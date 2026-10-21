@@ -1,0 +1,103 @@
+﻿Task Name,Description,Status,Priority,Tags,Phase,Périmètre,Estimation humain (jours),Estimation avec IA (jours),Gain IA,Dépend de
+[P0-01] Activer le contrôle d'accès (access_control) + Voter « propriétaire du compte »,"Routes publiques (catalogue GET, login, inscription), routes client (ROLE_USER), routes admin (ROLE_ADMIN). Voter pour PUT/DELETE /users/{id}.",TO DO,Urgent,"p0,api",Phase 0 — Stabiliser l'existant,API,1,0.75,moyen,
+"[P0-02] Valider les uploads d'images (type, taille, refus SVG)","Contrainte Assert\Image, max 5 Mo, jpeg/png/webp uniquement.",TO DO,Urgent,"p0,api",Phase 0 — Stabiliser l'existant,API,0.5,0.25,fort,
+[P0-03] Corriger DoctrinePictureRepository et le mapping inversedBy 'images',Utiliser DoctrinePicture + PictureMapper ; doctrine:schema:validate doit passer.,TO DO,Urgent,"p0,api",Phase 0 — Stabiliser l'existant,API,0.5,0.25,fort,
+[P0-04] Centraliser la gestion d'erreurs (codes HTTP + messages masqués en prod),"Exceptions métier dédiées (NotFound, Conflict, Validation) mappées dans ExceptionListener ; supprimer les try/catch des contrôleurs.",TO DO,High,"p0,api",Phase 0 — Stabiliser l'existant,API,1,0.5,fort,
+[P0-05] Valider les entrées : #[MapRequestPayload] + contraintes Assert sur les DTO,"Remplace les mappers manuels ; 422 automatiques ; ids validés avec Requirement::UUID.
+
+Dépend de : P0-04",TO DO,High,"p0,api",Phase 0 — Stabiliser l'existant,API,1.5,0.5,fort,P0-04
+[P0-06] Persister le slug produit (colonne unique + SluggerInterface),Migration + mapping dans les deux sens.,TO DO,High,"p0,api",Phase 0 — Stabiliser l'existant,API,0.5,0.25,fort,
+"[P0-07] Corriger les bugs ponctuels (AttributesMapper, updateDetails, inscription téléphone/adresse)","Voir compte rendu 03 : B5, B6, B7, B9.",TO DO,High,"p0,api",Phase 0 — Stabiliser l'existant,API,0.5,0.25,fort,
+"[P0-08] Secrets : APP_SECRET, clés JWT, .env.local, nettoyage .env.test",Changer le mot de passe BDD s'il est dans l'historique git.,TO DO,Urgent,"p0,devops",Phase 0 — Stabiliser l'existant,DevOps,0.25,0.25,faible,
+"[P0-09] Réparer l'outillage qualité (PHPStan, CS-Fixer, strict_types, supprimer Psalm/.php_cs)",,TO DO,Normal,"p0,devops",Phase 0 — Stabiliser l'existant,DevOps,0.5,0.25,fort,
+[P0-10] Tests d'intégration Doctrine (KernelTestCase + Foundry + BDD de test),"zenstruck/foundry pour les factories et fixtures.
+
+Dépend de : P0-03",TO DO,High,"p0,devops",Phase 0 — Stabiliser l'existant,DevOps,1.5,1.0,moyen,P0-03
+[P0-11] CI GitHub Actions (lint + PHPStan + PHPUnit + PostgreSQL),Dépend de : P0-09,TO DO,High,"p0,devops",Phase 0 — Stabiliser l'existant,DevOps,1,0.75,moyen,P0-09
+"[P0-12] README d'installation (docker compose, migrations, clés JWT, fixtures)",,TO DO,Normal,"p0,devops",Phase 0 — Stabiliser l'existant,DevOps,0.25,0.25,fort,
+"[P1-01] Séparer les routes /api/shop (public/client) et /api/admin (back-office), routes REST","POST /products au lieu de /create-product, etc. Préfixe versionné possible (/api/v1).
+
+Dépend de : P0-01",TO DO,High,"p1,api",Phase 1 — Socle API pour deux fronts,API,1,0.5,fort,P0-01
+[P1-02] Configurer CORS (nelmio/cors-bundle) pour les deux fronts,,TO DO,High,"p1,api",Phase 1 — Socle API pour deux fronts,API,0.25,0.25,fort,
+[P1-03] Documentation OpenAPI (nelmio/api-doc-bundle) + Swagger UI,"Sert aussi à générer le client TypeScript des fronts.
+
+Dépend de : P1-01",TO DO,High,"p1,api",Phase 1 — Socle API pour deux fronts,API,1,0.5,fort,P1-01
+"[P1-04] Format standard de liste : pagination, tri, filtres","Compatible React-admin (total dans X-Total-Count ou Content-Range).
+
+Dépend de : P1-01",TO DO,High,"p1,api",Phase 1 — Socle API pour deux fronts,API,1.5,0.5,fort,P1-01
+[P1-05] Refresh token JWT (gesdinet) + endpoint GET /api/shop/me,Dépend de : P0-01,TO DO,High,"p1,api",Phase 1 — Socle API pour deux fronts,API,1,0.75,moyen,P0-01
+[P1-06] Rôles ROLE_ADMIN / ROLE_EDITOR + commande console de création d'admin,Dépend de : P0-01,TO DO,High,"p1,api",Phase 1 — Socle API pour deux fronts,API,0.5,0.25,fort,P0-01
+[P1-07] Rate-limiting login/inscription (login_throttling + rate-limiter),,TO DO,Normal,"p1,api",Phase 1 — Socle API pour deux fronts,API,0.5,0.25,fort,
+[P1-08] Dates created_at / updated_at sur les entités (stof/doctrine-extensions),,TO DO,Normal,"p1,api",Phase 1 — Socle API pour deux fronts,API,0.5,0.25,fort,
+[P1-09] Initialiser le back-office React-admin + authProvider JWT,"Projet séparé (Vite + React-admin).
+
+Dépend de : P1-05",TO DO,High,"p1,backoffice",Phase 1 — Socle API pour deux fronts,Back-office,1,0.75,moyen,P1-05
+[P1-10] dataProvider React-admin adapté au format de l'API,Dépend de : P1-04,TO DO,High,"p1,backoffice",Phase 1 — Socle API pour deux fronts,Back-office,1,0.5,fort,P1-04
+[P1-11] Initialiser le front boutique + client API typé généré depuis l'OpenAPI,"Ex. Next.js ou Nuxt (SSR pour le SEO) + openapi-typescript.
+
+Dépend de : P1-03",TO DO,High,"p1,boutique",Phase 1 — Socle API pour deux fronts,Boutique,1,0.75,moyen,P1-03
+[P2-01] CRUD catégories (admin) + catégories parentes/enfants,Dépend de : P1-01,TO DO,High,"p2,api",Phase 2 — Catalogue complet,API,1.5,0.5,fort,P1-01
+[P2-02] Statut produit (brouillon/publié/archivé) + suppression/archivage,La boutique ne voit que les produits publiés.,TO DO,High,"p2,api",Phase 2 — Catalogue complet,API,1,0.5,fort,
+"[P2-03] Déclinaisons produit (variantes taille/parfum : SKU, prix, poids)","Ex. bougie 180 g / 300 g ; le panier pointe sur une variante.
+
+Dépend de : P2-02",TO DO,High,"p2,api",Phase 2 — Catalogue complet,API,3,2.0,moyen,P2-02
+[P2-04] Stock par variante + seuil d'alerte,Dépend de : P2-03,TO DO,High,"p2,api",Phase 2 — Catalogue complet,API,1,0.5,fort,P2-03
+"[P2-05] Images : ordre, image principale, suppression, URL miniatures LiipImagine",Dépend de : P0-03,TO DO,Normal,"p2,api",Phase 2 — Catalogue complet,API,1.5,0.5,fort,P0-03
+"[P2-06] Caractéristiques produit (cire, durée de combustion, notes olfactives…)",Faire évoluer Attribute (JSON) vers des caractéristiques configurables.,TO DO,Normal,"p2,api",Phase 2 — Catalogue complet,API,1,0.75,moyen,
+"[P2-07] Endpoints boutique : produit par slug, mis en avant, produits liés",Dépend de : P0-06,TO DO,Normal,"p2,api",Phase 2 — Catalogue complet,API,1,0.5,fort,P0-06
+"[P2-08] Recherche texte (PostgreSQL full-text, ou Meilisearch)",,TO DO,Normal,"p2,api",Phase 2 — Catalogue complet,API,1.5,1.0,moyen,
+"[P2-09] Écrans produits, variantes, stock et upload d'images",Dépend de : P1-10,TO DO,High,"p2,backoffice",Phase 2 — Catalogue complet,Back-office,3,1.25,fort,P1-10
+[P2-10] Écrans catégories,Dépend de : P2-01,TO DO,Normal,"p2,backoffice",Phase 2 — Catalogue complet,Back-office,0.5,0.25,fort,P2-01
+"[P2-11] Pages accueil, liste catégorie avec filtres, fiche produit",Dépend de : P1-11,TO DO,High,"p2,boutique",Phase 2 — Catalogue complet,Boutique,4,2.5,moyen,P1-11
+[P2-12] Recherche produit,Dépend de : P2-08,TO DO,Normal,"p2,boutique",Phase 2 — Catalogue complet,Boutique,1,0.75,moyen,P2-08
+"[P3-01] CRUD adresses du client connecté (livraison/facturation, par défaut)",Dépend de : P1-05,TO DO,High,"p3,api",Phase 3 — Comptes clients,API,1,0.5,fort,P1-05
+[P3-02] Changement de mot de passe + politique de mot de passe,,TO DO,High,"p3,api",Phase 3 — Comptes clients,API,0.5,0.25,fort,
+[P3-03] Mot de passe oublié (token + email),"Envoi via Symfony Mailer (synchrone au début, passé en asynchrone en P6-02).",TO DO,High,"p3,api",Phase 3 — Comptes clients,API,1,0.5,fort,
+[P3-04] Vérification de l'email à l'inscription,,TO DO,Normal,"p3,api",Phase 3 — Comptes clients,API,1,0.5,fort,
+[P3-05] RGPD : export des données et suppression du compte,,TO DO,Normal,"p3,api",Phase 3 — Comptes clients,API,1,0.75,moyen,
+"[P3-06] Écrans clients (liste, détail, commandes du client)",Dépend de : P1-10,TO DO,Normal,"p3,backoffice",Phase 3 — Comptes clients,Back-office,1,0.5,fort,P1-10
+"[P3-07] Inscription, connexion, espace client (profil, adresses, mot de passe)",Dépend de : P3-01,TO DO,High,"p3,boutique",Phase 3 — Comptes clients,Boutique,2.5,1.5,moyen,P3-01
+[P4-01] Modèle Panier / LignePanier (domaine + persistance),Dépend de : P2-03,TO DO,High,"p4,api",Phase 4 — Panier,API,1.5,0.5,fort,P2-03
+[P4-02] Panier invité (token) + fusion à la connexion,Dépend de : P4-01,TO DO,High,"p4,api",Phase 4 — Panier,API,1,0.75,moyen,P4-01
+"[P4-03] Calcul des totaux (HT, TVA, TTC) + contrôle du stock","Montants en centimes (int).
+
+Dépend de : P4-01",TO DO,High,"p4,api",Phase 4 — Panier,API,1,0.75,moyen,P4-01
+[P4-04] Mini-panier + page panier,Dépend de : P4-02,TO DO,High,"p4,boutique",Phase 4 — Panier,Boutique,2,1.25,moyen,P4-02
+[P5-01] Modèle Commande / LigneCommande (prix figés) + numérotation,Dépend de : P4-03,TO DO,Urgent,"p5,api",Phase 5 — Commande et paiement,API,1.5,0.5,fort,P4-03
+[P5-02] Statuts de commande avec Symfony Workflow,"en attente → payée → préparée → expédiée → livrée ; annulée ; remboursée.
+
+Dépend de : P5-01",TO DO,Urgent,"p5,api",Phase 5 — Commande et paiement,API,1,0.5,fort,P5-01
+"[P5-03] Checkout : adresses, mode de livraison, récapitulatif",Dépend de : P5-01,TO DO,Urgent,"p5,api",Phase 5 — Commande et paiement,API,1.5,1.0,moyen,P5-01
+[P5-04] Paiement Stripe (PaymentIntent) + webhooks signés,"Alternative : Mollie, très utilisé en France.
+
+Dépend de : P5-03",TO DO,Urgent,"p5,api",Phase 5 — Commande et paiement,API,2.5,1.5,moyen,P5-03
+[P5-05] Réservation et décrément du stock au paiement,Dépend de : P5-04,TO DO,High,"p5,api",Phase 5 — Commande et paiement,API,1,0.75,moyen,P5-04
+[P5-06] Historique des commandes du client,Dépend de : P5-01,TO DO,High,"p5,api",Phase 5 — Commande et paiement,API,0.5,0.25,fort,P5-01
+[P5-07] Factures PDF (dompdf) + numérotation légale,Dépend de : P5-04,TO DO,High,"p5,api",Phase 5 — Commande et paiement,API,1,0.75,moyen,P5-04
+[P5-08] Remboursement total/partiel depuis l'admin,Dépend de : P5-04,TO DO,Normal,"p5,api",Phase 5 — Commande et paiement,API,1,0.75,moyen,P5-04
+"[P5-09] Écrans commandes : liste, détail, changement de statut, remboursement",Dépend de : P5-02,TO DO,Urgent,"p5,backoffice",Phase 5 — Commande et paiement,Back-office,2,0.75,fort,P5-02
+[P5-10] Tunnel de commande + paiement Stripe + page de confirmation,Dépend de : P5-04,TO DO,Urgent,"p5,boutique",Phase 5 — Commande et paiement,Boutique,4,2.5,moyen,P5-04
+[P5-11] Historique et détail des commandes dans l'espace client,Dépend de : P5-06,TO DO,High,"p5,boutique",Phase 5 — Commande et paiement,Boutique,1,0.5,fort,P5-06
+"[P6-01] Modes et tarifs de livraison (forfait, poids, gratuité au-delà d'un seuil)",Dépend de : P5-03,TO DO,Urgent,"p6,api",Phase 6 — Livraison et emails,API,1.5,0.5,fort,P5-03
+[P6-02] Emails transactionnels (Mailer + Messenger asynchrone + templates),"Confirmation de commande, expédition, mot de passe oublié, bienvenue.",TO DO,Urgent,"p6,api",Phase 6 — Livraison et emails,API,2,0.75,fort,
+[P6-03] Numéro et lien de suivi colis,Dépend de : P5-02,TO DO,High,"p6,api",Phase 6 — Livraison et emails,API,0.5,0.25,fort,P5-02
+[P6-04] Points relais (Mondial Relay / Colissimo) — optionnel,Dépend de : P6-01,TO DO,Low,"p6,api",Phase 6 — Livraison et emails,API,2,1.75,faible,P6-01
+[P6-05] Écran modes de livraison + saisie du suivi,Dépend de : P6-01,TO DO,High,"p6,backoffice",Phase 6 — Livraison et emails,Back-office,1,0.5,fort,P6-01
+[P7-01] Hébergement + Docker de production (FrankenPHP ou Nginx/PHP-FPM),,TO DO,Urgent,"p7,devops",Phase 7 — Mise en production (MVP),DevOps,1.5,1.25,faible,
+[P7-02] Stockage des images sur S3 compatible (Flysystem) + CDN,,TO DO,High,"p7,devops",Phase 7 — Mise en production (MVP),DevOps,1,0.75,moyen,
+[P7-03] Suivi des erreurs (Sentry/GlitchTip) + logs,,TO DO,High,"p7,devops",Phase 7 — Mise en production (MVP),DevOps,0.5,0.25,moyen,
+[P7-04] Sauvegardes automatiques de la BDD,,TO DO,Urgent,"p7,devops",Phase 7 — Mise en production (MVP),DevOps,0.5,0.5,faible,
+"[P7-05] Pages légales, bandeau cookies, responsive, accessibilité","CGV, mentions légales, politique de confidentialité.",TO DO,Urgent,"p7,boutique",Phase 7 — Mise en production (MVP),Boutique,2,1.75,faible,
+[P7-06] Tests E2E du parcours d'achat (Playwright),Dépend de : P5-10,TO DO,High,"p7,devops",Phase 7 — Mise en production (MVP),DevOps,1.5,1.0,moyen,P5-10
+"[P8-01] Pages de contenu (à propos, FAQ…) + bannières de la page d'accueil",,TO DO,Normal,"p8,api","Phase 8 — Contenu, marketing et SEO",API,1.5,0.5,fort,
+"[P8-02] Codes promo (pourcentage, montant, livraison offerte, dates, quotas)",Dépend de : P4-03,TO DO,Normal,"p8,api","Phase 8 — Contenu, marketing et SEO",API,1.5,0.5,fort,P4-03
+[P8-03] Avis clients avec modération,Dépend de : P5-01,TO DO,Normal,"p8,api","Phase 8 — Contenu, marketing et SEO",API,1.5,0.5,fort,P5-01
+[P8-04] Newsletter (consentement + synchro Brevo),,TO DO,Low,"p8,api","Phase 8 — Contenu, marketing et SEO",API,1,0.75,moyen,
+"[P8-05] SEO : meta title/description, sitemap.xml, données structurées",Dépend de : P0-06,TO DO,Normal,"p8,api","Phase 8 — Contenu, marketing et SEO",API,1,0.5,fort,P0-06
+"[P8-06] Écrans contenus, bannières, codes promo, modération des avis",Dépend de : P8-01,TO DO,Normal,"p8,backoffice","Phase 8 — Contenu, marketing et SEO",Back-office,2,0.75,fort,P8-01
+"[P8-07] Affichage contenus, avis, saisie code promo, inscription newsletter",Dépend de : P8-02,TO DO,Normal,"p8,boutique","Phase 8 — Contenu, marketing et SEO",Boutique,2,1.25,moyen,P8-02
+"[P9-01] Endpoints statistiques (CA, commandes, panier moyen, stock bas)",Dépend de : P5-01,TO DO,Normal,"p9,api",Phase 9 — Pilotage et améliorations,API,1.5,0.5,fort,P5-01
+[P9-02] Tableau de bord (graphiques et alertes),Dépend de : P9-01,TO DO,Normal,"p9,backoffice",Phase 9 — Pilotage et améliorations,Back-office,1.5,0.5,fort,P9-01
+[P9-03] Journal d'audit des actions admin,,TO DO,Low,"p9,api",Phase 9 — Pilotage et améliorations,API,1,0.5,fort,
+[P9-04] Export CSV commandes/clients (comptabilité),,TO DO,Low,"p9,backoffice",Phase 9 — Pilotage et améliorations,Back-office,1,0.5,fort,
+[P9-05] Liste de souhaits / favoris,Dépend de : P3-01,TO DO,Low,"p9,api",Phase 9 — Pilotage et améliorations,API,1,0.5,fort,P3-01

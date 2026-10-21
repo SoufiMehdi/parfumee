@@ -1,0 +1,24 @@
+# Racine du monorepo — chaque app a aussi son propre .gitignore (api/.gitignore…)
+
+# Environnement local
+.env.local
+.env.*.local
+
+# Éditeurs / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Caches d'outils lancés depuis la racine
+.phpunit.cache/
+
+# Fronts (shop/, admin/)
+node_modules/
+dist/
+.next/
+.nuxt/
+.output/
+
+# Claude Code : réglages personnels (les fichiers partagés de .claude/ sont versionnés)
+.claude/settings.local.json
