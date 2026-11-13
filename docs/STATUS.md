@@ -5,8 +5,9 @@
 ## Où on en est
 
 - **Phase en cours :** Phase 0 — Stabiliser l'existant.
-- **En relecture :** `P0-01` (contrôle d'accès), sur la branche `fix/P0-01-access-control`. À merger après la review de la PR.
-- **Prochaines tâches conseillées :** `P0-03` (B1, lectures d'images cassées) et `P0-02` (validation des uploads), toutes deux urgentes.
+- **Fait :** `P0-01` (contrôle d'accès), mergée dans `main` (PR #6).
+- **En relecture :** `P0-02` (validation des uploads), sur la branche `fix/P0-02-validate-image-uploads`. À merger après la review de la PR.
+- **Prochaine tâche conseillée :** `P0-03` (B1, lectures d'images cassées), urgente.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -21,10 +22,11 @@
 
 ## Pièges connus en cours
 
-- Toutes les routes de l'API sont publiques (S1) **tant que `P0-01` n'est pas mergée** : ne rien exposer sur Internet avant.
-- Après `P0-01`, toute route absente de `access_control` (`config/packages/security.yaml`) est réservée à `ROLE_ADMIN`. Une nouvelle route publique ou client doit donc y être ajoutée explicitement, sinon elle répond 401/403.
+- Toute route absente de `access_control` (`config/packages/security.yaml`) est réservée à `ROLE_ADMIN`. Une nouvelle route publique ou client doit donc y être ajoutée explicitement, sinon elle répond 401/403.
 - Il n'existe aucun moyen de créer un administrateur avant `P1-06`. En attendant, promouvoir un compte en SQL : `UPDATE users SET roles = '["ROLE_ADMIN"]' WHERE email = '…';`. Les rôles sont relus en base à chaque requête, donc pas besoin de se reconnecter.
 - Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. À prévoir dans la CI (`P0-11`).
+- Upload d'images : la limite applicative est de 5 Mo, mais PHP refuse avant elle tout fichier au-delà de `upload_max_filesize` (2 Mo par défaut) et ignore le corps entier au-delà de `post_max_size` (8 Mo par défaut). À régler dans l'image Docker (`P7-01`) : `upload_max_filesize = 5M` au minimum.
+- `#[MapUploadedFile]`, `#[MapRequestPayload]` et `#[MapQueryString]` **ignorent silencieusement leurs contraintes** si `symfony/validator` est absent. Il est installé depuis `P0-02` : ne pas le retirer.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
 - `DoctrinePictureRepository` est cassé (B1) : les lectures d'images plantent.
 - Le slug produit n'est pas persisté (B4) : tous les produits renvoient `slug-placeholder`.
@@ -34,7 +36,17 @@
 
 ## Journal
 
-### 2026-11-13 — P0-01 : contrôle d'accès (branche `fix/P0-01-access-control`, en relecture)
+### 2026-11-13 — P0-02 : validation des uploads d'images (branche `fix/P0-02-validate-image-uploads`, en relecture)
+- `POST /upload-picture/{productId}` n'accepte plus que de vraies images JPEG, PNG ou WebP de 5 Mo au plus (constat S2). Le type est lu dans le contenu du fichier, pas dans son nom ni dans le `Content-Type` envoyé par le client. SVG, GIF, HTML et PHP déguisés sont refusés avec un 422, avant d'atteindre le use case.
+- La validation est déclarée sur l'argument du contrôleur avec `#[MapUploadedFile]` et `Assert\Image`.
+- Dépendances ajoutées : `symfony/validator` et `symfony/serializer`, toutes deux aussi nécessaires à `P0-05`.
+- Non traité, comme prévu : le réencodage des images (suggéré « idéalement » par l'audit) et la limite de dimensions en pixels.
+- Vérifications :
+  - PHPUnit : 156 tests passent (10 nouveaux), avec les mêmes 68 notices ;
+  - PHPStan : 67 erreurs, comme avant, aucune dans le nouveau code ;
+  - `composer audit` ne remonte aucune vulnérabilité.
+
+### 2026-11-13 — P0-01 : contrôle d'accès (mergée, PR #6)
 - `access_control` activé, fermé par défaut :
   - public : `POST /users/login`, `POST /users/create`, `GET /products`, `GET /products/filter`, `GET /product/{id}` ;
   - `ROLE_USER` : `GET`, `PUT` et `DELETE /users/{id}` ;

@@ -152,7 +152,8 @@ class ProductControllerTest extends WebTestCase
 
         // Simulation d'un fichier temporaire pour l'upload multipart
         $tempFile = tempnam(sys_get_temp_dir(), 'test_img_');
-        file_put_contents($tempFile, 'fake image content');
+        // Un vrai JPEG : le contenu est validé avant d'atteindre le contrôleur (P0-02).
+        imagejpeg(imagecreatetruecolor(8, 8), $tempFile);
         $uploadedFile = new UploadedFile($tempFile, 'perfume.jpg', 'image/jpeg', null, true);
 
         // Envoi en format Multipart Form (les fichiers vont dans le 5ème argument de request())
