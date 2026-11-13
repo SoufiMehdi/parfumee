@@ -10,50 +10,22 @@ use App\Ecommerce\Domain\Repository\Catalog\PictureRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
-use Doctrine\DBAL\Exception\ConnectionException;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use App\Tests\Support\DatabaseTestCase;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Runs the repository against a real PostgreSQL database: the unit test mocks
  * the EntityManager, which is how B1 (querying the domain model instead of
  * the Doctrine entity) went unnoticed.
- *
- * Needs a migrated test database:
- *   php bin/console doctrine:database:create --env=test --if-not-exists
- *   php bin/console doctrine:migrations:migrate --env=test -n
- *
- * Skipped when no database server answers, until P0-10 makes the test
- * database part of the standard setup. Each test runs in a transaction that
- * is rolled back.
  */
-final class DoctrinePictureRepositoryTest extends KernelTestCase
+final class DoctrinePictureRepositoryTest extends DatabaseTestCase
 {
-    private EntityManagerInterface $entityManager;
     private PictureRepositoryInterface $repository;
 
     protected function setUp(): void
     {
-        self::bootKernel();
-        $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        parent::setUp();
         $this->repository = self::getContainer()->get(PictureRepositoryInterface::class);
-
-        try {
-            $this->entityManager->getConnection()->beginTransaction();
-        } catch (ConnectionException $e) {
-            self::markTestSkipped('No test database available: '.$e->getMessage());
-        }
-    }
-
-    protected function tearDown(): void
-    {
-        $connection = $this->entityManager->getConnection();
-        if ($connection->isTransactionActive()) {
-            $connection->rollBack();
-        }
-
-        parent::tearDown();
     }
 
     public function testASavedPictureIsReadBackAsADomainPicture(): void

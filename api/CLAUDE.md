@@ -37,7 +37,9 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 ## Tests
 
 - Les tests **unitaires** (`tests/Unit/`) couvrent le domaine, les use cases (repositories mockés), les mappers et les presenters.
-- Les tests **d'intégration** (`tests/Integration/`, `KernelTestCase`) couvrent les repositories Doctrine **contre une vraie base de test**. Les mocks d'EntityManager ont masqué le bug B1.
+- Les tests **d'intégration** (`tests/Integration/`) couvrent les repositories Doctrine **contre une vraie base de test**. Les mocks d'EntityManager ont masqué le bug B1.
+  - Ils étendent `App\Tests\Support\DatabaseTestCase`, qui joue les migrations une fois par lancement et annule les données de chaque test (transaction + rollback).
+  - La base est le service `database_test` de `compose.override.yaml` (`docker compose up -d`). Sans elle, ces tests **échouent** : ne jamais les remplacer par un `markTestSkipped`.
 - Les tests **fonctionnels** (`tests/Functional/`, `WebTestCase`) couvrent les contrôleurs et la sécurité (401/403 attendus).
 - Le namespace d'un test suit son dossier : `App\Tests\Unit\...`, `App\Tests\Integration\...`.
 - PHPUnit est configuré avec `failOnWarning`, `failOnNotice` et `failOnDeprecation` : un warning PHP fait échouer la suite.

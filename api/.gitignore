@@ -2,7 +2,6 @@
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
-.env.test
 /.env.*.local
 /.env.dev
 /config/secrets/prod/prod.decrypt.private.php

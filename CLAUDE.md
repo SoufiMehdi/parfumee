@@ -50,12 +50,12 @@ Site e-commerce de **bougies parfumées**. Un seul dépôt contient une API et l
 
 ```bash
 # API (depuis api/)
-docker compose up -d                       # PostgreSQL de dev
+docker compose up -d                       # PostgreSQL de dev + PostgreSQL de test (127.0.0.1:54320)
 composer install
 php bin/console doctrine:migrations:migrate
 php bin/console doctrine:fixtures:load
 php bin/console lexik:jwt:generate-keypair # une seule fois par machine
-vendor/bin/phpunit
+vendor/bin/phpunit                         # les tests d'intégration exigent la base de test
 vendor/bin/phpstan analyse                 # utilise phpstan.dist.neon
 vendor/bin/php-cs-fixer fix --dry-run --diff
 ```
