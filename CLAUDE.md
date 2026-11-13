@@ -4,7 +4,7 @@ Site e-commerce de **bougies parfumées**. Un seul dépôt contient une API et l
 
 | Dossier | Contenu | État |
 |---|---|---|
-| `api/` | API Symfony 7.4 / PHP 8.2+ / PostgreSQL 16, architecture hexagonale. Voir `api/CLAUDE.md` | Existant, en stabilisation |
+| `api/` | API Symfony 8.1 / PHP 8.4+ / PostgreSQL 16, architecture hexagonale. Voir `api/CLAUDE.md` | Existant, en stabilisation |
 | `shop/` | Front boutique publique (SSR pour le SEO) | À créer — framework non choisi |
 | `admin/` | Back-office (React-admin proposé, voir ADR 0003) | À créer |
 | `infra/` | Docker Compose, Caddy, scripts de déploiement et de sauvegarde | À créer |

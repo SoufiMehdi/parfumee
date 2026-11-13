@@ -1,6 +1,6 @@
 # API — règles spécifiques
 
-Symfony 7.4, PHP ≥ 8.2, Doctrine ORM 3, PostgreSQL 16, JWT (lexik), LiipImagine. Tout le code métier vit dans `src/Ecommerce/`.
+Symfony 8.1 (pas LTS, voir ADR 0005), PHP ≥ 8.4, Doctrine ORM 3 / DoctrineBundle 3, PostgreSQL 16, JWT (lexik), LiipImagine. Tout le code métier vit dans `src/Ecommerce/`.
 
 ## Architecture hexagonale : règles non négociables
 
