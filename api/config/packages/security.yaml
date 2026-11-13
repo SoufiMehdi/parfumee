@@ -13,7 +13,7 @@ security:
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
         login:
             pattern: ^/users/login$
@@ -25,10 +25,23 @@ security:
             stateless: true
             jwt: ~
 
-    # Note: Only the *first* matching rule is applied
+    # Only the *first* matching rule is applied, so the order matters.
+    # Any route that is not listed here falls into the last rule and is
+    # admin-only: a new route is closed until it is explicitly opened.
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Public: authentication and catalogue reading
+        - { path: ^/users/(login|create)$, methods: [POST], roles: PUBLIC_ACCESS }
+        - { path: ^/products(/filter)?$, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/product/[^/]+$, methods: [GET], roles: PUBLIC_ACCESS }
+
+        # Back-office: must stay above the customer account rule, which would match /users/list
+        - { path: ^/users/list$, roles: ROLE_ADMIN }
+
+        # Customer account: ownership is then enforced by UserAccountVoter
+        - { path: ^/users/[^/]+$, methods: [GET, PUT, DELETE], roles: ROLE_USER }
+
+        # Everything else (catalogue writes, uploads, future routes)
+        - { path: ^/, roles: ROLE_ADMIN }
 
 when@test:
     security:

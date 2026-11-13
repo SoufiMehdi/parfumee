@@ -14,11 +14,13 @@ use App\Ecommerce\Application\Mapper\User\UpdateUserRequestMapper;
 use App\Ecommerce\Application\Mapper\User\LoginUserRequestMapper;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Infrastructure\Presenter\User\UserPresenter;
+use App\Ecommerce\Infrastructure\Security\Voter\UserAccountVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use App\Ecommerce\Application\Mapper\User\RegisterUserRequestMapper;
 
 #[Route('/users')]
@@ -57,6 +59,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/{id}', name: 'get_user', methods: [Request::METHOD_GET])]
+    #[IsGranted(UserAccountVoter::ACCESS, subject: 'id', message: 'Access denied.')]
     public function getById(string $id, GetUserUseCase $useCase, UserPresenter $presenter): JsonResponse
     {
         try {
@@ -99,6 +102,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/{id}', name: 'update_user', methods: [Request::METHOD_PUT])]
+    #[IsGranted(UserAccountVoter::ACCESS, subject: 'id', message: 'Access denied.')]
     public function update(
         string $id,
         Request $request,
@@ -125,6 +129,7 @@ class UserController extends AbstractController
     }
 
     #[Route('/{id}', name: 'delete_user', methods: [Request::METHOD_DELETE])]
+    #[IsGranted(UserAccountVoter::ACCESS, subject: 'id', message: 'Access denied.')]
     public function delete(string $id, DeleteUserUseCase $useCase): JsonResponse
     {
         try {

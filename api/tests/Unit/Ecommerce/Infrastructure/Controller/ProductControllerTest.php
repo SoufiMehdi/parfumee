@@ -12,17 +12,22 @@ use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
+use App\Tests\Support\AuthenticatesRequests;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class ProductControllerTest extends WebTestCase
 {
+    use AuthenticatesRequests;
+
     private $client;
 
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        // Catalogue writes are admin-only; the access rules themselves are covered by AccessControlTest.
+        $this->authenticateAs($this->client, '99999999-9999-4999-8999-999999999999', ['ROLE_ADMIN']);
     }
 
     public function testGetProducts(): void
