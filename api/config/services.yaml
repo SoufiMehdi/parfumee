@@ -22,6 +22,7 @@ services:
     App\Ecommerce\Infrastructure\EventListener\ExceptionListener:
         arguments:
             $debug: '%kernel.debug%'
+            $nameConverter: '@serializer.name_converter.camel_case_to_snake_case'
         tags:
             - { name: 'kernel.event_listener', event: 'kernel.exception' }
 

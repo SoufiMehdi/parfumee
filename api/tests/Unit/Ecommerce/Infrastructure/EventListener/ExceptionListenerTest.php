@@ -20,7 +20,12 @@ use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\Serializer\NameConverter\CamelCaseToSnakeCaseNameConverter;
+use Symfony\Component\Validator\ConstraintViolation;
+use Symfony\Component\Validator\ConstraintViolationList;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 
 final class ExceptionListenerTest extends TestCase
 {
@@ -70,6 +75,26 @@ final class ExceptionListenerTest extends TestCase
         $logger->expects(self::never())->method(self::anything());
 
         $this->handle(new NotFoundHttpException('No route found.'), debug: false, logger: $logger);
+    }
+
+    public function testValidationFailureListsEachFieldAsTheClientNamedIt(): void
+    {
+        $violations = new ConstraintViolationList([
+            new ConstraintViolation('This value should not be blank.', null, [], null, 'firstName', ''),
+            new ConstraintViolation('This is not a valid UUID.', null, [], null, 'categoryId', 'x'),
+        ]);
+        $exception = new UnprocessableEntityHttpException('ignored', new ValidationFailedException(null, $violations));
+
+        $response = $this->handle($exception, debug: false);
+
+        self::assertSame(422, $response->getStatusCode());
+        self::assertSame([
+            'error' => 'Validation failed.',
+            'violations' => [
+                ['field' => 'first_name', 'message' => 'This value should not be blank.'],
+                ['field' => 'category_id', 'message' => 'This is not a valid UUID.'],
+            ],
+        ], $this->decode($response));
     }
 
     public function testUnexpectedExceptionMessageIsHiddenOutsideDebug(): void
@@ -122,7 +147,7 @@ final class ExceptionListenerTest extends TestCase
             $exception,
         );
 
-        new ExceptionListener($logger ?? new NullLogger(), $debug)->onKernelException($event);
+        new ExceptionListener($logger ?? new NullLogger(), new CamelCaseToSnakeCaseNameConverter(), $debug)->onKernelException($event);
 
         $response = $event->getResponse();
         self::assertInstanceOf(Response::class, $response);

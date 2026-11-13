@@ -1,0 +1,5 @@
+framework:
+    serializer:
+        # The API speaks snake_case (first_name, category_id) while the DTO
+        # properties are camelCase. Applies to #[MapRequestPayload] and #[MapQueryString].
+        name_converter: serializer.name_converter.camel_case_to_snake_case

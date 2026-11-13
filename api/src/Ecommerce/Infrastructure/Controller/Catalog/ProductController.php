@@ -11,12 +11,17 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
+use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 
@@ -33,7 +38,7 @@ class ProductController extends AbstractController
         return new JsonResponse($data);
     }
 
-    #[Route('/product/{id}', name: 'get_product', methods: [Request::METHOD_GET])]
+    #[Route('/product/{id}', name: 'get_product', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_GET])]
     public function getById(string $id, GetProductUseCase $useCase, ProductPresenter $presenter): JsonResponse
     {
         $data = $presenter->present($useCase->execute($id));
@@ -41,47 +46,34 @@ class ProductController extends AbstractController
     }
 
     #[Route('/products/filter', name: 'get_filtered_products', methods: [Request::METHOD_GET])]
-    public function getFiltered(Request $request, GetFilteredProductsUseCase $useCase, ProductPresenter $presenter): JsonResponse
-    {
-        $products = $useCase->execute($request->query->all());
-        $data = $presenter->presentCollection($products);
-
-        return new JsonResponse($data);
+    public function getFiltered(
+        GetFilteredProductsUseCase $useCase,
+        ProductPresenter $presenter,
+        // 422 like any other invalid input: the attribute answers 404 by default.
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        GetProductsFilterDto $filter = new GetProductsFilterDto(),
+    ): JsonResponse {
+        return new JsonResponse($presenter->presentCollection($useCase->execute($filter)));
     }
 
     #[Route('/create-product', name: 'create_product', methods: [Request::METHOD_POST])]
-    public function create(Request $request, CreateProductUseCase $useCase): JsonResponse
+    public function create(#[MapRequestPayload] CreateProductDto $dto, CreateProductUseCase $useCase): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $dto = new CreateProductDto(
-            name: $data['name'] ?? '',
-            price: $data['price'] ?? 0,
-            categoryId: $data['category_id'] ?? '',
-            attributes: $data['attributes'] ?? []
-        );
-        $product = $useCase->execute($dto);
-        return new JsonResponse($product, JsonResponse::HTTP_CREATED);
+        return new JsonResponse($useCase->execute($dto), JsonResponse::HTTP_CREATED);
     }
-    #[Route('/edit-product/{id}', name: 'update_product', methods: [Request::METHOD_PUT])]
-    public function update(string $id, Request $request, UpdateProductUseCase $useCase): JsonResponse
+
+    #[Route('/edit-product/{id}', name: 'update_product', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_PUT])]
+    public function update(string $id, #[MapRequestPayload] UpdateProductDto $dto, UpdateProductUseCase $useCase): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
-        $dto = new UpdateProductDto(
-            name: $data['name'] ?? '',
-            price: $data['price'] ?? 0,
-            categoryId: $data['category_id'] ?? '',
-            attributes: $data['attributes'] ?? []
-        );
         $product = $useCase->execute($dto, $id);
-        return new JsonResponse(
-            [
-                'result' => 'Product updated successfully',
-                'data' => $product->getId()
-            ],
-            JsonResponse::HTTP_OK
-            );
+
+        return new JsonResponse([
+            'result' => 'Product updated successfully',
+            'data' => $product->getId(),
+        ]);
     }
-    #[Route('/upload-picture/{productId}', name: 'upload_picture', methods: [Request::METHOD_POST])]
+
+    #[Route('/upload-picture/{productId}', name: 'upload_picture', requirements: ['productId' => Requirement::UUID], methods: [Request::METHOD_POST])]
     public function uploadPicture(
         string $productId,
         Request $request,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 
-use App\Ecommerce\Application\DTO\User\RegisterUserRequestDTO;
+use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Application\UseCase\User\RegisterUserUseCase;
 use App\Ecommerce\Domain\Exception\User\DuplicateEmailException;
 use App\Ecommerce\Domain\Model\User\User;
@@ -32,7 +32,7 @@ class RegisterUserUseCaseTest extends TestCase
 
     public function testExecuteSuccessfullyRegistersUser(): void
     {
-        $dto = new RegisterUserRequestDTO(
+        $dto = new RegisterUserRequestDto(
             email: 'test@example.com',
             password: 'plainPassword',
             firstName: 'John',
@@ -63,7 +63,7 @@ class RegisterUserUseCaseTest extends TestCase
 
     public function testExecuteThrowsExceptionWhenEmailAlreadyExists(): void
     {
-        $dto = new RegisterUserRequestDTO(
+        $dto = new RegisterUserRequestDto(
             email: 'existing@example.com',
             password: 'plainPassword',
             firstName: 'John',
@@ -88,7 +88,7 @@ class RegisterUserUseCaseTest extends TestCase
 
     public function testExecuteThrowsExceptionWhenHasherFails(): void
     {
-        $dto = new RegisterUserRequestDTO(
+        $dto = new RegisterUserRequestDto(
             email: 'test@example.com',
             password: 'plainPassword',
             firstName: 'John',
@@ -113,7 +113,7 @@ class RegisterUserUseCaseTest extends TestCase
 
     public function testExecuteThrowsExceptionWhenRepositoryFails(): void
     {
-        $dto = new RegisterUserRequestDTO(
+        $dto = new RegisterUserRequestDto(
             email: 'test@example.com',
             password: 'plainPassword',
             firstName: 'John',

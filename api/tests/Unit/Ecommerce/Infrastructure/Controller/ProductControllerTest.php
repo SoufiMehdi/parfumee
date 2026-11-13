@@ -59,33 +59,33 @@ class ProductControllerTest extends WebTestCase
         $presenterMock = $this->createMock(ProductPresenter::class);
         $productMock = $this->createMock(Product::class);
 
-        $useCaseMock->expects($this->once())->method('execute')->with('prod-123')->willReturn($productMock);
-        $presenterMock->expects($this->once())->method('present')->with($productMock)->willReturn(['id' => 'prod-123', 'name' => 'Parfum']);
+        $useCaseMock->expects($this->once())->method('execute')->with('11111111-1111-4111-8111-111111111111')->willReturn($productMock);
+        $presenterMock->expects($this->once())->method('present')->with($productMock)->willReturn(['id' => '11111111-1111-4111-8111-111111111111', 'name' => 'Parfum']);
 
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
         static::getContainer()->set(ProductPresenter::class, $presenterMock);
 
-        $this->client->request('GET', '/product/prod-123');
+        $this->client->request('GET', '/product/11111111-1111-4111-8111-111111111111');
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
-        $this->assertStringContainsString('prod-123', $response->getContent());
+        $this->assertStringContainsString('11111111-1111-4111-8111-111111111111', $response->getContent());
     }
 
     public function testGetProductByIdNotFound(): void
     {
         $useCaseMock = $this->createMock(GetProductUseCase::class);
-        $useCaseMock->expects($this->once())->method('execute')->with('unknown')
-            ->willThrowException(new ProductNotFoundException('unknown'));
+        $useCaseMock->expects($this->once())->method('execute')->with('33333333-3333-4333-8333-333333333333')
+            ->willThrowException(new ProductNotFoundException('33333333-3333-4333-8333-333333333333'));
 
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
 
-        $this->client->request('GET', '/product/unknown');
+        $this->client->request('GET', '/product/33333333-3333-4333-8333-333333333333');
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_NOT_FOUND, $response->getStatusCode());
         $this->assertJsonStringEqualsJsonString(
-            json_encode(['error' => 'Product with id "unknown" not found.']),
+            json_encode(['error' => 'Product with id "33333333-3333-4333-8333-333333333333" not found.']),
             $response->getContent()
         );
     }
@@ -105,7 +105,7 @@ class ProductControllerTest extends WebTestCase
         $payload = [
             'name' => 'Oud Intense',
             'price' => 120.50,
-            'category_id' => 'cat-789',
+            'category_id' => '22222222-2222-4222-8222-222222222222',
             'attributes' => ['capacity' => '100ml']
         ];
 
@@ -120,25 +120,25 @@ class ProductControllerTest extends WebTestCase
     {
         $useCaseMock = $this->createMock(UpdateProductUseCase::class);
         $productMock = $this->createMock(Product::class);
-        $productMock->method('getId')->willReturn('prod-123');
+        $productMock->method('getId')->willReturn('11111111-1111-4111-8111-111111111111');
 
         $useCaseMock->expects($this->once())
             ->method('execute')
-            ->with($this->isInstanceOf(UpdateProductDto::class), 'prod-123')
+            ->with($this->isInstanceOf(UpdateProductDto::class), '11111111-1111-4111-8111-111111111111')
             ->willReturn($productMock);
 
         static::getContainer()->set(UpdateProductUseCase::class, $useCaseMock);
 
-        $payload = ['name' => 'Nouveau Nom', 'price' => 95.00];
+        $payload = ['name' => 'Nouveau Nom', 'price' => 95.00, 'category_id' => '22222222-2222-4222-8222-222222222222'];
 
-        $this->client->request('PUT', '/edit-product/prod-123', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
+        $this->client->request('PUT', '/edit-product/11111111-1111-4111-8111-111111111111', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
         $this->assertSame('Product updated successfully', $data['result']);
-        $this->assertSame('prod-123', $data['data']);
+        $this->assertSame('11111111-1111-4111-8111-111111111111', $data['data']);
     }
 
     public function testUploadPictureSuccess(): void
@@ -149,7 +149,7 @@ class ProductControllerTest extends WebTestCase
 
         $useCaseMock->expects($this->once())
             ->method('execute')
-            ->with('prod-123', $this->isInstanceOf(UploadedFile::class), 'Belle image')
+            ->with('11111111-1111-4111-8111-111111111111', $this->isInstanceOf(UploadedFile::class), 'Belle image')
             ->willReturn($imageMock);
 
         static::getContainer()->set(UploadProductImageUseCase::class, $useCaseMock);
@@ -163,7 +163,7 @@ class ProductControllerTest extends WebTestCase
         // Envoi en format Multipart Form (les fichiers vont dans le 5ème argument de request())
         $this->client->request(
             'POST',
-            '/upload-picture/prod-123',
+            '/upload-picture/11111111-1111-4111-8111-111111111111',
             ['alt' => 'Belle image'], // $_POST
             ['file' => $uploadedFile] // $_FILES
         );
@@ -179,7 +179,7 @@ class ProductControllerTest extends WebTestCase
     public function testUploadPictureBadRequest(): void
     {
         // On teste le cas d'erreur de validation du contrôleur (pas de fichier fourni)
-        $this->client->request('POST', '/upload-picture/prod-123');
+        $this->client->request('POST', '/upload-picture/11111111-1111-4111-8111-111111111111');
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_BAD_REQUEST, $response->getStatusCode());

@@ -8,7 +8,7 @@ use App\Ecommerce\Domain\Exception\User\DuplicateEmailException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordHasherInterface;
-use App\Ecommerce\Application\DTO\User\RegisterUserRequestDTO;
+use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,7 +19,7 @@ readonly class RegisterUserUseCase
         private PasswordHasherInterface $passwordHasher
     ) {}
 
-    public function execute(RegisterUserRequestDTO $dto): void
+    public function execute(RegisterUserRequestDto $dto): void
     {
         // 1. Vérifier si l'email est déjà utilisé
         $existingUser = $this->userRepository->findByEmail($dto->email);
