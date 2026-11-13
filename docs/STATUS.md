@@ -6,8 +6,9 @@
 
 - **Phase en cours :** Phase 0 — Stabiliser l'existant.
 - **Fait :** `P0-01` (contrôle d'accès), mergée dans `main` (PR #6).
-- **En relecture :** `P0-02` (validation des uploads), sur la branche `fix/P0-02-validate-image-uploads`. À merger après la review de la PR.
-- **Prochaine tâche conseillée :** `P0-03` (B1, lectures d'images cassées), urgente.
+- **Fait :** `P0-02` (validation des uploads), mergée dans `main` (PR #7).
+- **En relecture :** `P0-03` (repository des images), sur la branche `fix/P0-03-picture-repository`. À merger après la review de la PR.
+- **Prochaines tâches conseillées :** `P0-04` (gestion d'erreurs centralisée), puis `P0-05` qui en dépend.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -28,15 +29,27 @@
 - Upload d'images : la limite applicative est de 5 Mo, mais PHP refuse avant elle tout fichier au-delà de `upload_max_filesize` (2 Mo par défaut) et ignore le corps entier au-delà de `post_max_size` (8 Mo par défaut). À régler dans l'image Docker (`P7-01`) : `upload_max_filesize = 5M` au minimum.
 - `#[MapUploadedFile]`, `#[MapRequestPayload]` et `#[MapQueryString]` **ignorent silencieusement leurs contraintes** si `symfony/validator` est absent. Il est installé depuis `P0-02` : ne pas le retirer.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
-- `DoctrinePictureRepository` est cassé (B1) : les lectures d'images plantent.
 - Le slug produit n'est pas persisté (B4) : tous les produits renvoient `slug-placeholder`.
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
 - Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
-- `doctrine:schema:validate` échoue sur le mapping, mais ce n'est pas lié à Symfony 8 : ce sont les bugs déjà connus B2 (`DoctrinePicture.php:29`, `inversedBy: 'images'`, corrigé dans P0-03) et B15 (`price` en `float`).
+- `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
+- Tests d'intégration (`tests/Integration/`) : ils ont besoin d'une base de test migrée (`doctrine:database:create --env=test --if-not-exists`, puis `doctrine:migrations:migrate --env=test -n`). Sans serveur de base joignable, ils sont **ignorés** (« Skipped »), pas en échec : vérifier ce compteur avant de conclure que tout passe. À rendre obligatoire dans `P0-10`.
+- `.env.test` pointe vers une base sur `192.168.1.28`. Sur une autre machine, surcharger `DATABASE_URL` dans `.env.test.local` (non versionné), sinon chaque test d'intégration attend le délai de connexion (la suite passe de 2 s à 18 s).
+- Avec le `compose.yaml` actuel, le port PostgreSQL côté hôte est attribué au hasard et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`.
+- Lire un produit sans attribut `weight` déclenche un warning PHP (B5, `P0-07`), qui fait échouer PHPUnit. Les tests d'intégration donnent donc un poids à leurs produits.
 
 ## Journal
 
-### 2026-11-13 — P0-02 : validation des uploads d'images (branche `fix/P0-02-validate-image-uploads`, en relecture)
+### 2026-11-13 — P0-03 : repository des images (branche `fix/P0-03-picture-repository`, en relecture)
+- B1 corrigé : `DoctrinePictureRepository::findById`, `findByProductId` et `findAll` interrogent maintenant l'entité `DoctrinePicture` et renvoient des `Picture` du domaine via `PictureMapper`. `findByProductId` filtre sur l'association `product` (le champ `productId` n'existait pas).
+- B2 corrigé : `inversedBy: 'images'` retiré de `DoctrinePicture::$category`. La relation devient unidirectionnelle, sans changement de schéma ni migration.
+- Premier test d'intégration contre une vraie base PostgreSQL (`tests/Integration/…/DoctrinePictureRepositoryTest.php`), puisque les mocks avaient masqué B1.
+- **Écart avec la roadmap :** elle demandait que `doctrine:schema:validate` passe. Il échoue encore à cause de B15, qui est hors périmètre.
+- Vérifications :
+  - PHPUnit : 162 tests passent avec la base de test (6 nouveaux), 65 notices contre 68 ; sans base, 157 passent et 5 sont ignorés ;
+  - PHPStan : 63 erreurs, contre 67 avant, aucune dans le nouveau code.
+
+### 2026-11-13 — P0-02 : validation des uploads d'images (mergée, PR #7)
 - `POST /upload-picture/{productId}` n'accepte plus que de vraies images JPEG, PNG ou WebP de 5 Mo au plus (constat S2). Le type est lu dans le contenu du fichier, pas dans son nom ni dans le `Content-Type` envoyé par le client. SVG, GIF, HTML et PHP déguisés sont refusés avec un 422, avant d'atteindre le use case.
 - La validation est déclarée sur l'argument du contrôleur avec `#[MapUploadedFile]` et `Assert\Image`.
 - Dépendances ajoutées : `symfony/validator` et `symfony/serializer`, toutes deux aussi nécessaires à `P0-05`.

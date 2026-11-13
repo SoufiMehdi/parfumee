@@ -26,7 +26,8 @@ class DoctrinePicture
     #[ORM\ManyToOne(targetEntity: DoctrineProduct::class, inversedBy: 'pictures', cascade: ['persist'])]
     private ?DoctrineProduct $product = null;
 
-    #[ORM\ManyToOne(targetEntity: DoctrineCategory::class, inversedBy: 'images')]
+    // Unidirectional: DoctrineCategory holds no collection of pictures.
+    #[ORM\ManyToOne(targetEntity: DoctrineCategory::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
     private ?DoctrineCategory $category = null;
 

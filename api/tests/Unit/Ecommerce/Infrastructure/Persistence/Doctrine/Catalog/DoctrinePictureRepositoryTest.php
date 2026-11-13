@@ -73,42 +73,52 @@ class DoctrinePictureRepositoryTest extends TestCase
         $this->repository->save($picture);
     }
 
-    public function testFindByIdReturnsPicture(): void
+    public function testFindByIdReturnsTheDomainPicture(): void
     {
-        $id = 'pic-123';
-        $picture = $this->createMock(Picture::class);
+        $pictureEntity = new DoctrinePicture('pic-123', 'products/a.jpg');
+        $picture = new Picture('pic-123', 'products/a.jpg');
 
-        $repo = $this->createMock(EntityRepository::class);
-        $repo->method('find')->with($id)->willReturn($picture);
+        $this->entityManager->expects($this->once())
+            ->method('find')
+            ->with(DoctrinePicture::class, 'pic-123')
+            ->willReturn($pictureEntity);
+        $this->mapper->expects($this->once())->method('toDomain')->with($pictureEntity)->willReturn($picture);
 
-        $this->entityManager->method('getRepository')->with(Picture::class)->willReturn($repo);
-
-        $this->assertSame($picture, $this->repository->findById($id));
+        $this->assertSame($picture, $this->repository->findById('pic-123'));
     }
 
-    public function testFindByProductIdReturnsPictures(): void
+    public function testFindByIdReturnsNullWhenThePictureDoesNotExist(): void
     {
-        $productId = 'prod-123';
-        $pictures = [$this->createMock(Picture::class)];
+        $this->entityManager->method('find')->with(DoctrinePicture::class, 'unknown')->willReturn(null);
+        $this->mapper->expects($this->never())->method('toDomain');
 
-        $repo = $this->createMock(EntityRepository::class);
-        $repo->method('findBy')->with(['productId' => $productId])->willReturn($pictures);
-
-        $this->entityManager->method('getRepository')->with(Picture::class)->willReturn($repo);
-
-        $this->assertSame($pictures, $this->repository->findByProductId($productId));
+        $this->assertNull($this->repository->findById('unknown'));
     }
 
-    public function testFindAllReturnsPictures(): void
+    public function testFindByProductIdFiltersOnTheProductAssociation(): void
     {
-        $pictures = [$this->createMock(Picture::class)];
+        $pictureEntity = new DoctrinePicture('pic-123', 'products/a.jpg');
+        $picture = new Picture('pic-123', 'products/a.jpg');
 
         $repo = $this->createMock(EntityRepository::class);
-        $repo->method('findAll')->willReturn($pictures);
+        $repo->expects($this->once())->method('findBy')->with(['product' => 'prod-123'])->willReturn([$pictureEntity]);
+        $this->entityManager->method('getRepository')->with(DoctrinePicture::class)->willReturn($repo);
+        $this->mapper->method('toDomain')->with($pictureEntity)->willReturn($picture);
 
-        $this->entityManager->method('getRepository')->with(Picture::class)->willReturn($repo);
+        $this->assertSame([$picture], $this->repository->findByProductId('prod-123'));
+    }
 
-        $this->assertSame($pictures, $this->repository->findAll());
+    public function testFindAllReturnsDomainPictures(): void
+    {
+        $pictureEntity = new DoctrinePicture('pic-123', 'products/a.jpg');
+        $picture = new Picture('pic-123', 'products/a.jpg');
+
+        $repo = $this->createMock(EntityRepository::class);
+        $repo->expects($this->once())->method('findAll')->willReturn([$pictureEntity]);
+        $this->entityManager->method('getRepository')->with(DoctrinePicture::class)->willReturn($repo);
+        $this->mapper->method('toDomain')->with($pictureEntity)->willReturn($picture);
+
+        $this->assertSame([$picture], $this->repository->findAll());
     }
 
     public function testSaveThrowsExceptionOnDatabaseError(): void
