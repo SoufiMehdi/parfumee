@@ -4,8 +4,9 @@
 
 ## Où on en est
 
-- **Phase en cours :** Phase 0 — Stabiliser l'existant (pas encore démarrée).
-- **Prochaine tâche conseillée :** `P0-01`, activer le contrôle d'accès, car toutes les routes sont actuellement publiques.
+- **Phase en cours :** Phase 0 — Stabiliser l'existant.
+- **En relecture :** `P0-01` (contrôle d'accès), sur la branche `fix/P0-01-access-control`. À merger après la review de la PR.
+- **Prochaines tâches conseillées :** `P0-03` (B1, lectures d'images cassées) et `P0-02` (validation des uploads), toutes deux urgentes.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -20,14 +21,30 @@
 
 ## Pièges connus en cours
 
-- Toutes les routes de l'API sont publiques (S1) : ne rien exposer sur Internet avant `P0-01`.
+- Toutes les routes de l'API sont publiques (S1) **tant que `P0-01` n'est pas mergée** : ne rien exposer sur Internet avant.
+- Après `P0-01`, toute route absente de `access_control` (`config/packages/security.yaml`) est réservée à `ROLE_ADMIN`. Une nouvelle route publique ou client doit donc y être ajoutée explicitement, sinon elle répond 401/403.
+- Il n'existe aucun moyen de créer un administrateur avant `P1-06`. En attendant, promouvoir un compte en SQL : `UPDATE users SET roles = '["ROLE_ADMIN"]' WHERE email = '…';`. Les rôles sont relus en base à chaque requête, donc pas besoin de se reconnecter.
+- Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. À prévoir dans la CI (`P0-11`).
+- Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
 - `DoctrinePictureRepository` est cassé (B1) : les lectures d'images plantent.
 - Le slug produit n'est pas persisté (B4) : tous les produits renvoient `slug-placeholder`.
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
-- Trois recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle`, `symfony/framework-bundle` et `symfony/security-bundle`. Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs (`security.yaml` touche P0-01).
+- Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
 - `doctrine:schema:validate` échoue sur le mapping, mais ce n'est pas lié à Symfony 8 : ce sont les bugs déjà connus B2 (`DoctrinePicture.php:29`, `inversedBy: 'images'`, corrigé dans P0-03) et B15 (`price` en `float`).
 
 ## Journal
+
+### 2026-11-13 — P0-01 : contrôle d'accès (branche `fix/P0-01-access-control`, en relecture)
+- `access_control` activé, fermé par défaut :
+  - public : `POST /users/login`, `POST /users/create`, `GET /products`, `GET /products/filter`, `GET /product/{id}` ;
+  - `ROLE_USER` : `GET`, `PUT` et `DELETE /users/{id}` ;
+  - `ROLE_ADMIN` : tout le reste, dont `GET /users/list`, les écritures du catalogue et les uploads.
+- `UserAccountVoter` : `/users/{id}` n'est accessible qu'au propriétaire du compte ou à un admin, en lecture comme en écriture (la roadmap ne citait que `PUT` et `DELETE`, mais `GET` expose les mêmes données personnelles).
+- Recipe Flex `symfony/security-bundle` mise à jour.
+- Vérifications :
+  - PHPUnit : 146 tests passent (34 nouveaux), avec les mêmes 68 notices ;
+  - PHPStan : 67 erreurs, comme avant, aucune dans le nouveau code ;
+  - essai HTTP réel avec PostgreSQL et le vrai provider Doctrine : 401 sans token, 403 sur le compte d'un autre et sur les routes admin, 200 sur son propre compte, puis 200 partout une fois le compte promu admin.
 
 ### 2026-11-13 — Montée de version Symfony 7.4 → 8.1
 - L'API passe en **Symfony 8.1.11** sur la branche `chore/upgrade-symfony-8.1`, avec PHP ≥ 8.4 et DoctrineBundle 3.4. ORM 3.7, doctrine/collections 3 et liip/imagine 2.18 suivent. Décision consignée dans l'ADR 0005.
