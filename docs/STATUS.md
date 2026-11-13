@@ -6,7 +6,7 @@
 
 - **Phase en cours :** Phase 0 — Stabiliser l'existant (pas encore démarrée).
 - **Prochaine tâche conseillée :** `P0-01`, activer le contrôle d'accès, car toutes les routes sont actuellement publiques.
-- **Branche de travail :** `chore/upgrade-symfony-8.1` (montée en Symfony 8.1, PR à ouvrir), sinon `main`.
+- **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
 
