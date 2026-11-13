@@ -7,7 +7,9 @@
 - **Phase en cours :** Phase 0 — Stabiliser l'existant.
 - **Fait :** `P0-01` (contrôle d'accès), mergée dans `main` (PR #6).
 - **Fait :** `P0-02` (validation des uploads), mergée dans `main` (PR #7).
-- **En relecture :** `P0-03` (repository des images), sur la branche `fix/P0-03-picture-repository`. À merger après la review de la PR.
+- **Fait :** `P0-03` (repository des images), mergée dans `main` (PR #8).
+- **En relecture :** la base de test (première partie de `P0-10`), sur la branche `chore/P0-10-test-database`.
+- **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Prochaines tâches conseillées :** `P0-04` (gestion d'erreurs centralisée), puis `P0-05` qui en dépend.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -33,14 +35,22 @@
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
 - Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
 - `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
-- Tests d'intégration (`tests/Integration/`) : ils ont besoin d'une base de test migrée (`doctrine:database:create --env=test --if-not-exists`, puis `doctrine:migrations:migrate --env=test -n`). Sans serveur de base joignable, ils sont **ignorés** (« Skipped »), pas en échec : vérifier ce compteur avant de conclure que tout passe. À rendre obligatoire dans `P0-10`.
-- `.env.test` pointe vers une base sur `192.168.1.28`. Sur une autre machine, surcharger `DATABASE_URL` dans `.env.test.local` (non versionné), sinon chaque test d'intégration attend le délai de connexion (la suite passe de 2 s à 18 s).
-- Avec le `compose.yaml` actuel, le port PostgreSQL côté hôte est attribué au hasard et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`.
+- Tests d'intégration (`tests/Integration/`) : ils exigent la base de test, c'est-à-dire le service `database_test` lancé par `docker compose up -d` depuis `api/` (`127.0.0.1:54320`). Sans elle ils **échouent**, avec un message qui dit quoi lancer. `vendor/bin/phpunit tests/Unit` reste utilisable sans base.
+- La base de test vit en mémoire : elle est vide après chaque redémarrage du conteneur, et le premier test d'intégration rejoue les migrations. Rien à faire à la main.
+- L'ancien `.env.test` contenait le mot de passe d'une base PostgreSQL sur `192.168.1.28`. Il est retiré du fichier mais **reste dans l'historique git** : le changer si cette base sert encore (`P0-08`).
+- Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 - Lire un produit sans attribut `weight` déclenche un warning PHP (B5, `P0-07`), qui fait échouer PHPUnit. Les tests d'intégration donnent donc un poids à leurs produits.
 
 ## Journal
 
-### 2026-11-13 — P0-03 : repository des images (branche `fix/P0-03-picture-repository`, en relecture)
+### 2026-11-13 — Base de test dédiée (branche `chore/P0-10-test-database`, en relecture)
+- Nouveau service `database_test` dans `api/compose.override.yaml` : PostgreSQL 16 jetable, données en mémoire, exposé uniquement sur `127.0.0.1:54320` (les ports 5432 et 5433 étaient déjà pris sur le PC de dev).
+- `api/.env.test` pointe vers ce service et n'est plus listé dans `.gitignore` (il était à la fois versionné et ignoré).
+- `tests/Support/DatabaseTestCase.php` : classe de base des tests d'intégration. Elle joue les migrations une fois par lancement de PHPUnit, refuse toute base dont le nom ne finit pas par `_test`, et annule les données de chaque test.
+- Le « Skipped » provisoire de `P0-03` est supprimé : sans base, les tests d'intégration échouent.
+- Vérifications : PHPUnit 162 tests verts avec la base lancée, 5 échecs explicites base arrêtée, `tests/Unit` seul (121 tests) vert sans base ; PHPStan 63 erreurs comme avant.
+
+### 2026-11-13 — P0-03 : repository des images (mergée, PR #8)
 - B1 corrigé : `DoctrinePictureRepository::findById`, `findByProductId` et `findAll` interrogent maintenant l'entité `DoctrinePicture` et renvoient des `Picture` du domaine via `PictureMapper`. `findByProductId` filtre sur l'association `product` (le champ `productId` n'existait pas).
 - B2 corrigé : `inversedBy: 'images'` retiré de `DoctrinePicture::$category`. La relation devient unidirectionnelle, sans changement de schéma ni migration.
 - Premier test d'intégration contre une vraie base PostgreSQL (`tests/Integration/…/DoctrinePictureRepositoryTest.php`), puisque les mocks avaient masqué B1.
