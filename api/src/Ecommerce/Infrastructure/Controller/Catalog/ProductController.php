@@ -15,6 +15,7 @@ use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Constraints as Assert;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
@@ -35,11 +36,7 @@ class ProductController extends AbstractController
     #[Route('/product/{id}', name: 'get_product', methods: [Request::METHOD_GET])]
     public function getById(string $id, GetProductUseCase $useCase, ProductPresenter $presenter): JsonResponse
     {
-        $product = $useCase->execute($id);
-        if (!$product) {
-            return new JsonResponse(['message' => 'Product not found'], JsonResponse::HTTP_NOT_FOUND);
-        }
-        $data = $presenter->present($product);
+        $data = $presenter->present($useCase->execute($id));
         return new JsonResponse($data);
     }
 
@@ -103,20 +100,15 @@ class ProductController extends AbstractController
     ): JsonResponse {
         $alt = $request->request->get('alt');
 
-        if (!$productId || !$file) {
-            return new JsonResponse(['message' => 'Product ID and file are required'], JsonResponse::HTTP_BAD_REQUEST);
+        if (!$file) {
+            throw new BadRequestHttpException('The "file" field is required.');
         }
 
-        try {
-            $picture = $useCase->execute($productId, $file, $alt);
-            return new JsonResponse(
-                [
-                'result' => 'Image uploaded successfully',
-                'data' => $picture->getId()
-                ],
-                JsonResponse::HTTP_OK);
-        } catch (\Exception $e) {
-            return new JsonResponse(['message' => $e->getMessage()], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
-        }
+        $picture = $useCase->execute($productId, $file, $alt);
+
+        return new JsonResponse([
+            'result' => 'Image uploaded successfully',
+            'data' => $picture->getId(),
+        ]);
     }
 }

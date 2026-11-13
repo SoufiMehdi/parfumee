@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Domain\Exception\User;
 
-class DuplicateEmailException extends \DomainException
+use App\Ecommerce\Domain\Exception\ConflictExceptionInterface;
+
+class DuplicateEmailException extends \DomainException implements ConflictExceptionInterface
 {
     public function __construct(string $email)
     {

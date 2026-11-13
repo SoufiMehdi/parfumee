@@ -20,10 +20,12 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 5. **Les contrôleurs sont fins :** ils transforment la requête en DTO, appellent le use case et renvoient le presenter. Pas de logique, pas de `try/catch` : les erreurs sont gérées par `ExceptionListener`.
 6. **Exceptions métier :**
    - une classe par cas (`ProductNotFoundException`…) ;
-   - elles implémentent `DomainExceptionInterface` ;
-   - le mapping vers un code HTTP est centralisé dans `ExceptionListener` (NotFound → 404, Validation → 422, Conflict → 409) ;
-   - **jamais de `\Exception` générique.**
-7. **Validation des entrées :** `#[MapRequestPayload]` / `#[MapQueryString]` + contraintes `Assert` sur les DTO. Les ids de route sont contraints avec `Requirement::UUID`.
+   - chacune implémente **une** des interfaces de `Domain/Exception/`, qui dit de quel type d'échec il s'agit : `NotFoundExceptionInterface` → 404, `ConflictExceptionInterface` → 409, `ValidationExceptionInterface` → 422, `AuthenticationExceptionInterface` → 401 ;
+   - le mapping vers le code HTTP est centralisé dans `ExceptionListener` : ajouter une exception ne demande aucune modification du listener ;
+   - leur message est renvoyé tel quel au client : l'écrire pour lui, en anglais, sans détail technique ;
+   - **jamais de `\Exception` ni d'`\InvalidArgumentException` générique**, qui finiraient en 500.
+7. **Format d'erreur :** toute erreur sort en `{"error": "..."}`. Le message d'une erreur 5xx n'est jamais renvoyé hors mode debug : il est journalisé côté serveur.
+8. **Validation des entrées :** `#[MapRequestPayload]` / `#[MapQueryString]` + contraintes `Assert` sur les DTO. Les ids de route sont contraints avec `Requirement::UUID`.
 
 ## Conventions
 

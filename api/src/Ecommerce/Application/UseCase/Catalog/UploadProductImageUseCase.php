@@ -2,6 +2,7 @@
 
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
+use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Storage\FileStorageInterface;
@@ -23,7 +24,7 @@ class UploadProductImageUseCase
         // 1. On vérifie si le produit existe
         $product = $this->productRepository->findById($productId);
         if (!$product) {
-            throw new \Exception("Produit non trouvé");
+            throw new ProductNotFoundException($productId);
         }
 
         // 2. On upload le fichier physiquement via le Port

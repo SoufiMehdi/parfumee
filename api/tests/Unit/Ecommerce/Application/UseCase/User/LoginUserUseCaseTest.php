@@ -13,7 +13,7 @@ use App\Ecommerce\Domain\Service\User\TokenGeneratorInterface;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 
 class LoginUserUseCaseTest extends TestCase
 {
@@ -79,7 +79,7 @@ class LoginUserUseCaseTest extends TestCase
         $this->passwordVerifier->expects($this->never())->method('verify');
         $this->tokenGenerator->expects($this->never())->method('generate');
 
-        $this->expectException(AuthenticationException::class);
+        $this->expectException(InvalidCredentialsException::class);
         $this->expectExceptionMessage('Invalid credentials');
 
         $this->useCase->execute($dto);
@@ -107,7 +107,7 @@ class LoginUserUseCaseTest extends TestCase
 
         $this->tokenGenerator->expects($this->never())->method('generate');
 
-        $this->expectException(AuthenticationException::class);
+        $this->expectException(InvalidCredentialsException::class);
         $this->expectExceptionMessage('Invalid credentials');
 
         $this->useCase->execute($dto);

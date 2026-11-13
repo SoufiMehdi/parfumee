@@ -1,100 +1,140 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\EventListener;
 
+use App\Ecommerce\Domain\Exception\AuthenticationExceptionInterface;
+use App\Ecommerce\Domain\Exception\ConflictExceptionInterface;
 use App\Ecommerce\Domain\Exception\DomainExceptionInterface;
+use App\Ecommerce\Domain\Exception\NotFoundExceptionInterface;
+use App\Ecommerce\Domain\Exception\ValidationExceptionInterface;
 use App\Ecommerce\Infrastructure\EventListener\ExceptionListener;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\JsonResponse;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
+use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 
-class ExceptionListenerTest extends TestCase
+final class ExceptionListenerTest extends TestCase
 {
-    private ExceptionListener $listener;
-    private HttpKernelInterface $kernel;
+    private const string SECRET = 'SQLSTATE[08006] connection to server at "10.0.0.5" failed';
 
-    protected function setUp(): void
+    /**
+     * @return iterable<string, array{\Throwable, int}>
+     */
+    public static function businessExceptions(): iterable
     {
-        $this->listener = new ExceptionListener();
-        $this->kernel = $this->createMock(HttpKernelInterface::class);
+        yield 'not found' => [new class('Product not found.') extends \DomainException implements NotFoundExceptionInterface {}, 404];
+        yield 'conflict' => [new class('Email already taken.') extends \DomainException implements ConflictExceptionInterface {}, 409];
+        yield 'validation' => [new class('Invalid price.') extends \DomainException implements ValidationExceptionInterface {}, 422];
+        yield 'authentication' => [new class('Invalid credentials.') extends \DomainException implements AuthenticationExceptionInterface {}, 401];
+        yield 'unspecified business error' => [new class('Not allowed.') extends \DomainException implements DomainExceptionInterface {}, 400];
     }
 
-    public function testOnKernelExceptionWithDomainException(): void
+    #[DataProvider('businessExceptions')]
+    public function testBusinessExceptionIsMappedToItsStatusCodeWithItsMessage(\Throwable $exception, int $expectedStatusCode): void
     {
-        // 1. Arrange
-        // On crée une exception anonyme qui implémente ton interface de Domaine
-        $domainException = new class('Erreur métier : Solde insuffisant.') extends \Exception implements DomainExceptionInterface {};
+        $response = $this->handle($exception, debug: false);
 
-        $event = new ExceptionEvent(
-            $this->kernel,
-            new Request(),
-            HttpKernelInterface::MAIN_REQUEST,
-            $domainException
-        );
-
-        // 2. Act
-        $this->listener->onKernelException($event);
-
-        // 3. Assert
-        $response = $event->getResponse();
-        $this->assertInstanceOf(JsonResponse::class, $response);
-        $this->assertSame(JsonResponse::HTTP_BAD_REQUEST, $response->getStatusCode());
-
-        $data = json_decode($response->getContent(), true);
-        $this->assertSame('Erreur métier : Solde insuffisant.', $data['error']);
+        self::assertSame($expectedStatusCode, $response->getStatusCode());
+        self::assertSame(['error' => $exception->getMessage()], $this->decode($response));
     }
 
-    public function testOnKernelExceptionWithHttpException(): void
+    public function testBusinessExceptionIsNotLogged(): void
     {
-        // 1. Arrange
-        // Une exception HTTP standard de Symfony (ici une 404)
-        $httpException = new NotFoundHttpException('Cette ressource n\'existe pas.');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::never())->method(self::anything());
 
-        $event = new ExceptionEvent(
-            $this->kernel,
-            new Request(),
-            HttpKernelInterface::MAIN_REQUEST,
-            $httpException
-        );
-
-        // 2. Act
-        $this->listener->onKernelException($event);
-
-        // 3. Assert
-        $response = $event->getResponse();
-        $this->assertInstanceOf(JsonResponse::class, $response);
-        $this->assertSame(JsonResponse::HTTP_NOT_FOUND, $response->getStatusCode()); // 404
-
-        $data = json_decode($response->getContent(), true);
-        $this->assertSame('Cette ressource n\'existe pas.', $data['error']);
+        $this->handle(new class('Product not found.') extends \DomainException implements NotFoundExceptionInterface {}, debug: false, logger: $logger);
     }
 
-    public function testOnKernelExceptionWithGenericException(): void
+    public function testHttpExceptionKeepsItsStatusCodeMessageAndHeaders(): void
     {
-        // 1. Arrange
-        // Une exception PHP classique (Erreur technique ou de code)
-        $genericException = new \Exception('Database connection timeout.');
+        $response = $this->handle(new TooManyRequestsHttpException(30, 'Slow down.'), debug: false);
 
+        self::assertSame(429, $response->getStatusCode());
+        self::assertSame(['error' => 'Slow down.'], $this->decode($response));
+        self::assertSame('30', $response->headers->get('Retry-After'));
+    }
+
+    public function testClientHttpExceptionIsNotLogged(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::never())->method(self::anything());
+
+        $this->handle(new NotFoundHttpException('No route found.'), debug: false, logger: $logger);
+    }
+
+    public function testUnexpectedExceptionMessageIsHiddenOutsideDebug(): void
+    {
+        $response = $this->handle(new \RuntimeException(self::SECRET), debug: false);
+
+        self::assertSame(500, $response->getStatusCode());
+        self::assertSame(['error' => 'An unexpected error occurred.'], $this->decode($response));
+        self::assertStringNotContainsString('SQLSTATE', (string) $response->getContent());
+    }
+
+    public function testServerHttpExceptionMessageIsHiddenOutsideDebug(): void
+    {
+        $response = $this->handle(new ServiceUnavailableHttpException(null, self::SECRET), debug: false);
+
+        self::assertSame(503, $response->getStatusCode());
+        self::assertSame(['error' => 'An unexpected error occurred.'], $this->decode($response));
+    }
+
+    public function testUnexpectedExceptionIsLoggedWithTheException(): void
+    {
+        $exception = new \RuntimeException(self::SECRET);
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())
+            ->method('error')
+            ->with(self::isString(), self::callback(
+                static fn (array $context): bool => $exception === $context['exception'] && self::SECRET === $context['message'],
+            ));
+
+        $this->handle($exception, debug: false, logger: $logger);
+    }
+
+    public function testUnexpectedExceptionDetailsAreShownInDebug(): void
+    {
+        $response = $this->handle(new \RuntimeException(self::SECRET), debug: true);
+        $data = $this->decode($response);
+
+        self::assertSame(500, $response->getStatusCode());
+        self::assertSame('An unexpected error occurred.', $data['error']);
+        self::assertSame(\RuntimeException::class, $data['debug']['class']);
+        self::assertSame(self::SECRET, $data['debug']['message']);
+    }
+
+    private function handle(\Throwable $exception, bool $debug, ?LoggerInterface $logger = null): Response
+    {
         $event = new ExceptionEvent(
-            $this->kernel,
+            $this->createStub(HttpKernelInterface::class),
             new Request(),
             HttpKernelInterface::MAIN_REQUEST,
-            $genericException
+            $exception,
         );
 
-        // 2. Act
-        $this->listener->onKernelException($event);
+        new ExceptionListener($logger ?? new NullLogger(), $debug)->onKernelException($event);
 
-        // 3. Assert
         $response = $event->getResponse();
-        $this->assertInstanceOf(JsonResponse::class, $response);
-        $this->assertSame(JsonResponse::HTTP_INTERNAL_SERVER_ERROR, $response->getStatusCode()); // 500
+        self::assertInstanceOf(Response::class, $response);
 
-        $data = json_decode($response->getContent(), true);
-        // On vérifie que le message d'erreur générique est bien combiné avec le message de l'exception
-        $this->assertSame('An unexpected error occurred.Database connection timeout.', $data['error']);
+        return $response;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decode(Response $response): array
+    {
+        return json_decode((string) $response->getContent(), true, flags: \JSON_THROW_ON_ERROR);
     }
 }

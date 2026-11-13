@@ -2,6 +2,7 @@
 
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
+use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
@@ -36,22 +37,15 @@ class GetProductUseCaseTest extends TestCase
         $this->assertSame($expectedProduct, $result);
     }
 
-    public function testExecuteReturnsNullWhenProductNotFound(): void
+    public function testExecuteThrowsWhenProductNotFound(): void
     {
         $this->productRepository
             ->method('findById')
             ->willReturn(null);
 
-        $this->assertNull($this->useCase->execute('non-existent-id'));
-    }
+        $this->expectException(ProductNotFoundException::class);
+        $this->expectExceptionMessage('Product with id "non-existent-id" not found.');
 
-    public function testExecuteReturnsNullWhenIdIsNull(): void
-    {
-        // On vérifie que le repository n'est jamais appelé si l'id est null
-        $this->productRepository
-            ->expects($this->never())
-            ->method('findById');
-
-        $this->assertNull($this->useCase->execute(null));
+        $this->useCase->execute('non-existent-id');
     }
 }

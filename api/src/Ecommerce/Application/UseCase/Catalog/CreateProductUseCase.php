@@ -3,7 +3,7 @@
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
-use App\Ecommerce\Domain\Exception\Catalog\CategorieNotFoundException;
+use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
@@ -24,7 +24,7 @@ class CreateProductUseCase
         // 1. Récupérer la catégorie depuis la base de données
         $category = $this->categoryRepository->findById(Uuid::fromString($dto->categoryId));
         if (!$category) {
-            throw new CategorieNotFoundException($dto->categoryId);
+            throw new CategoryNotFoundException($dto->categoryId);
         }
         
         // 2. Créer le produit en utilisant le modèle Domaine

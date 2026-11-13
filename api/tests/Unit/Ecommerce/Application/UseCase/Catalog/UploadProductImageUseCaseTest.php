@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
+use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\PictureRepositoryInterface;
@@ -74,8 +75,7 @@ class UploadProductImageUseCaseTest extends TestCase
         
         $file = $this->createMock(UploadedFile::class);
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage("Produit non trouvé");
+        $this->expectException(ProductNotFoundException::class);
 
         $this->useCase->execute('invalid-id', $file);
     }

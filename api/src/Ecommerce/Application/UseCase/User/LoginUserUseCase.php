@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Ecommerce\Application\UseCase\User;
 
 use App\Ecommerce\Application\DTO\User\LoginUserRequestDTO;
+use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordVerifierInterface;
 use App\Ecommerce\Domain\Service\User\TokenGeneratorInterface;
-use Symfony\Component\Security\Core\Exception\AuthenticationException;
 
 readonly class LoginUserUseCase
 {
@@ -27,11 +27,11 @@ readonly class LoginUserUseCase
         $user = $this->userRepository->findByEmail($dto->email);
 
         if (!$user) {
-            throw new AuthenticationException('Invalid credentials.');
+            throw new InvalidCredentialsException();
         }
 
         if (!$this->passwordVerifier->verify($dto->email, $dto->password)) {
-            throw new AuthenticationException('Invalid credentials.');
+            throw new InvalidCredentialsException();
         }
 
         $token = $this->tokenGenerator->generate(
