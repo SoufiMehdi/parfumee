@@ -26,6 +26,11 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
    - **jamais de `\Exception` ni d'`\InvalidArgumentException` générique**, qui finiraient en 500.
 7. **Format d'erreur :** toute erreur sort en `{"error": "..."}`. Le message d'une erreur 5xx n'est jamais renvoyé hors mode debug : il est journalisé côté serveur.
 8. **Validation des entrées :** `#[MapRequestPayload]` / `#[MapQueryString]` + contraintes `Assert` sur les DTO. Les ids de route sont contraints avec `Requirement::UUID`.
+   - Pas de mapper manuel requête → DTO, et pas de `json_decode` ni de `$request->toArray()` dans un contrôleur.
+   - L'API parle `snake_case` (`first_name`), les DTO sont en `camelCase` : la conversion est globale (`config/packages/serializer.yaml`).
+   - `#[MapQueryString]` répond 404 par défaut en cas d'erreur : toujours préciser `validationFailedStatusCode: 422`.
+   - `Assert\NotBlank` accepte une chaîne d'espaces : écrire `NotBlank(normalizer: 'trim')`.
+   - Une erreur de validation sort en `{"error": "Validation failed.", "violations": [{"field": "first_name", "message": "..."}]}`.
 
 ## Conventions
 
