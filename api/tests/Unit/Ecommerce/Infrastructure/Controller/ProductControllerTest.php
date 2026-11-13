@@ -9,6 +9,7 @@ use App\Ecommerce\Application\UseCase\Catalog\GetProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
+use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
@@ -74,8 +75,8 @@ class ProductControllerTest extends WebTestCase
     public function testGetProductByIdNotFound(): void
     {
         $useCaseMock = $this->createMock(GetProductUseCase::class);
-        // Le cas où le cas d'usage retourne null (produit inexistant)
-        $useCaseMock->expects($this->once())->method('execute')->with('unknown')->willReturn(null);
+        $useCaseMock->expects($this->once())->method('execute')->with('unknown')
+            ->willThrowException(new ProductNotFoundException('unknown'));
 
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
 
@@ -83,7 +84,10 @@ class ProductControllerTest extends WebTestCase
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_NOT_FOUND, $response->getStatusCode());
-        $this->assertJsonStringEqualsJsonString(json_encode(['message' => 'Product not found']), $response->getContent());
+        $this->assertJsonStringEqualsJsonString(
+            json_encode(['error' => 'Product with id "unknown" not found.']),
+            $response->getContent()
+        );
     }
 
     public function testCreateProduct(): void
@@ -179,7 +183,7 @@ class ProductControllerTest extends WebTestCase
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_BAD_REQUEST, $response->getStatusCode());
-        $this->assertStringContainsString('Product ID and file are required', $response->getContent());
+        $this->assertSame(['error' => 'The "file" field is required.'], json_decode($response->getContent(), true));
     }
     protected static function getKernelClass(): string
     {

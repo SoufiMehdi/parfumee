@@ -3,6 +3,8 @@
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
+use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
+use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
@@ -21,12 +23,12 @@ class UpdateProductUseCase
     {
         $product = $this->productRepository->findById($id);
         if (!$product) {
-            throw new \Exception("Product not found");
+            throw new ProductNotFoundException($id);
         }
 
         $category = $this->categoryRepository->findById($dto->categoryId);
         if (!$category) {
-            throw new \Exception("Category not found");
+            throw new CategoryNotFoundException($dto->categoryId);
         }
 
         $product->updateDetails(

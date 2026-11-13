@@ -8,9 +8,10 @@
 - **Fait :** `P0-01` (contrôle d'accès), mergée dans `main` (PR #6).
 - **Fait :** `P0-02` (validation des uploads), mergée dans `main` (PR #7).
 - **Fait :** `P0-03` (repository des images), mergée dans `main` (PR #8).
-- **En relecture :** la base de test (première partie de `P0-10`), sur la branche `chore/P0-10-test-database`.
+- **Fait :** la base de test (première partie de `P0-10`), mergée dans `main` (PR #9).
+- **En relecture :** `P0-04` (gestion d'erreurs centralisée), sur la branche `fix/P0-04-centralized-error-handling`.
+- **Prochaine tâche conseillée :** `P0-05` (validation des entrées), qui termine le tableau B8.
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
-- **Prochaines tâches conseillées :** `P0-04` (gestion d'erreurs centralisée), puis `P0-05` qui en dépend.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -30,6 +31,10 @@
 - Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. À prévoir dans la CI (`P0-11`).
 - Upload d'images : la limite applicative est de 5 Mo, mais PHP refuse avant elle tout fichier au-delà de `upload_max_filesize` (2 Mo par défaut) et ignore le corps entier au-delà de `post_max_size` (8 Mo par défaut). À régler dans l'image Docker (`P7-01`) : `upload_max_filesize = 5M` au minimum.
 - `#[MapUploadedFile]`, `#[MapRequestPayload]` et `#[MapQueryString]` **ignorent silencieusement leurs contraintes** si `symfony/validator` est absent. Il est installé depuis `P0-02` : ne pas le retirer.
+- Lignes du tableau B8 encore ouvertes, à traiter dans `P0-05` : champ manquant dans le body, id qui n'est pas un UUID, `category_id` absent. Elles répondent 500 (générique en production). Attention, `PUT /users/{id}` avec un id invalide répondait 400 avant `P0-04` et répond maintenant 500 comme `GET` et `DELETE` ; seul un admin peut l'atteindre, le Voter refusant les autres avant.
+- Les 401 du pare-feu JWT (token absent, invalide ou expiré) sont produits par le bundle lexik au format `{"code": 401, "message": "..."}`, pas en `{"error": "..."}`. À harmoniser au plus tard avec le contrat OpenAPI (`P1-03`).
+- Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
+- En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
 - Le slug produit n'est pas persisté (B4) : tous les produits renvoient `slug-placeholder`.
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
@@ -42,6 +47,17 @@
 - Lire un produit sans attribut `weight` déclenche un warning PHP (B5, `P0-07`), qui fait échouer PHPUnit. Les tests d'intégration donnent donc un poids à leurs produits.
 
 ## Journal
+
+### 2026-11-13 — P0-04 : gestion d'erreurs centralisée (branche `fix/P0-04-centralized-error-handling`, en relecture)
+- Les contrôleurs n'ont plus aucun `try/catch` : `ExceptionListener` est le seul endroit où une exception devient une réponse HTTP.
+- Les exceptions métier disent leur type par une interface (`NotFound` → 404, `Conflict` → 409, `Validation` → 422, `Authentication` → 401). Nouvelles classes : `ProductNotFoundException`, `InvalidCredentialsException`, `InvalidEmailException`, `InvalidPhoneNumberException`. `CategorieNotFoundException` est renommée `CategoryNotFoundException`. B17 est corrigé au passage.
+- S3 corrigé : le message d'une erreur 5xx n'est plus renvoyé au client hors mode debug, il est journalisé. Avant, rien n'était journalisé du tout.
+- `LoginUserUseCase` ne dépend plus de `Symfony\Component\Security`.
+- Changements visibles pour un client de l'API :
+  - toutes les erreurs sortent en `{"error": "..."}` (certaines sortaient en `{"message": "..."}`) ;
+  - produit ou catégorie inconnus : 404 au lieu de 500 ou 400 ;
+  - email ou téléphone invalide : 422 au lieu de 400.
+- Vérifications : PHPUnit 183 tests verts (21 nouveaux) ; PHPStan 63 erreurs comme avant, aucune dans le nouveau code ; essai HTTP en mode production (500 générique côté client, détail SQL dans le journal serveur).
 
 ### 2026-11-13 — Base de test dédiée (branche `chore/P0-10-test-database`, en relecture)
 - Nouveau service `database_test` dans `api/compose.override.yaml` : PostgreSQL 16 jetable, données en mémoire, exposé uniquement sur `127.0.0.1:54320` (les ports 5432 et 5433 étaient déjà pris sur le PC de dev).

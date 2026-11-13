@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Domain\Exception\User;
 
-class UserNotFoundException extends \DomainException
+use App\Ecommerce\Domain\Exception\NotFoundExceptionInterface;
+
+class UserNotFoundException extends \DomainException implements NotFoundExceptionInterface
 {
     public function __construct(string $userId)
     {

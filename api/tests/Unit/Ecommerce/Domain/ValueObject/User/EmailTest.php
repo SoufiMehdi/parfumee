@@ -4,7 +4,7 @@ namespace App\Tests\Unit\Ecommerce\Domain\ValueObject\User;
 
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use PHPUnit\Framework\TestCase;
-use InvalidArgumentException;
+use App\Ecommerce\Domain\Exception\User\InvalidEmailException;
 use PHPUnit\Framework\Attributes\DataProvider;
 class EmailTest extends TestCase
 {
@@ -19,7 +19,7 @@ class EmailTest extends TestCase
     #[DataProvider('invalidEmailProvider')]
     public function testItShouldThrowExceptionForInvalidEmail(string $invalidEmail): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidEmailException::class);
         $this->expectExceptionMessage("Invalid email format: $invalidEmail");
 
         new Email($invalidEmail);
