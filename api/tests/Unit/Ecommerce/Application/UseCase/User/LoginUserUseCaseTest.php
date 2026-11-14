@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 
-use App\Ecommerce\Application\DTO\User\LoginUserRequestDTO;
+use App\Ecommerce\Application\DTO\User\LoginUserRequestDto;
 use App\Ecommerce\Application\UseCase\User\LoginUserUseCase;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
@@ -37,7 +37,7 @@ class LoginUserUseCaseTest extends TestCase
 
     public function testExecuteReturnsTokenOnSuccess(): void
     {
-        $dto = new LoginUserRequestDTO(email: 'user@example.com', password: 'plainPassword');
+        $dto = new LoginUserRequestDto(email: 'user@example.com', password: 'plainPassword');
 
         $user = new User(
             'test-uuid',
@@ -70,7 +70,7 @@ class LoginUserUseCaseTest extends TestCase
 
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
-        $dto = new LoginUserRequestDTO(email: 'unknown@example.com', password: 'password');
+        $dto = new LoginUserRequestDto(email: 'unknown@example.com', password: 'password');
 
         $this->userRepository
             ->method('findByEmail')
@@ -87,7 +87,7 @@ class LoginUserUseCaseTest extends TestCase
 
     public function testExecuteThrowsExceptionWhenPasswordInvalid(): void
     {
-        $dto = new LoginUserRequestDTO(email: 'user@example.com', password: 'wrongPassword');
+        $dto = new LoginUserRequestDto(email: 'user@example.com', password: 'wrongPassword');
 
         $user = new User(
             'test-uuid',

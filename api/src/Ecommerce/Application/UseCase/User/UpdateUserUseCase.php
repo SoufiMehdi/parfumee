@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Application\UseCase\User;
 
-use App\Ecommerce\Application\DTO\User\UpdateUserRequestDTO;
+use App\Ecommerce\Application\DTO\User\UpdateUserRequestDto;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
@@ -17,7 +17,7 @@ readonly class UpdateUserUseCase
     ) {
     }
 
-    public function execute(string $id, UpdateUserRequestDTO $dto): User
+    public function execute(string $id, UpdateUserRequestDto $dto): User
     {
         $user = $this->userRepository->findById(Uuid::fromString($id));
 

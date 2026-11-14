@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Application\UseCase\User;
 
-use App\Ecommerce\Application\DTO\User\LoginUserRequestDTO;
+use App\Ecommerce\Application\DTO\User\LoginUserRequestDto;
 use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordVerifierInterface;
@@ -22,7 +22,7 @@ readonly class LoginUserUseCase
     /**
      * @return array{token: string}
      */
-    public function execute(LoginUserRequestDTO $dto): array
+    public function execute(LoginUserRequestDto $dto): array
     {
         $user = $this->userRepository->findByEmail($dto->email);
 

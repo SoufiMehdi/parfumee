@@ -1,22 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
-use App\Ecommerce\Application\Mapper\GetProductsFilterMapper;
+use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 
 class GetFilteredProductsUseCase
 {
     public function __construct(
         private ProductRepositoryInterface $productRepository,
-        private GetProductsFilterMapper $filterMapper
     ) {
     }
 
-    public function execute(array $data): array
+    /**
+     * @return Product[]
+     */
+    public function execute(GetProductsFilterDto $filter): array
     {
-        $filterDto = $this->filterMapper->map($data);
-        return $this->productRepository->findByFilter($filterDto);
+        return $this->productRepository->findByFilter($filter);
     }
 }

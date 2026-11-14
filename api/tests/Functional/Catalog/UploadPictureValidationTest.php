@@ -94,8 +94,8 @@ final class UploadPictureValidationTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertSame(
-            '{"error":"The picture must be a JPEG, PNG or WebP image."}',
-            $this->client->getResponse()->getContent(),
+            ['error' => 'Validation failed.', 'violations' => [['field' => 'file', 'message' => 'The picture must be a JPEG, PNG or WebP image.']]],
+            json_decode((string) $this->client->getResponse()->getContent(), true),
         );
     }
 

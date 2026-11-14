@@ -9,8 +9,9 @@
 - **Fait :** `P0-02` (validation des uploads), mergée dans `main` (PR #7).
 - **Fait :** `P0-03` (repository des images), mergée dans `main` (PR #8).
 - **Fait :** la base de test (première partie de `P0-10`), mergée dans `main` (PR #9).
-- **En relecture :** `P0-04` (gestion d'erreurs centralisée), sur la branche `fix/P0-04-centralized-error-handling`.
-- **Prochaine tâche conseillée :** `P0-05` (validation des entrées), qui termine le tableau B8.
+- **Fait :** `P0-04` (gestion d'erreurs centralisée), mergée dans `main` (PR #10).
+- **En relecture :** `P0-05` (validation des entrées), sur la branche `fix/P0-05-input-validation`.
+- **Prochaines tâches conseillées :** `P0-07` (bugs ponctuels B5, B6, B7) et `P0-06` (slug produit).
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -31,7 +32,10 @@
 - Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. À prévoir dans la CI (`P0-11`).
 - Upload d'images : la limite applicative est de 5 Mo, mais PHP refuse avant elle tout fichier au-delà de `upload_max_filesize` (2 Mo par défaut) et ignore le corps entier au-delà de `post_max_size` (8 Mo par défaut). À régler dans l'image Docker (`P7-01`) : `upload_max_filesize = 5M` au minimum.
 - `#[MapUploadedFile]`, `#[MapRequestPayload]` et `#[MapQueryString]` **ignorent silencieusement leurs contraintes** si `symfony/validator` est absent. Il est installé depuis `P0-02` : ne pas le retirer.
-- Lignes du tableau B8 encore ouvertes, à traiter dans `P0-05` : champ manquant dans le body, id qui n'est pas un UUID, `category_id` absent. Elles répondent 500 (générique en production). Attention, `PUT /users/{id}` avec un id invalide répondait 400 avant `P0-04` et répond maintenant 500 comme `GET` et `DELETE` ; seul un admin peut l'atteindre, le Voter refusant les autres avant.
+- Un body JSON doit être envoyé avec `Content-Type: application/json`. Sans cet en-tête, il est lu comme un formulaire et la réponse est un 400.
+- Quand un champ obligatoire manque ou a le mauvais type, la réponse ne liste que ces erreurs-là ; les autres règles (format d'email, longueur…) ne sont vérifiées qu'une fois tous les champs présents et bien typés. Un formulaire peut donc demander deux allers-retours.
+- Un id de route en majuscules répond 404 : `Requirement::UUID` n'accepte que les minuscules, la forme que l'API produit.
+- Créer un produit sans attribut `weight` déclenche encore un warning PHP, donc un 500 (B5, `P0-07`) : `attributes` n'est pas validé champ par champ.
 - Les 401 du pare-feu JWT (token absent, invalide ou expiré) sont produits par le bundle lexik au format `{"code": 401, "message": "..."}`, pas en `{"error": "..."}`. À harmoniser au plus tard avec le contrat OpenAPI (`P1-03`).
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
@@ -47,6 +51,15 @@
 - Lire un produit sans attribut `weight` déclenche un warning PHP (B5, `P0-07`), qui fait échouer PHPUnit. Les tests d'intégration donnent donc un poids à leurs produits.
 
 ## Journal
+
+### 2026-11-13 — P0-05 : validation des entrées (branche `fix/P0-05-input-validation`, en relecture)
+- Les bodies et les filtres sont convertis en DTO et validés par `#[MapRequestPayload]` et `#[MapQueryString]`, avec des contraintes `Assert` sur les DTO. Les quatre mappers manuels et les `json_decode` des contrôleurs sont supprimés.
+- Les ids de route sont contraints par `Requirement::UUID` : un id invalide répond 404 au lieu de 500.
+- Une erreur de validation répond 422 avec la liste des champs fautifs, nommés comme le client les a envoyés (`first_name`).
+- Bugs fermés : le reste du tableau B8, B9 (un `PUT` partiel effaçait le nom), B16 (un body vide créait un produit sans nom à prix 0), S11 (longueurs).
+- Ajout hors audit : mot de passe de 8 caractères minimum à l'inscription. La vraie politique de mots de passe reste `P3-02`.
+- `GetFilteredProductsUseCase` reçoit maintenant un `GetProductsFilterDto` au lieu d'un tableau. Les DTO `…RequestDTO` sont renommés `…RequestDto`.
+- Vérifications : PHPUnit 219 tests verts (36 de plus) ; PHPStan 58 erreurs contre 63, aucune dans le nouveau code ; essai HTTP réel sur la base de test (inscription, doublon, login, filtres, ids).
 
 ### 2026-11-13 — P0-04 : gestion d'erreurs centralisée (branche `fix/P0-04-centralized-error-handling`, en relecture)
 - Les contrôleurs n'ont plus aucun `try/catch` : `ExceptionListener` est le seul endroit où une exception devient une réponse HTTP.

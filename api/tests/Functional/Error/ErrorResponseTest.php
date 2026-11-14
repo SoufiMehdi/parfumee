@@ -69,7 +69,7 @@ final class ErrorResponseTest extends WebTestCase
     {
         $this->useCaseThrows($useCase, $failure);
 
-        $this->client->request($method, $uri, content: self::validBodyFor($uri));
+        $this->client->request($method, $uri, server: ['CONTENT_TYPE' => 'application/json'], content: self::validBodyFor($uri));
 
         self::assertResponseStatusCodeSame($expectedStatusCode);
         self::assertSame(['error' => $failure->getMessage()], $this->decodedResponse());
@@ -95,7 +95,7 @@ final class ErrorResponseTest extends WebTestCase
 
     public function testInvalidJsonBodyIsABadRequest(): void
     {
-        $this->client->request('POST', '/users/login', content: '{not json');
+        $this->client->request('POST', '/users/login', server: ['CONTENT_TYPE' => 'application/json'], content: '{not json');
 
         self::assertResponseStatusCodeSame(400);
         self::assertArrayHasKey('error', $this->decodedResponse());
@@ -134,7 +134,7 @@ final class ErrorResponseTest extends WebTestCase
     private static function validBodyFor(string $uri): string
     {
         return (string) json_encode(match (true) {
-            str_starts_with($uri, '/users/create') => ['email' => 'a@example.test', 'password' => 'secret', 'first_name' => 'A', 'last_name' => 'B'],
+            str_starts_with($uri, '/users/create') => ['email' => 'a@example.test', 'password' => 'long-enough', 'first_name' => 'A', 'last_name' => 'B'],
             str_starts_with($uri, '/users/login') => ['email' => 'a@example.test', 'password' => 'secret'],
             default => ['name' => 'Candle', 'price' => 10, 'category_id' => self::ID],
         });

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 
-use App\Ecommerce\Application\DTO\User\UpdateUserRequestDTO;
+use App\Ecommerce\Application\DTO\User\UpdateUserRequestDto;
 use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
@@ -30,7 +30,7 @@ class UpdateUserUseCaseTest extends TestCase
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn($id->toRfc4122());
 
-        $dto = new UpdateUserRequestDTO(
+        $dto = new UpdateUserRequestDto(
             firstName: 'Jane',
             lastName: 'Smith',
             phoneNumber: null,
@@ -61,7 +61,7 @@ class UpdateUserUseCaseTest extends TestCase
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn($id->toRfc4122());
 
-        $dto = new UpdateUserRequestDTO(
+        $dto = new UpdateUserRequestDto(
             firstName: 'Jane',
             lastName: 'Smith',
             phoneNumber: '+33698765432',
@@ -82,7 +82,7 @@ class UpdateUserUseCaseTest extends TestCase
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
         $id = Uuid::v4();
-        $dto = new UpdateUserRequestDTO(firstName: 'Jane', lastName: 'Smith');
+        $dto = new UpdateUserRequestDto(firstName: 'Jane', lastName: 'Smith');
 
         $this->userRepository
             ->method('findById')

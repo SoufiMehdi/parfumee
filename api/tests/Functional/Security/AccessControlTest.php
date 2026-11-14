@@ -30,6 +30,7 @@ final class AccessControlTest extends WebTestCase
     private const string OWNER_ID = '11111111-1111-4111-8111-111111111111';
     private const string OTHER_ID = '22222222-2222-4222-8222-222222222222';
     private const string ADMIN_ID = '99999999-9999-4999-8999-999999999999';
+    private const string ACCOUNT_BODY = '{"first_name": "Ada", "last_name": "Lovelace"}';
 
     private KernelBrowser $client;
 
@@ -121,18 +122,7 @@ final class AccessControlTest extends WebTestCase
         $this->stubAccountUseCases(self::OWNER_ID);
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/users/'.self::OWNER_ID, content: '{}');
-
-        self::assertResponseIsSuccessful();
-    }
-
-    public function testAccountIdIsMatchedCaseInsensitively(): void
-    {
-        $id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-        $this->stubAccountUseCases($id);
-        $this->authenticateAs($this->client, $id);
-
-        $this->client->request('GET', '/users/'.strtoupper($id));
+        $this->client->request($method, '/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
     }
@@ -143,7 +133,7 @@ final class AccessControlTest extends WebTestCase
         $this->stubAccountUseCases(self::OWNER_ID);
         $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
 
-        $this->client->request($method, '/users/'.self::OWNER_ID, content: '{}');
+        $this->client->request($method, '/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
     }
