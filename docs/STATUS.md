@@ -11,8 +11,9 @@
 - **Fait :** la base de test (première partie de `P0-10`), mergée dans `main` (PR #9).
 - **Fait :** `P0-04` (gestion d'erreurs centralisée), mergée dans `main` (PR #10).
 - **Fait :** `P0-05` (validation des entrées), mergée dans `main` (PR #11).
-- **En relecture :** `P0-07` (bugs ponctuels B5, B6, B7), sur la branche `fix/P0-07-point-bugs`.
-- **Prochaine tâche conseillée :** `P0-06` (slug produit, B4).
+- **Fait :** `P0-07` (bugs ponctuels B5, B6, B7), mergée dans `main` (PR #12).
+- **En relecture :** `P0-06` (slug produit, B4), sur la branche `fix/P0-06-product-slug`.
+- **Prochaine tâche conseillée :** `P0-08` (secrets), puis `P0-09` (outillage qualité).
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -43,7 +44,9 @@
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
-- Le slug produit n'est pas persisté (B4) : tous les produits renvoient `slug-placeholder`.
+- Slug produit : il suit le nom. Renommer un produit change donc son slug, et l'ancienne URL ne redirige nulle part. À revoir avant l'ouverture de la boutique (`P2-07`) : slug figé, ou table de redirections.
+- Slug produit : deux créations simultanées du même nom peuvent viser le même slug. L'index unique refuse la seconde, qui répond 500 au lieu d'obtenir un suffixe. Sans gravité tant que seul le back-office crée des produits.
+- La migration `Version20261114170000` (colonne `slug`) est à jouer sur chaque base de dev : `php bin/console doctrine:migrations:migrate`. Elle calcule le slug des produits existants.
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
 - Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
 - `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
@@ -54,7 +57,15 @@
 
 ## Journal
 
-### 2026-11-14 — P0-07 : bugs ponctuels B5, B6 et B7 (branche `fix/P0-07-point-bugs`, en relecture)
+### 2026-11-14 — P0-06 : slug produit persisté, B4 (branche `fix/P0-06-product-slug`, en relecture)
+- La table `products` a une colonne `slug` unique et non nulle. Le slug est enregistré et relu : plus de `slug-placeholder`.
+- Le slug est généré par le `SluggerInterface` de Symfony, derrière le port `Domain/Service/Catalog/SlugGeneratorInterface`. « Bougie Été à l'Ambre » donne `bougie-ete-a-l-ambre`.
+- `ProductSlugResolver` rend le slug unique : un nom déjà pris reçoit `-2`, `-3`… Un nom sans aucun caractère utilisable (`!!!`) donne `product`.
+- À la modification, le slug n'est recalculé que si le nom change.
+- La migration `Version20261114170000` calcule le slug des produits déjà en base, avec la même règle.
+- Vérifications : PHPUnit 261 tests verts (22 nouveaux) ; PHPStan 54 erreurs, inchangé, aucune dans le nouveau code ; migration essayée sur la base de test avec des produits existants, dont deux homonymes ; essai HTTP réel (création de deux homonymes, renommage, relecture).
+
+### 2026-11-14 — P0-07 : bugs ponctuels B5, B6 et B7 (mergée, PR #12)
 - B5 : un produit sans `weight` a maintenant un poids `null`, sans warning PHP. Créer ou lire un tel produit répondait 500. Les attributs sont validés à l'entrée : le poids doit être un nombre positif, donc `"180g"` est refusé au lieu d'être lu comme 180.
 - B6 : `Product::updateDetails()` passe par `setPrice()`. Le modèle refuse un prix négatif à la modification comme à la création.
 - B7 : le téléphone et l'adresse fournis à l'inscription sont enregistrés. L'adresse devient l'adresse par défaut du compte, de type `shipping` sauf mention contraire.

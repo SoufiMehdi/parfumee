@@ -24,7 +24,7 @@ final class ProductTest extends TestCase
         $product = new Product('id', 'Candle', 'candle', 10.0, $this->category());
 
         try {
-            $product->updateDetails('Candle', -5.0, $this->category());
+            $product->updateDetails('Candle', 'candle', -5.0, $this->category());
             self::fail('A negative price must be refused.');
         } catch (InvalidPriceException) {
         }
@@ -38,9 +38,10 @@ final class ProductTest extends TestCase
         $category = new Category('cat-2', 'Gifts', 'gifts');
         $attributes = new Attribute(weight: 180.0);
 
-        $product->updateDetails('Amber candle', 0.0, $category, $attributes);
+        $product->updateDetails('Amber candle', 'amber-candle', 0.0, $category, $attributes);
 
         self::assertSame('Amber candle', $product->getName());
+        self::assertSame('amber-candle', $product->getSlug());
         self::assertSame(0.0, $product->getPrice());
         self::assertSame($category, $product->getCategory());
         self::assertSame($attributes, $product->getAttributes());
