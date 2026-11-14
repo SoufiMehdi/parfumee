@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Application\DTO\User;
 
+use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
 use Symfony\Component\Validator\Constraints as Assert;
 
 final readonly class RegisterUserRequestDto
 {
-    /**
-     * @param array<string, mixed>|null $address
-     */
     public function __construct(
         #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Email]
@@ -27,9 +25,10 @@ final readonly class RegisterUserRequestDto
         #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Length(max: 255)]
         public string $lastName,
-        #[Assert\Length(max: 20)]
+        #[Assert\Regex(pattern: PhoneNumber::PATTERN, message: 'This value is not a valid phone number.')]
         public ?string $phoneNumber = null,
-        public ?array $address = null,
+        #[Assert\Valid]
+        public ?RegisterAddressDto $address = null,
     ) {
     }
 }

@@ -57,7 +57,7 @@ class Product
     ): void 
     {
         $this->name = $name;
-        $this->price = $price;
+        $this->setPrice($price);
         $this->category = $category;
         $this->attributes = ($attributes) ? $attributes : $this->attributes;
         // Tu peux aussi recalculer le slug ici

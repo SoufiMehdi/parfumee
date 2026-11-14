@@ -6,9 +6,13 @@ namespace App\Ecommerce\Domain\Model\User;
 
 class Address
 {
+    public const string TYPE_SHIPPING = 'shipping';
+    public const string TYPE_BILLING = 'billing';
+    public const array TYPES = [self::TYPE_SHIPPING, self::TYPE_BILLING];
+
     public function __construct(
         private readonly string $id,
-        private string $type, // shipping | billing
+        private string $type, // one of self::TYPES
         private string $street,
         private string $city,
         private string $postalCode,
