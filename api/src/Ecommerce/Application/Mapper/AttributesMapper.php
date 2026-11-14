@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Application\Mapper;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
@@ -9,14 +11,12 @@ class AttributesMapper
 {
     public function fromDto(CreateProductDto $dto): Attribute
     {
-        return new Attribute(
-            weight: (float) $dto->attributes['weight'] ?? null,
-            fragrance: $dto->attributes['fragrance'] ?? null,
-            size: $dto->attributes['size'] ?? null,
-            description: $dto->attributes['description'] ?? null,
-            presentation: $dto->attributes['presentation'] ?? null
-        );
+        return $this->fromArray($dto->attributes);
     }
+
+    /**
+     * @return array{weight: ?float, fragrance: ?string, size: ?string, description: ?string, presentation: ?string}
+     */
     public function toDto(Attribute $attribute): array
     {
         return [
@@ -24,17 +24,23 @@ class AttributesMapper
             'fragrance' => $attribute->getFragrance(),
             'size' => $attribute->getSize(),
             'description' => $attribute->getDescription(),
-            'presentation' => $attribute->getPresentation()
+            'presentation' => $attribute->getPresentation(),
         ];
     }
-    public  function fromArray(array $attributes): Attribute
+
+    /**
+     * Every attribute is optional: a missing one is null, never 0 or ''.
+     *
+     * @param array<string, mixed> $attributes
+     */
+    public function fromArray(array $attributes): Attribute
     {
         return new Attribute(
-            weight: (float) $attributes['weight'] ?? null,
+            weight: isset($attributes['weight']) ? (float) $attributes['weight'] : null,
             fragrance: $attributes['fragrance'] ?? null,
             size: $attributes['size'] ?? null,
             description: $attributes['description'] ?? null,
-            presentation: $attributes['presentation'] ?? null
+            presentation: $attributes['presentation'] ?? null,
         );
     }
 }

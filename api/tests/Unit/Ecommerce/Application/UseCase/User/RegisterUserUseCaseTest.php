@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 
+use App\Ecommerce\Application\DTO\User\RegisterAddressDto;
 use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Application\UseCase\User\RegisterUserUseCase;
 use App\Ecommerce\Domain\Exception\User\DuplicateEmailException;
+use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordHasherInterface;
@@ -132,6 +134,55 @@ class RegisterUserUseCaseTest extends TestCase
 
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('Database error');
+
+        $this->useCase->execute($dto);
+    }
+
+    public function testExecuteKeepsThePhoneNumberAndTheAddress(): void
+    {
+        $dto = new RegisterUserRequestDto(
+            email: 'test@example.com',
+            password: 'plainPassword',
+            firstName: 'John',
+            lastName: 'Doe',
+            phoneNumber: '+33 6 12 34 56 78',
+            address: new RegisterAddressDto('1 rue de la Paix', 'Paris', '75002', 'France', Address::TYPE_BILLING),
+        );
+        $this->userRepository->method('findByEmail')->willReturn(null);
+        $this->passwordHasher->method('hash')->willReturn('hashedPassword');
+
+        $saved = null;
+        $this->userRepository
+            ->expects($this->once())
+            ->method('save')
+            ->willReturnCallback(static function (User $user) use (&$saved): void {
+                $saved = $user;
+            });
+
+        $this->useCase->execute($dto);
+
+        $this->assertInstanceOf(User::class, $saved);
+        $this->assertSame('+33 6 12 34 56 78', $saved->getPhoneNumber()?->getValue());
+        $this->assertCount(1, $saved->getAddresses());
+        $address = $saved->getAddresses()[0];
+        $this->assertSame('1 rue de la Paix', $address->getStreet());
+        $this->assertSame('Paris', $address->getCity());
+        $this->assertSame('75002', $address->getPostalCode());
+        $this->assertSame('France', $address->getCountry());
+        $this->assertSame(Address::TYPE_BILLING, $address->getType());
+        $this->assertTrue($address->isDefault());
+    }
+
+    public function testExecuteWithoutPhoneNorAddressLeavesThemEmpty(): void
+    {
+        $dto = new RegisterUserRequestDto('test@example.com', 'plainPassword', 'John', 'Doe');
+        $this->userRepository->method('findByEmail')->willReturn(null);
+        $this->passwordHasher->method('hash')->willReturn('hashedPassword');
+
+        $this->userRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->callback(static fn (User $user): bool => null === $user->getPhoneNumber() && [] === $user->getAddresses()));
 
         $this->useCase->execute($dto);
     }

@@ -60,6 +60,41 @@ final class InputValidationTest extends WebTestCase
         self::assertSame('+33 6 12 34 56 78', $dto->value->phoneNumber);
     }
 
+    public function testRegistrationAddressIsMapped(): void
+    {
+        $dto = $this->captureDto(RegisterUserUseCase::class);
+
+        $this->sendJson('POST', '/users/create', self::USER + [
+            'address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'postal_code' => '75002', 'country' => 'France'],
+        ]);
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertInstanceOf(RegisterUserRequestDto::class, $dto->value);
+        self::assertNotNull($dto->value->address);
+        self::assertSame('75002', $dto->value->address->postalCode);
+        self::assertSame('shipping', $dto->value->address->type);
+    }
+
+    public function testProductWithoutAttributesIsAccepted(): void
+    {
+        $dto = $this->captureDto(CreateProductUseCase::class, self::ID);
+
+        $this->sendJson('POST', '/create-product', array_diff_key(self::PRODUCT, ['attributes' => 0]));
+
+        self::assertResponseStatusCodeSame(201);
+        self::assertInstanceOf(CreateProductDto::class, $dto->value);
+        self::assertSame([], $dto->value->attributes);
+    }
+
+    public function testUnknownAttributesAreIgnored(): void
+    {
+        $this->captureDto(CreateProductUseCase::class, self::ID);
+
+        $this->sendJson('POST', '/create-product', ['attributes' => ['wax' => 'soy', 'weight' => 180.5]] + self::PRODUCT);
+
+        self::assertResponseStatusCodeSame(201);
+    }
+
     public function testUnknownFieldsAreIgnored(): void
     {
         $dto = $this->captureDto(RegisterUserUseCase::class);
@@ -141,6 +176,17 @@ final class InputValidationTest extends WebTestCase
         yield 'product with a text price' => ['POST', '/create-product', ['price' => 'cheap'] + $product, 'price'];
         yield 'product with a blank name' => ['POST', '/create-product', ['name' => ''] + $product, 'name'];
         yield 'product with a 256-character name' => ['POST', '/create-product', ['name' => str_repeat('a', 256)] + $product, 'name'];
+
+        // B5: "180g" used to be read as 180 without a word.
+        yield 'product with a text weight' => ['POST', '/create-product', ['attributes' => ['weight' => '180g']] + $product, 'attributes[weight]'];
+        yield 'product with a negative weight' => ['POST', '/create-product', ['attributes' => ['weight' => -1]] + $product, 'attributes[weight]'];
+        yield 'product with a number as fragrance' => ['POST', '/create-product', ['attributes' => ['fragrance' => 12]] + $product, 'attributes[fragrance]'];
+
+        // B7: phone number and address are now part of a registration.
+        yield 'registration with a malformed phone number' => ['POST', '/users/create', ['phone_number' => 'call me'] + $user, 'phone_number'];
+        yield 'registration with an address without postal code' => ['POST', '/users/create', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'country' => 'France']] + $user, 'address.postal_code'];
+        yield 'registration with an unknown address type' => ['POST', '/users/create', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'postal_code' => '75002', 'country' => 'France', 'type' => 'home']] + $user, 'address.type'];
+        yield 'account update with a malformed phone number' => ['PUT', '/users/'.self::ID, ['first_name' => 'Ada', 'last_name' => 'Lovelace', 'phone_number' => 'x'], 'phone_number'];
 
         // B16: an empty body used to create a product named '' at price 0.
         yield 'product update with an empty object' => ['PUT', '/edit-product/'.self::ID, [], 'name'];
