@@ -32,7 +32,7 @@ Site e-commerce de **bougies parfumées**. Un seul dépôt contient une API et l
 - **Commits :** Conventional Commits, avec l'ID de tâche quand il y en a un. Exemple : `fix(catalog): persist product slug [P0-06]`.
 - **Branches :** `feat/<id>-<sujet>` ou `fix/<id>-<sujet>` depuis `main`, avec une PR par tâche ou groupe de tâches.
 - **Une tâche n'est pas finie tant que** les tests passent et que `docs/STATUS.md` n'est pas mis à jour (skill `fin-de-session`).
-- **Secrets :** jamais dans git. `.env` ne contient que des valeurs de dev ; les vraies valeurs vont dans `.env.local` ou dans les secrets Symfony.
+- **Secrets :** jamais dans git. `.env` ne contient aucun secret ; `.env.dev` et `.env.test` ne contiennent que des valeurs de dev jetables ; les vraies valeurs vont dans `.env.local`, dans de vraies variables d'environnement ou dans les secrets Symfony.
 - **Suppressions :** ne jamais supprimer de données, de migrations déjà jouées ou de fichiers utilisateur sans demander.
 
 ## Agents et skills du projet
