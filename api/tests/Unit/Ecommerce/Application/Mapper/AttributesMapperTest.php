@@ -105,4 +105,30 @@ class AttributesMapperTest extends TestCase
         $this->assertNull($attribute->getDescription());
         $this->assertNull($attribute->getPresentation());
     }*/
+
+    public function testMissingAttributesAreNullAndRaiseNoWarning(): void
+    {
+        $attribute = $this->mapper->fromArray([]);
+
+        $this->assertNull($attribute->getWeight());
+        $this->assertNull($attribute->getFragrance());
+        $this->assertNull($attribute->getSize());
+        $this->assertNull($attribute->getDescription());
+        $this->assertNull($attribute->getPresentation());
+    }
+
+    public function testFromDtoWithoutWeightKeepsTheOtherAttributes(): void
+    {
+        $dto = new CreateProductDto(name: 'Candle', price: 10.0, categoryId: 'cat-1', attributes: ['fragrance' => 'Amber']);
+
+        $attribute = $this->mapper->fromDto($dto);
+
+        $this->assertNull($attribute->getWeight());
+        $this->assertSame('Amber', $attribute->getFragrance());
+    }
+
+    public function testAnIntegerWeightBecomesAFloat(): void
+    {
+        $this->assertSame(180.0, $this->mapper->fromArray(['weight' => 180])->getWeight());
+    }
 }

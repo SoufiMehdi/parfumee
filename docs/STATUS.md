@@ -10,8 +10,9 @@
 - **Fait :** `P0-03` (repository des images), mergée dans `main` (PR #8).
 - **Fait :** la base de test (première partie de `P0-10`), mergée dans `main` (PR #9).
 - **Fait :** `P0-04` (gestion d'erreurs centralisée), mergée dans `main` (PR #10).
-- **En relecture :** `P0-05` (validation des entrées), sur la branche `fix/P0-05-input-validation`.
-- **Prochaines tâches conseillées :** `P0-07` (bugs ponctuels B5, B6, B7) et `P0-06` (slug produit).
+- **Fait :** `P0-05` (validation des entrées), mergée dans `main` (PR #11).
+- **En relecture :** `P0-07` (bugs ponctuels B5, B6, B7), sur la branche `fix/P0-07-point-bugs`.
+- **Prochaine tâche conseillée :** `P0-06` (slug produit, B4).
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -35,7 +36,9 @@
 - Un body JSON doit être envoyé avec `Content-Type: application/json`. Sans cet en-tête, il est lu comme un formulaire et la réponse est un 400.
 - Quand un champ obligatoire manque ou a le mauvais type, la réponse ne liste que ces erreurs-là ; les autres règles (format d'email, longueur…) ne sont vérifiées qu'une fois tous les champs présents et bien typés. Un formulaire peut donc demander deux allers-retours.
 - Un id de route en majuscules répond 404 : `Requirement::UUID` n'accepte que les minuscules, la forme que l'API produit.
-- Créer un produit sans attribut `weight` déclenche encore un warning PHP, donc un 500 (B5, `P0-07`) : `attributes` n'est pas validé champ par champ.
+- Attributs produit : les clés inconnues (par exemple `wax`) sont toujours ignorées sans erreur. Seules `weight`, `fragrance`, `size`, `description` et `presentation` sont conservées et validées.
+- Les fichiers `tests/http/` ne sont pas versionnés : s'ils envoient encore `"weight": "180g"`, la réponse est maintenant un 422. Le poids doit être un nombre.
+- Adresse à l'inscription : elle est enregistrée comme adresse par défaut du compte. Aucune route ne permet encore de la modifier ou d'en ajouter (`P3-01`).
 - Les 401 du pare-feu JWT (token absent, invalide ou expiré) sont produits par le bundle lexik au format `{"code": 401, "message": "..."}`, pas en `{"error": "..."}`. À harmoniser au plus tard avec le contrat OpenAPI (`P1-03`).
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
@@ -48,9 +51,16 @@
 - La base de test vit en mémoire : elle est vide après chaque redémarrage du conteneur, et le premier test d'intégration rejoue les migrations. Rien à faire à la main.
 - L'ancien `.env.test` contenait le mot de passe d'une base PostgreSQL sur `192.168.1.28`. Il est retiré du fichier mais **reste dans l'historique git** : le changer si cette base sert encore (`P0-08`).
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
-- Lire un produit sans attribut `weight` déclenche un warning PHP (B5, `P0-07`), qui fait échouer PHPUnit. Les tests d'intégration donnent donc un poids à leurs produits.
 
 ## Journal
+
+### 2026-11-14 — P0-07 : bugs ponctuels B5, B6 et B7 (branche `fix/P0-07-point-bugs`, en relecture)
+- B5 : un produit sans `weight` a maintenant un poids `null`, sans warning PHP. Créer ou lire un tel produit répondait 500. Les attributs sont validés à l'entrée : le poids doit être un nombre positif, donc `"180g"` est refusé au lieu d'être lu comme 180.
+- B6 : `Product::updateDetails()` passe par `setPrice()`. Le modèle refuse un prix négatif à la modification comme à la création.
+- B7 : le téléphone et l'adresse fournis à l'inscription sont enregistrés. L'adresse devient l'adresse par défaut du compte, de type `shipping` sauf mention contraire.
+- Le format du téléphone est défini une seule fois, dans `PhoneNumber::PATTERN`, et réutilisé par les DTO.
+- B9 était déjà fermé par `P0-05`.
+- Vérifications : PHPUnit 239 tests verts (20 nouveaux) ; PHPStan 54 erreurs contre 58, aucune dans le nouveau code ; essai HTTP réel sur la base de test (inscription avec téléphone et adresse, produit sans poids créé puis relu, prix négatif et poids `"180g"` refusés).
 
 ### 2026-11-13 — P0-05 : validation des entrées (branche `fix/P0-05-input-validation`, en relecture)
 - Les bodies et les filtres sont convertis en DTO et validés par `#[MapRequestPayload]` et `#[MapQueryString]`, avec des contraintes `Assert` sur les DTO. Les quatre mappers manuels et les `json_decode` des contrôleurs sont supprimés.

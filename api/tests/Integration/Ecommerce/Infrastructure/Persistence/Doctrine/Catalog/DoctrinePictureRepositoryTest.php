@@ -97,8 +97,8 @@ final class DoctrinePictureRepositoryTest extends DatabaseTestCase
 
         $category = new DoctrineCategory($categoryId, 'Candles', 'candles-'.$categoryId);
         $this->entityManager->persist($category);
-        // A weight is set on purpose: reading a product without one triggers B5 (fixed in P0-07).
-        $this->entityManager->persist(new DoctrineProduct($productId, 'Amber candle', 24.9, $category, ['weight' => 180]));
+        // No attributes on purpose: a product without weight used to raise a PHP warning when read back (B5).
+        $this->entityManager->persist(new DoctrineProduct($productId, 'Amber candle', 24.9, $category));
         $this->entityManager->flush();
 
         $product = self::getContainer()->get(ProductRepositoryInterface::class)->findById($productId);

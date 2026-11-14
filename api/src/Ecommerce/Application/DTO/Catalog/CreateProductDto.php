@@ -22,6 +22,18 @@ readonly class CreateProductDto
         #[Assert\NotBlank(normalizer: 'trim')]
         #[Assert\Uuid]
         public string $categoryId,
+        // Unknown keys are ignored. A weight must be a JSON number: "180g" used
+        // to be read as 180 without a word.
+        #[Assert\Collection(
+            fields: [
+                'weight' => new Assert\Optional([new Assert\Type(['int', 'float'], message: 'This value should be a number.'), new Assert\PositiveOrZero()]),
+                'fragrance' => new Assert\Optional([new Assert\Type('string'), new Assert\Length(max: 255)]),
+                'size' => new Assert\Optional([new Assert\Type('string'), new Assert\Length(max: 255)]),
+                'description' => new Assert\Optional([new Assert\Type('string'), new Assert\Length(max: 5000)]),
+                'presentation' => new Assert\Optional([new Assert\Type('string'), new Assert\Length(max: 5000)]),
+            ],
+            allowExtraFields: true,
+        )]
         public array $attributes = [],
     ) {
     }
