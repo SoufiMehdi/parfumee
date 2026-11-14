@@ -4,12 +4,14 @@ namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
 use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
 use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -26,10 +28,14 @@ class CreateProductUseCaseTest extends TestCase
         $this->categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
         $this->attributesMapper = $this->createMock(AttributesMapper::class);
 
+        $slugGenerator = $this->createStub(SlugGeneratorInterface::class);
+        $slugGenerator->method('generate')->willReturn('bougie-parfumee');
+
         $this->useCase = new CreateProductUseCase(
             $this->productRepository,
             $this->categoryRepository,
-            $this->attributesMapper
+            $this->attributesMapper,
+            new ProductSlugResolver($slugGenerator, $this->productRepository),
         );
     }
 
@@ -54,7 +60,7 @@ class CreateProductUseCaseTest extends TestCase
         $this->productRepository
             ->expects($this->once())
             ->method('save')
-            ->with($this->isInstanceOf(Product::class));
+            ->with($this->callback(static fn (Product $product): bool => 'bougie-parfumee' === $product->getSlug()));
 
         // 2. Exécution (Act)
         $result = $this->useCase->execute($dto);

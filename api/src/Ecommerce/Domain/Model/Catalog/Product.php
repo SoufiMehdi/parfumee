@@ -49,19 +49,24 @@ class Product
     public function getSlug(): string { return $this->slug; }
     public function getPrice(): float { return $this->price; }
     public function getCategory(): Category { return $this->category; }
+    /**
+     * @param string $slug the slug matching the new name; the model cannot compute it itself,
+     *                     since uniqueness depends on the rest of the catalog
+     */
     public function updateDetails(
-        string $name, 
-        float $price, 
+        string $name,
+        string $slug,
+        float $price,
+
         Category $category, 
         ?Attribute $attributes = null
     ): void 
     {
         $this->name = $name;
+        $this->slug = $slug;
         $this->setPrice($price);
         $this->category = $category;
         $this->attributes = ($attributes) ? $attributes : $this->attributes;
-        // Tu peux aussi recalculer le slug ici
-        $this->slug = str_replace(' ', '-', strtolower($name));
     }
 
     public function addPicture(Picture $picture): void

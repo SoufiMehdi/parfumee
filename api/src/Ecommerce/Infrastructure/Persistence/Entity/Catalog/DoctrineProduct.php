@@ -18,6 +18,9 @@ class DoctrineProduct
     #[ORM\Column(type: 'string', length: 255)]
     private string $name;
 
+    #[ORM\Column(type: 'string', length: 255, unique: true)]
+    private string $slug;
+
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private float $price;
 
@@ -38,12 +41,14 @@ class DoctrineProduct
     public function __construct(
         string $id, 
         string $name,
+        string $slug,
          float $price, DoctrineCategory $category, 
          array $attributes = []
          )
     {
         $this->id = $id;
         $this->name = $name;
+        $this->slug = $slug;
         $this->price = $price;
         $this->category = $category;
         $this->attributes = $attributes;
@@ -53,6 +58,8 @@ class DoctrineProduct
     public function getId(): string { return $this->id; }
     public function getName(): string { return $this->name; }
     public function setName(string $name): void { $this->name = $name; }
+    public function getSlug(): string { return $this->slug; }
+    public function setSlug(string $slug): void { $this->slug = $slug; }
     public function getPrice(): float { return $this->price; }
     public function setPrice(float $price): void { $this->price = $price;}
     public function getCategory(): DoctrineCategory { return $this->category; }

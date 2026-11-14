@@ -9,13 +9,15 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 
 class UpdateProductUseCase
 {
     public function __construct(
         private ProductRepositoryInterface $productRepository,
         private CategoryRepositoryInterface $categoryRepository,
-        private AttributesMapper $attributesMapper // Injection ajoutée
+        private AttributesMapper $attributesMapper,
+        private ProductSlugResolver $slugResolver,
     ) {
     }
 
@@ -31,8 +33,14 @@ class UpdateProductUseCase
             throw new CategoryNotFoundException($dto->categoryId);
         }
 
+        // The slug follows the name, and only changes when the name does.
+        $slug = $dto->name === $product->getName()
+            ? $product->getSlug()
+            : $this->slugResolver->resolve($dto->name, $product->getId());
+
         $product->updateDetails(
             $dto->name,
+            $slug,
             $dto->price,
             $category,
             $this->attributesMapper->fromDto($dto) // Utilisation de l'instance

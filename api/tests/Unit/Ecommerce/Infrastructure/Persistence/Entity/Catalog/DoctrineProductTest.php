@@ -18,6 +18,7 @@ class DoctrineProductTest extends TestCase
         $this->product = new DoctrineProduct(
             'prod-uuid',
             'Smartphone',
+            'smartphone',
             999.99,
             $this->category,
             ['color' => 'black']

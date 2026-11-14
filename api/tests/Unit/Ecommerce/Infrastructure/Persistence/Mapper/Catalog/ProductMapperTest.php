@@ -45,6 +45,7 @@ class ProductMapperTest extends TestCase
 
         $product->method('getId')->willReturn('id-1');
         $product->method('getName')->willReturn('Product Name');
+        $product->method('getSlug')->willReturn('product-name');
         $product->method('getPrice')->willReturn(100.50);
         $product->method('getAttributes')->willReturn($attributeMock); // Retourne le mock au lieu d'un tableau array
 
@@ -60,6 +61,7 @@ class ProductMapperTest extends TestCase
         $this->assertInstanceOf(DoctrineProduct::class, $result);
         $this->assertSame('id-1', $result->getId());
         $this->assertSame('Product Name', $result->getName());
+        $this->assertSame('product-name', $result->getSlug());
         $this->assertSame(100.50, $result->getPrice());
         $this->assertSame($doctrineCategory, $result->getCategory());
     }
@@ -73,6 +75,7 @@ class ProductMapperTest extends TestCase
         $attributeMock = $this->createMock(Attribute::class);
 
         $product->method('getName')->willReturn('Updated Name');
+        $product->method('getSlug')->willReturn('updated-name');
         $product->method('getPrice')->willReturn(200.00);
         $product->method('getAttributes')->willReturn($attributeMock);
 
@@ -83,6 +86,7 @@ class ProductMapperTest extends TestCase
 
         // Assertions sur l'objet de base de données qui va recevoir les modifications
         $doctrineProduct->expects($this->once())->method('setName')->with('Updated Name');
+        $doctrineProduct->expects($this->once())->method('setSlug')->with('updated-name');
         $doctrineProduct->expects($this->once())->method('setPrice')->with(200.00);
         $doctrineProduct->expects($this->once())->method('setCategory')->with($doctrineCategory);
         $doctrineProduct->expects($this->once())->method('setAttributes')->with(['size' => 'L']);
@@ -102,6 +106,7 @@ class ProductMapperTest extends TestCase
 
         $doctrineProduct->method('getId')->willReturn('id-1');
         $doctrineProduct->method('getName')->willReturn('Name');
+        $doctrineProduct->method('getSlug')->willReturn('name');
         $doctrineProduct->method('getPrice')->willReturn(10.0);
         $doctrineProduct->method('getCategory')->willReturn($doctrineCategory);
         $doctrineProduct->method('getAttributes')->willReturn(['color' => 'blue']); // Doctrine renvoie un tableau
@@ -116,5 +121,6 @@ class ProductMapperTest extends TestCase
 
         // 3. Assert
         $this->assertInstanceOf(Product::class, $result);
+        $this->assertSame('name', $result->getSlug());
     }
 }

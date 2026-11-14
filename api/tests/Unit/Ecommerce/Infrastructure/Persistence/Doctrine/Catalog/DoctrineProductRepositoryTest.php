@@ -40,6 +40,7 @@ class DoctrineProductRepositoryTest extends TestCase
         $doctrineProduct = new DoctrineProduct(
             'prod-1',
             'Product 1',
+            'product-1',
             100.0,
             $doctrineCategory,
             [
@@ -82,6 +83,7 @@ class DoctrineProductRepositoryTest extends TestCase
         $doctrineProduct = new DoctrineProduct(
             $productId,
             'Product 1',
+            'product-1',
             100.0,
             new DoctrineCategory('cat-1', 'Category 1', 'slug-cat-1'),
             [

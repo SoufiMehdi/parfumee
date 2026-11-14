@@ -54,6 +54,13 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         return array_map([$this->mapper, 'toDomain'], $doctrineProducts);
     }
 
+    public function slugExists(string $slug, ?string $exceptProductId = null): bool
+    {
+        $doctrineProduct = $this->entityManager->getRepository(DoctrineProduct::class)->findOneBy(['slug' => $slug]);
+
+        return null !== $doctrineProduct && $doctrineProduct->getId() !== $exceptProductId;
+    }
+
     public function findByFilter(GetProductsFilterDto $filterDto): array
     {
         $rsm = new \Doctrine\ORM\Query\ResultSetMappingBuilder($this->entityManager);

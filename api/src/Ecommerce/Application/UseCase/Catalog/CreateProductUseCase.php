@@ -8,6 +8,7 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use Symfony\Component\Uid\Uuid;
 
 class CreateProductUseCase
@@ -15,7 +16,8 @@ class CreateProductUseCase
     public function __construct(
         private ProductRepositoryInterface $productRepository,
         private CategoryRepositoryInterface $categoryRepository,
-        private AttributesMapper $attributesMapper
+        private AttributesMapper $attributesMapper,
+        private ProductSlugResolver $slugResolver,
     ) {
     }
 
@@ -31,7 +33,7 @@ class CreateProductUseCase
         $product = new Product(
             Uuid::v4()->toRfc4122(), // Génère un nouvel ID pour le produit
             $dto->name,
-            strtolower(str_replace(' ', '-', $dto->name)), // Génère un slug simple à partir du nom
+            $this->slugResolver->resolve($dto->name),
             $dto->price,
             $category,
             $this->attributesMapper->fromDto($dto)

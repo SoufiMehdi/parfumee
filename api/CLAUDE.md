@@ -37,7 +37,7 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 - `declare(strict_types=1);` dans **tous** les fichiers.
 - **Identifiants :** UUID v4 en `string` (RFC 4122), générés dans le use case.
 - **Montants :** en **centimes (`int`)** pour tout nouveau code (panier, commandes). `Product::price` est encore un `float` : dette à migrer avant la phase 4.
-- **Slugs :** générés avec `SluggerInterface`, jamais avec `str_replace`.
+- **Slugs :** générés par le port `SlugGeneratorInterface` (`SluggerInterface` de Symfony derrière), jamais avec `str_replace`. Pour un produit, passer par `ProductSlugResolver`, qui garantit l'unicité.
 - **Nommage :** suffixe `Dto` (et non `DTO`), messages d'exception en anglais.
 - **Routes :** REST (`GET /api/shop/products`, `POST /api/admin/products`, `PUT /api/admin/products/{id}`…). Les routes actuelles (`/create-product`, `/edit-product/{id}`…) sont à migrer en P1-01.
 
