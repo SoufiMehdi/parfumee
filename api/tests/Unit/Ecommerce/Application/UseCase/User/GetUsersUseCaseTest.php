@@ -23,8 +23,8 @@ class GetUsersUseCaseTest extends TestCase
 
     public function testExecuteReturnsAllUsers(): void
     {
-        $user1 = $this->createMock(User::class);
-        $user2 = $this->createMock(User::class);
+        $user1 = $this->createStub(User::class);
+        $user2 = $this->createStub(User::class);
 
         $this->userRepository
             ->expects($this->once())

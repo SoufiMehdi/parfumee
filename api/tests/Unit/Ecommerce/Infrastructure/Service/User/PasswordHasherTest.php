@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Service\User;
 
 use App\Ecommerce\Infrastructure\Service\User\PasswordHasher;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -40,6 +41,7 @@ class PasswordHasherTest extends TestCase
         $this->assertEquals($hashedPassword, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testHashThrowsExceptionWhenSymfonyHasherFails(): void
     {
         $plainPassword = 'plainPassword123';

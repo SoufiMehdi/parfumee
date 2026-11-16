@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -34,6 +35,7 @@ class DeleteUserUseCaseTest extends TestCase
         $this->useCase->execute($id->toRfc4122());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
         $id = Uuid::v4();

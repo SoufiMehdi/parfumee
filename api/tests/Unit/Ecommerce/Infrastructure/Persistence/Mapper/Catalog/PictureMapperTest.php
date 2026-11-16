@@ -22,8 +22,8 @@ class PictureMapperTest extends TestCase
     public function testToInfrastructureWithProduct(): void
     {
         // 1. Arrange
-        $picture = $this->createMock(Picture::class);
-        $doctrineProduct = $this->createMock(DoctrineProduct::class);
+        $picture = $this->createStub(Picture::class);
+        $doctrineProduct = $this->createStub(DoctrineProduct::class);
 
         $picture->method('getId')->willReturn('img-uuid-123');
         $picture->method('url')->willReturn('https://cdn.com/perfume.jpg');
@@ -44,7 +44,7 @@ class PictureMapperTest extends TestCase
     public function testToInfrastructureWithoutProduct(): void
     {
         // 1. Arrange
-        $picture = $this->createMock(Picture::class);
+        $picture = $this->createStub(Picture::class);
 
         // On teste le comportement si le produit passé est null
         $picture->method('getId')->willReturn('img-uuid-456');
@@ -64,7 +64,7 @@ class PictureMapperTest extends TestCase
     public function testToDomain(): void
     {
         // 1. Arrange
-        $doctrinePicture = $this->createMock(DoctrinePicture::class);
+        $doctrinePicture = $this->createStub(DoctrinePicture::class);
 
         $doctrinePicture->method('getId')->willReturn('img-uuid-789');
         $doctrinePicture->method('getUrl')->willReturn('https://cdn.com/perfume-3.jpg');

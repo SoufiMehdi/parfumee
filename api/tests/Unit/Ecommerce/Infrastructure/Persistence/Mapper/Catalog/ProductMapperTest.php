@@ -15,6 +15,7 @@ use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\CategoryMapper;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\PictureMapper;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\ProductMapper;
 use Doctrine\Common\Collections\ArrayCollection;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -38,12 +39,13 @@ class ProductMapperTest extends TestCase
         );
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testToInfrastructure(): void
     {
         // 1. Arrange
-        $product = $this->createMock(Product::class);
-        $doctrineCategory = $this->createMock(DoctrineCategory::class);
-        $attributeMock = $this->createMock(Attribute::class); // Création d'un mock d'Attribute pour respecter le type de retour
+        $product = $this->createStub(Product::class);
+        $doctrineCategory = $this->createStub(DoctrineCategory::class);
+        $attributeMock = $this->createStub(Attribute::class); // Création d'un mock d'Attribute pour respecter le type de retour
 
         $product->method('getId')->willReturn('id-1');
         $product->method('getName')->willReturn('Product Name');
@@ -68,13 +70,14 @@ class ProductMapperTest extends TestCase
         $this->assertSame($doctrineCategory, $result->getCategory());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testMapDomainToEntity(): void
     {
         // 1. Arrange
-        $product = $this->createMock(Product::class);
+        $product = $this->createStub(Product::class);
         $doctrineProduct = $this->createMock(DoctrineProduct::class);
-        $doctrineCategory = $this->createMock(DoctrineCategory::class);
-        $attributeMock = $this->createMock(Attribute::class);
+        $doctrineCategory = $this->createStub(DoctrineCategory::class);
+        $attributeMock = $this->createStub(Attribute::class);
 
         $product->method('getName')->willReturn('Updated Name');
         $product->method('getSlug')->willReturn('updated-name');
@@ -100,11 +103,11 @@ class ProductMapperTest extends TestCase
     public function testToDomain(): void
     {
         // 1. Arrange
-        $doctrineProduct = $this->createMock(DoctrineProduct::class);
-        $doctrineCategory = $this->createMock(DoctrineCategory::class);
-        $doctrinePicture = $this->createMock(DoctrinePicture::class);
-        $category = $this->createMock(Category::class);
-        $attribute = $this->createMock(Attribute::class);
+        $doctrineProduct = $this->createStub(DoctrineProduct::class);
+        $doctrineCategory = $this->createStub(DoctrineCategory::class);
+        $doctrinePicture = $this->createStub(DoctrinePicture::class);
+        $category = $this->createStub(Category::class);
+        $attribute = $this->createStub(Attribute::class);
 
         $doctrineProduct->method('getId')->willReturn('id-1');
         $doctrineProduct->method('getName')->willReturn('Name');

@@ -45,7 +45,7 @@ class AttributesMapperTest extends TestCase
 
     public function testToDtoMapsCorrectly(): void
     {
-        $attribute = $this->createMock(Attribute::class);
+        $attribute = $this->createStub(Attribute::class);
         $attribute->method('getWeight')->willReturn(1.5);
         $attribute->method('getFragrance')->willReturn('Floral');
         $attribute->method('getSize')->willReturn('Large');

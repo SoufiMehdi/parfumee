@@ -9,6 +9,7 @@ use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -46,6 +47,7 @@ class GetProductsUseCaseTest extends TestCase
         $this->assertInstanceOf(Product::class, $result[0]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteReturnsEmptyArrayWhenNoProducts(): void
     {
         // 1. Arrange

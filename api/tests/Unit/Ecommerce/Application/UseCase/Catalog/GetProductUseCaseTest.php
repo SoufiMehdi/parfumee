@@ -9,6 +9,7 @@ use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -27,7 +28,7 @@ class GetProductUseCaseTest extends TestCase
     {
         $productId = 'uuid-123';
         $category = new Category('cat-1', 'Parfums', 'parfums');
-        $expectedProduct = $this->createMock(Product::class);
+        $expectedProduct = $this->createStub(Product::class);
 
         $this->productRepository
             ->expects($this->once())
@@ -40,6 +41,7 @@ class GetProductUseCaseTest extends TestCase
         $this->assertSame($expectedProduct, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsWhenProductNotFound(): void
     {
         $this->productRepository

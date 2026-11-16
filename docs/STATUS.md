@@ -16,7 +16,8 @@
 - **Fait :** `P0-08` (secrets, S4), mergée dans `main` (PR #14).
 - **Fait :** `P0-09` (outillage qualité), mergée dans `main` (PR #15).
 - **Fait :** `P0-11` (CI GitHub Actions), mergée dans `main` (PR #16).
-- **En relecture :** `P0-12` (README d'installation), sur la branche `docs/P0-12-readme`.
+- **Fait :** `P0-12` (README d'installation), mergée dans `main` (PR #17).
+- **En relecture :** le nettoyage de la sortie des tests (partie de `P0-10`), sur la branche `chore/P0-10-clean-test-output`.
 - **Prochaine tâche conseillée :** le reste de `P0-10`, dernière tâche de la phase 0.
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
@@ -64,6 +65,13 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — Sortie des tests nettoyée, partie de P0-10 (branche `chore/P0-10-clean-test-output`, en relecture)
+- `composer check` se terminait par « OK, but there were issues! » avec 64 avertissements PHPUnit, et affichait une ligne `[error] Uncaught exception` au milieu des tests. Rien n'échouait, mais la sortie ressemblait à des erreurs.
+- Les mocks sans attente sont devenus des stubs (`createStub`). Quatre vérifications d'arguments qui ne s'appuyaient sur aucune attente sont devenues de vraies attentes (`expects($this->once())`).
+- 27 tests gardent des mocks créés dans `setUp()` dont ils n'attendent rien : ils portent `#[AllowMockObjectsWithoutExpectations]`.
+- En environnement de test, le logger est un `NullLogger` : les erreurs volontaires des tests ne s'affichent plus.
+- Vérification : `composer check` vert, PHPUnit affiche « OK (267 tests, 1254 assertions) ».
 
 ### 2026-11-16 — P0-12 : README d'installation (branche `docs/P0-12-readme`, en relecture)
 - Nouveau `README.md` à la racine : prérequis, installation de l'API en 7 étapes, création d'un compte administrateur, routes actuelles, commandes de vérification, fichiers d'environnement, problèmes fréquents.

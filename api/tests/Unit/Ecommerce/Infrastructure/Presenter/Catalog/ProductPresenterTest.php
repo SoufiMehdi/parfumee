@@ -22,7 +22,7 @@ class ProductPresenterTest extends TestCase
 
     public function testPresentReturnsFormattedArray(): void
     {
-        $categoryMock = $this->createMock(Category::class);
+        $categoryMock = $this->createStub(Category::class);
         $categoryMock->method('getId')->willReturn('cat-123');
         $categoryMock->method('getName')->willReturn('Electronics');
 
@@ -37,7 +37,7 @@ class ProductPresenterTest extends TestCase
             ]
         );
 
-        $productMock = $this->createMock(Product::class);
+        $productMock = $this->createStub(Product::class);
         $productMock->method('getId')->willReturn('prod-123');
         $productMock->method('getName')->willReturn('Laptop');
         $productMock->method('getSlug')->willReturn('laptop');
@@ -69,9 +69,9 @@ class ProductPresenterTest extends TestCase
 
     public function testPresentCollectionReturnsArrayOfFormattedProducts(): void
     {
-        $productMock = $this->createMock(Product::class);
-        $categoryMock = $this->createMock(Category::class);
-        $attributesMock = $this->createMock(ArrayCollection::class);
+        $productMock = $this->createStub(Product::class);
+        $categoryMock = $this->createStub(Category::class);
+        $attributesMock = $this->createStub(ArrayCollection::class);
 
         $productMock->method('getId')->willReturn('p1');
         $productMock->method('getName')->willReturn('Item');
@@ -99,7 +99,7 @@ class ProductPresenterTest extends TestCase
 
     public function testPresentThrowsExceptionWhenCategoryIsNull(): void
     {
-        $productMock = $this->createMock(Product::class);
+        $productMock = $this->createStub(Product::class);
         $productMock->method('getCategory')->willThrowException(new \Error('Call to a member function getId() on null'));
 
         $this->expectException(\Error::class);

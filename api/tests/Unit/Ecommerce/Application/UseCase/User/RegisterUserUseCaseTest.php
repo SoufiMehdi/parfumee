@@ -12,6 +12,7 @@ use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordHasherInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -72,7 +73,7 @@ class RegisterUserUseCaseTest extends TestCase
             lastName: 'Doe'
         );
 
-        $existingUser = $this->createMock(User::class);
+        $existingUser = $this->createStub(User::class);
 
         $this->userRepository
             ->method('findByEmail')
@@ -88,6 +89,7 @@ class RegisterUserUseCaseTest extends TestCase
         $this->useCase->execute($dto);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenHasherFails(): void
     {
         $dto = new RegisterUserRequestDto(
@@ -113,6 +115,7 @@ class RegisterUserUseCaseTest extends TestCase
         $this->useCase->execute($dto);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenRepositoryFails(): void
     {
         $dto = new RegisterUserRequestDto(
@@ -138,6 +141,7 @@ class RegisterUserUseCaseTest extends TestCase
         $this->useCase->execute($dto);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteKeepsThePhoneNumberAndTheAddress(): void
     {
         $dto = new RegisterUserRequestDto(
@@ -173,6 +177,7 @@ class RegisterUserUseCaseTest extends TestCase
         $this->assertTrue($address->isDefault());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteWithoutPhoneNorAddressLeavesThemEmpty(): void
     {
         $dto = new RegisterUserRequestDto('test@example.com', 'plainPassword', 'John', 'Doe');

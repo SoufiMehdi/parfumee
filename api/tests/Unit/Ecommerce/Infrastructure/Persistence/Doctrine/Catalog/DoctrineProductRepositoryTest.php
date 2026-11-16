@@ -32,8 +32,8 @@ class DoctrineProductRepositoryTest extends TestCase
 
     public function testSaveNewProduct(): void
     {
-        $product = $this->createMock(Product::class);
-        $category = $this->createMock(Category::class);
+        $product = $this->createStub(Product::class);
+        $category = $this->createStub(Category::class);
         $doctrineCategory = new DoctrineCategory(
             'cat-1',
             'Category 1',
@@ -93,7 +93,7 @@ class DoctrineProductRepositoryTest extends TestCase
                 'size' => 'M',
             ]
         );
-        $product = $this->createMock(Product::class);
+        $product = $this->createStub(Product::class);
         $repository = $this->createMock(EntityRepository::class);
 
         $this->entityManager->method('getRepository')
@@ -117,10 +117,10 @@ class DoctrineProductRepositoryTest extends TestCase
 
     public function testFindAllReturnsCollectionOfProducts(): void
     {
-        $doctrineProduct1 = $this->createMock(DoctrineProduct::class);
-        $doctrineProduct2 = $this->createMock(DoctrineProduct::class);
-        $product1 = $this->createMock(Product::class);
-        $product2 = $this->createMock(Product::class);
+        $doctrineProduct1 = $this->createStub(DoctrineProduct::class);
+        $doctrineProduct2 = $this->createStub(DoctrineProduct::class);
+        $product1 = $this->createStub(Product::class);
+        $product2 = $this->createStub(Product::class);
 
         $repository = $this->createMock(EntityRepository::class);
 
@@ -155,8 +155,8 @@ class DoctrineProductRepositoryTest extends TestCase
             size: 'M'
         );
 
-        $doctrineProduct = $this->createMock(DoctrineProduct::class);
-        $product = $this->createMock(Product::class);
+        $doctrineProduct = $this->createStub(DoctrineProduct::class);
+        $product = $this->createStub(Product::class);
         $query = $this->createMock(NativeQuery::class);
 
         $this->entityManager->expects($this->once())

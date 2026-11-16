@@ -6,12 +6,12 @@ namespace App\Tests\Unit\Ecommerce\Domain\Model\User;
 
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\ValueObject\User\Email;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 
 class UserTest extends TestCase
 {
-    private MockObject&Email $emailMock;
+    private Stub&Email $emailMock;
     private string $id = 'user-123';
     private string $passwordHash = 'hashed_password';
     private string $firstName = 'John';
@@ -19,7 +19,7 @@ class UserTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->emailMock = $this->createMock(Email::class);
+        $this->emailMock = $this->createStub(Email::class);
     }
 
     public function testItShouldCreateUserSuccessfully(): void

@@ -12,6 +12,7 @@ use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\PictureMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -30,14 +31,14 @@ class DoctrinePictureRepositoryTest extends TestCase
 
     public function testSavePersistsAndFlushesPictureWithProduct(): void
     {
-        $product = $this->createMock(Product::class);
+        $product = $this->createStub(Product::class);
         $product->method('getId')->willReturn('prod-123');
 
-        $picture = $this->createMock(Picture::class);
+        $picture = $this->createStub(Picture::class);
         $picture->method('getProduct')->willReturn($product);
 
-        $productEntity = $this->createMock(DoctrineProduct::class);
-        $pictureEntity = $this->createMock(DoctrinePicture::class);
+        $productEntity = $this->createStub(DoctrineProduct::class);
+        $pictureEntity = $this->createStub(DoctrinePicture::class);
 
         $productRepo = $this->createMock(EntityRepository::class);
         $productRepo->expects($this->once())->method('find')->with('prod-123')->willReturn($productEntity);
@@ -57,10 +58,10 @@ class DoctrinePictureRepositoryTest extends TestCase
 
     public function testSavePersistsAndFlushesPictureWithoutProduct(): void
     {
-        $picture = $this->createMock(Picture::class);
+        $picture = $this->createStub(Picture::class);
         $picture->method('getProduct')->willReturn(null);
 
-        $pictureEntity = $this->createMock(DoctrinePicture::class);
+        $pictureEntity = $this->createStub(DoctrinePicture::class);
 
         $this->entityManager->expects($this->never())->method('getRepository');
 
@@ -123,9 +124,10 @@ class DoctrinePictureRepositoryTest extends TestCase
         $this->assertSame([$picture], $this->repository->findAll());
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSaveThrowsExceptionOnDatabaseError(): void
     {
-        $picture = $this->createMock(Picture::class);
+        $picture = $this->createStub(Picture::class);
         $this->mapper->method('toInfrastructure')->willReturn(new DoctrinePicture(
             'pic-123',
             'http://example.com/pic.jpg',
