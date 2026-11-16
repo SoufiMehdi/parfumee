@@ -17,7 +17,7 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
    - Un repository renvoie **toujours des objets du domaine**, jamais des entités Doctrine.
 3. **Les règles métier sont dans le modèle.** Exemple : le prix est validé dans `Product::setPrice()`, et toute modification du prix passe par cette méthode.
 4. **Un use case = une classe `execute()`**, nommée `<Verbe><Objet>UseCase`.
-5. **Les contrôleurs sont fins :** ils transforment la requête en DTO, appellent le use case et renvoient le presenter. Pas de logique, pas de `try/catch` : les erreurs sont gérées par `ExceptionListener`.
+5. **Les contrôleurs sont fins :** ils transforment la requête en DTO, appellent le use case et renvoient `$this->json(...)` de la vue produite par le presenter. Pas de logique, pas de `try/catch` : les erreurs sont gérées par `ExceptionListener`.
 6. **Exceptions métier :**
    - une classe par cas (`ProductNotFoundException`…) ;
    - chacune implémente **une** des interfaces de `Domain/Exception/`, qui dit de quel type d'échec il s'agit : `NotFoundExceptionInterface` → 404, `ConflictExceptionInterface` → 409, `ValidationExceptionInterface` → 422, `AuthenticationExceptionInterface` → 401 ;
@@ -31,6 +31,16 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
    - `#[MapQueryString]` répond 404 par défaut en cas d'erreur : toujours préciser `validationFailedStatusCode: 422`.
    - `Assert\NotBlank` accepte une chaîne d'espaces : écrire `NotBlank(normalizer: 'trim')`.
    - Une erreur de validation sort en `{"error": "Validation failed.", "violations": [{"field": "first_name", "message": "..."}]}`.
+
+## Contrat OpenAPI
+
+Le contrat est généré à partir du code ; les fronts en tirent leur client. Il doit donc rester exact.
+
+- **Réponses :** un presenter renvoie une **vue**, un objet `final readonly` de `Infrastructure/Presenter/<Module>/View/` aux propriétés publiques typées. Jamais un tableau : c'est la vue qui produit le schéma de réponse. Une liste se déclare `/** @var list<XView> */`.
+- **`snake_case` partout :** les propriétés sont en `camelCase` dans le code, le sérialiseur les convertit. Renvoyer avec `$this->json()`, jamais `new JsonResponse()` d'un objet.
+- **Chaque action documente :** un résumé (`#[OA\Get(summary: ...)]`), sa réponse de succès avec `new Model(type: XView::class)`, et ses erreurs par référence (`ref: '#/components/responses/NotFound'`). Le tag et les 401/403 communs se posent sur la classe.
+- **Route publique :** `#[Security(name: null)]`, en plus de la règle dans `security.yaml`. Un test vérifie que les deux disent la même chose.
+- **Après tout changement** de route, de DTO ou de vue : `composer openapi:dump`, et commiter `openapi.json`.
 
 ## Conventions
 

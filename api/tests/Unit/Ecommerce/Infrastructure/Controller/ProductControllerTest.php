@@ -12,9 +12,14 @@ use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
+use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\AttributesView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\CategorySummaryView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\PictureView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductView;
 use App\Tests\Support\AuthenticatesRequests;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -63,7 +68,15 @@ class ProductControllerTest extends WebTestCase
         $productMock = $this->createStub(Product::class);
 
         $useCaseMock->expects($this->once())->method('execute')->with('11111111-1111-4111-8111-111111111111')->willReturn($productMock);
-        $presenterMock->expects($this->once())->method('present')->with($productMock)->willReturn(['id' => '11111111-1111-4111-8111-111111111111', 'name' => 'Parfum']);
+        $presenterMock->expects($this->once())->method('present')->with($productMock)->willReturn(new ProductView(
+            '11111111-1111-4111-8111-111111111111',
+            'Parfum',
+            'parfum',
+            12.5,
+            new CategorySummaryView('22222222-2222-4222-8222-222222222222', 'Bougies'),
+            new AttributesView(180.0, null, null, null, null),
+            [new PictureView('img-1', 'products/a.jpg', null, 2)],
+        ));
 
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
         static::getContainer()->set(ProductPresenter::class, $presenterMock);
@@ -72,7 +85,17 @@ class ProductControllerTest extends WebTestCase
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
-        $this->assertStringContainsString('11111111-1111-4111-8111-111111111111', $response->getContent());
+        // The exact body: keys are snake_case, and a null stays in the response.
+        $this->assertSame([
+            'id' => '11111111-1111-4111-8111-111111111111',
+            'name' => 'Parfum',
+            'slug' => 'parfum',
+            'price' => 12.5,
+            'category' => ['id' => '22222222-2222-4222-8222-222222222222', 'name' => 'Bougies'],
+            // 180, not 180.0: JSON has a single number type.
+            'attributes' => ['weight' => 180, 'fragrance' => null, 'size' => null, 'description' => null, 'presentation' => null],
+            'pictures' => [['id' => 'img-1', 'url' => 'products/a.jpg', 'alt' => null, 'sort_order' => 2]],
+        ], json_decode($response->getContent(), true));
     }
 
     public function testGetProductByIdNotFound(): void
@@ -116,19 +139,24 @@ class ProductControllerTest extends WebTestCase
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_CREATED, $response->getStatusCode());
-        $this->assertStringContainsString('new-uuid', $response->getContent());
+        $this->assertSame(['id' => 'new-uuid'], json_decode($response->getContent(), true));
     }
 
     public function testUpdateProduct(): void
     {
         $useCaseMock = $this->createMock(UpdateProductUseCase::class);
-        $productMock = $this->createStub(Product::class);
-        $productMock->method('getId')->willReturn('11111111-1111-4111-8111-111111111111');
+        $product = new Product(
+            '11111111-1111-4111-8111-111111111111',
+            'Nouveau Nom',
+            'nouveau-nom',
+            95.0,
+            new Category('22222222-2222-4222-8222-222222222222', 'Bougies', 'bougies'),
+        );
 
         $useCaseMock->expects($this->once())
             ->method('execute')
             ->with($this->isInstanceOf(UpdateProductDto::class), '11111111-1111-4111-8111-111111111111')
-            ->willReturn($productMock);
+            ->willReturn($product);
 
         static::getContainer()->set(UpdateProductUseCase::class, $useCaseMock);
 
@@ -140,8 +168,11 @@ class ProductControllerTest extends WebTestCase
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
-        $this->assertSame('Product updated successfully', $data['result']);
-        $this->assertSame('11111111-1111-4111-8111-111111111111', $data['data']);
+        // The updated product is returned, as an account update returns the account.
+        $this->assertSame('11111111-1111-4111-8111-111111111111', $data['id']);
+        $this->assertSame('Nouveau Nom', $data['name']);
+        $this->assertSame('nouveau-nom', $data['slug']);
+        $this->assertEquals(95.0, $data['price']);
     }
 
     public function testUploadPictureSuccess(): void
@@ -175,8 +206,7 @@ class ProductControllerTest extends WebTestCase
         $this->assertSame(JsonResponse::HTTP_CREATED, $response->getStatusCode());
 
         $data = json_decode($response->getContent(), true);
-        $this->assertSame('Image uploaded successfully', $data['result']);
-        $this->assertSame('img-999', $data['data']);
+        $this->assertSame(['id' => 'img-999'], $data);
     }
 
     public function testUploadPictureBadRequest(): void

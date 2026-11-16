@@ -49,7 +49,7 @@ final class TokenRefreshTest extends DatabaseTestCase
         self::assertSame(200, $response->getStatusCode(), (string) $response->getContent());
         $account = $this->decode($response);
         self::assertSame(self::EMAIL, $account['email']);
-        self::assertSame('Ada', $account['firstName']);
+        self::assertSame('Ada', $account['first_name']);
         self::assertArrayNotHasKey('password', $account);
     }
 

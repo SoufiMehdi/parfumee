@@ -1,0 +1,112 @@
+# The OpenAPI contract of the API, generated from the controllers and their DTOs.
+#   Swagger UI : GET /api/v1/doc
+#   JSON       : GET /api/v1/doc.json
+# The fronts generate their TypeScript client from the JSON: it is never written by hand.
+nelmio_api_doc:
+    html_config:
+        # Swagger UI is served by the API itself (public/bundles), not from a third-party CDN.
+        assets_mode: bundle
+    documentation:
+        info:
+            title: Parfumée API
+            description: API of the Parfumée shop. `/api/v1/shop` is used by the shop, `/api/v1/admin` by the back-office.
+            version: 1.0.0
+        # Every operation needs a token unless it says otherwise (#[Security(name: null)]).
+        security:
+            - Bearer: []
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+                    description: The `token` returned by a sign-in or a token refresh. It lasts 15 minutes.
+            schemas:
+                # Errors are built by ExceptionListener, not from a class: they are described here,
+                # and OpenApiContractTest checks that real error responses match.
+                Error:
+                    type: object
+                    required: [error]
+                    properties:
+                        error:
+                            type: string
+                            description: A message written for the client.
+                ValidationError:
+                    type: object
+                    required: [error, violations]
+                    properties:
+                        error:
+                            type: string
+                            example: Validation failed.
+                        violations:
+                            type: array
+                            items:
+                                type: object
+                                required: [field, message]
+                                properties:
+                                    field:
+                                        type: string
+                                        description: Name of the faulty field, as the client sent it.
+                                        example: first_name
+                                    message:
+                                        type: string
+                RefreshTokenRequest:
+                    type: object
+                    required: [refresh_token]
+                    properties:
+                        refresh_token:
+                            type: string
+            responses:
+                BadRequest:
+                    description: The body is not valid JSON, or is not sent as `application/json`
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/Error' }
+                Unauthorized:
+                    description: The token is missing, invalid or expired
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/Error' }
+                Forbidden:
+                    description: The account does not have the required role
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/Error' }
+                NotFound:
+                    description: The resource does not exist
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/Error' }
+                ValidationFailed:
+                    description: A field is missing or invalid
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/ValidationError' }
+        paths:
+            # Handled by the refresh_jwt authenticator: there is no controller to read it from.
+            /api/v1/token/refresh:
+                post:
+                    tags: ['Sessions']
+                    summary: Exchange a refresh token for a new session
+                    description: A refresh token works once. The response carries a new one, which replaces it.
+                    security: []
+                    requestBody:
+                        required: true
+                        content:
+                            application/json:
+                                schema: { $ref: '#/components/schemas/RefreshTokenRequest' }
+                    responses:
+                        '200':
+                            description: The new session
+                            content:
+                                application/json:
+                                    schema: { $ref: '#/components/schemas/SessionView' }
+                        '401':
+                            description: The refresh token is missing, unknown, expired or already used
+                            content:
+                                application/json:
+                                    schema: { $ref: '#/components/schemas/Error' }
+    areas:
+        default:
+            path_patterns:
+                - ^/api/v1/(shop|admin|token)/

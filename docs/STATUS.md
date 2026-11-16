@@ -22,8 +22,9 @@
 - **Phase en cours : phase 1** — socle API pour deux fronts.
 - **Fait :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), mergée dans `main` (PR #23, qui remplace la #22).
 - **Fait :** `P1-06` (rôles et commande de création d'admin), mergée dans `main` (PR #24).
-- **En relecture :** `P1-05` (`/me` et refresh token), sur la branche `feat/P1-05-me-refresh-token`.
-- **Prochaine tâche conseillée :** `P1-03` (OpenAPI), puis `P1-02` (CORS) et `P1-04` (format de liste). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **Fait :** `P1-05` (`/me` et refresh token), mergée dans `main` (PR #25).
+- **En relecture :** `P1-03` (contrat OpenAPI et Swagger UI), sur la branche `feat/P1-03-openapi`.
+- **Prochaine tâche conseillée :** `P1-04` (format de liste : pagination, tri), puis `P1-02` (CORS). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -44,7 +45,10 @@
 - Sessions : le JWT vit 15 minutes, le refresh token 30 jours et ne sert qu'une fois (`POST /api/v1/token/refresh`). Un front doit donc remplacer son refresh token à chaque renouvellement, et ne pas lancer deux renouvellements en parallèle : le second serait refusé.
 - Pas de déconnexion côté serveur : aucune route ne révoque un refresh token, et un JWT émis reste valable jusqu'à son expiration, même après suppression du rôle. Seule la suppression du compte coupe la session. Une route de déconnexion reste à écrire, au plus tard avec les fronts (`P1-09`, `P3-07`).
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
-- Les erreurs de `/api/v1/token/refresh` sortent au format du bundle (`{"code": 401, "message": ...}`), comme les 401 du pare-feu JWT : à harmoniser avec `P1-03`.
+- Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
+- Contrat OpenAPI : la route `/api/v1/token/refresh` n'a pas de contrôleur (elle est traitée par le pare-feu) et les schémas d'erreur ne viennent pas d'une classe. Les deux sont décrits à la main dans `config/packages/nelmio_api_doc.yaml` ; `OpenApiContractTest` vérifie que les vraies réponses d'erreur y correspondent.
+- Dans le contrat, un champ de réponse qui peut être `null` (par exemple `phone_number`) n'est pas marqué « requis », alors qu'il est toujours présent dans la réponse. Le client TypeScript généré le verra donc comme optionnel.
+- La documentation (`/api/v1/doc` et `/api/v1/doc.json`) est publique, y compris en production : elle décrit l'API sans rien ouvrir. À restreindre dans `security.yaml` si ce n'est pas souhaité.
 - Le bundle de refresh token n'a pas de recipe Flex officielle : il est enregistré à la main dans `config/bundles.php` et configuré dans `config/packages/gesdinet_jwt_refresh_token.yaml`.
 - Un compte du back-office ne se crée que par la commande `php bin/console app:user:create-admin` (options `--editor` et `--promote`). Aucune route ne donne de rôle. Les rôles sont relus en base à chaque requête : une promotion prend effet sans se reconnecter.
 - Rôles : `ROLE_ADMIN` inclut `ROLE_EDITOR`, qui inclut `ROLE_USER` (`role_hierarchy`). L'éditeur n'a accès qu'à `/api/v1/admin/products` ; toute nouvelle route du back-office est réservée aux administrateurs tant qu'on ne l'ouvre pas aux éditeurs dans `security.yaml`.
@@ -60,7 +64,7 @@
 - Attributs produit : les clés inconnues (par exemple `wax`) sont toujours ignorées sans erreur. Seules `weight`, `fragrance`, `size`, `description` et `presentation` sont conservées et validées.
 - Les fichiers `tests/http/` ne sont pas versionnés : s'ils envoient encore `"weight": "180g"`, la réponse est maintenant un 422. Le poids doit être un nombre.
 - Adresse à l'inscription : elle est enregistrée comme adresse par défaut du compte. Aucune route ne permet encore de la modifier ou d'en ajouter (`P3-01`).
-- Les 401 du pare-feu JWT (token absent, invalide ou expiré) sont produits par le bundle lexik au format `{"code": 401, "message": "..."}`, pas en `{"error": "..."}`. À harmoniser au plus tard avec le contrat OpenAPI (`P1-03`).
+- Toutes les erreurs sortent en `{"error": "..."}`, y compris les 401 du pare-feu JWT (`JwtFailureListener`) et du renouvellement de jeton (`RefreshTokenFailureHandler`).
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
 - Collection Bruno (`api/bruno/`) : à mettre à jour quand une route change La lancer avec `bru run --env local -r` depuis `api/bruno`, l'API démarrée et le compte `admin@example.test` promu administrateur.
@@ -82,6 +86,17 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P1-03 : contrat OpenAPI et Swagger UI (branche `feat/P1-03-openapi`, en relecture)
+- `nelmio/api-doc-bundle` génère le contrat des 19 opérations : Swagger UI sur `/api/v1/doc`, JSON sur `/api/v1/doc.json`, copie versionnée dans `api/openapi.json` (`composer openapi:dump`).
+- Les réponses sont maintenant des objets typés, les « vues » (`Presenter/*/View/`), que les presenters renvoient. Le contrat est généré à partir d'elles : la documentation ne peut pas s'écarter de la réponse.
+- Changements du contrat, faits avant que les fronts ne le consomment :
+  - les réponses sont en `snake_case` comme les requêtes (`first_name`, `phone_number`, `postal_code`, `is_default`, `sort_order`) ;
+  - créer un produit ou envoyer une image répond `{"id": "..."}` (auparavant un texte nu, ou `{"result", "data"}`) ;
+  - modifier un produit renvoie le produit, comme modifier un compte renvoie le compte ;
+  - les 401 du pare-feu JWT et du renouvellement de jeton sortent en `{"error": "..."}`.
+- `OpenApiContractTest` (12 tests) : toute route est documentée, une opération est dite publique exactement quand elle l'est, toutes les références se résolvent, tout est en `snake_case`, les vraies erreurs correspondent aux schémas, le fichier versionné est à jour.
+- Vérifications : `composer check` vert ; Swagger UI et ses scripts servis en local, sans CDN ; collection Bruno, 20 requêtes sur 20.
 
 ### 2026-11-16 — P1-05 : `/me` et refresh token (branche `feat/P1-05-me-refresh-token`, en relecture)
 - `GET`, `PUT` et `DELETE /api/v1/shop/me` remplacent `/api/v1/shop/users/{id}` : le compte est toujours celui du jeton, le client n'a plus à connaître son identifiant. `UserAccountVoter`, devenu inutile, est supprimé.

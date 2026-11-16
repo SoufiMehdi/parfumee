@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Presenter\User;
 
 use App\Ecommerce\Domain\Model\User\Address;
+use App\Ecommerce\Domain\Model\User\Role;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
 use App\Ecommerce\Infrastructure\Presenter\User\UserPresenter;
+use App\Ecommerce\Infrastructure\Presenter\User\View\AddressView;
+use App\Ecommerce\Infrastructure\Presenter\User\View\UserView;
 use PHPUnit\Framework\TestCase;
 
-class UserPresenterTest extends TestCase
+final class UserPresenterTest extends TestCase
 {
     private UserPresenter $presenter;
 
@@ -20,99 +23,62 @@ class UserPresenterTest extends TestCase
         $this->presenter = new UserPresenter();
     }
 
-    public function testPresentReturnsFormattedUser(): void
+    public function testPresentCopiesEveryFieldOfTheUser(): void
     {
-        $email = new Email('john@example.com');
-        $phone = new PhoneNumber('+33612345678');
-
         $user = new User(
-            'test-uuid-123',
-            $email,
+            'user-id',
+            new Email('ada@example.test'),
             'hashed-password',
-            'John',
-            'Doe',
-            $phone,
-            ['ROLE_USER']
+            'Ada',
+            'Lovelace',
+            new PhoneNumber('+33612345678'),
+            [Role::USER, Role::ADMIN],
+            [new Address('address-id', Address::TYPE_BILLING, '1 rue des Bougies', 'Lyon', '69001', 'FR', true)],
         );
 
-        $result = $this->presenter->present($user);
+        $view = $this->presenter->present($user);
 
-        $this->assertSame('test-uuid-123', $result['id']);
-        $this->assertSame('john@example.com', $result['email']);
-        $this->assertSame('John', $result['firstName']);
-        $this->assertSame('Doe', $result['lastName']);
-        $this->assertSame('+33612345678', $result['phoneNumber']);
-        $this->assertSame(['ROLE_USER'], $result['roles']);
-        $this->assertIsArray($result['addresses']);
+        self::assertEquals(new UserView(
+            'user-id',
+            'ada@example.test',
+            'Ada',
+            'Lovelace',
+            '+33612345678',
+            [Role::USER, Role::ADMIN],
+            [new AddressView('address-id', Address::TYPE_BILLING, '1 rue des Bougies', 'Lyon', '69001', 'FR', true)],
+        ), $view);
     }
 
-    public function testPresentHandlesNullPhoneNumber(): void
+    public function testTheViewHasNoPlaceForThePassword(): void
     {
-        $email = new Email('jane@example.com');
+        $user = new User('user-id', new Email('ada@example.test'), 'hashed-password', 'Ada', 'Lovelace');
 
-        $user = new User(
-            'test-uuid-456',
-            $email,
-            'hashed-password',
-            'Jane',
-            'Doe',
-            null,
-            ['ROLE_USER']
-        );
+        $view = $this->presenter->present($user);
 
-        $result = $this->presenter->present($user);
-
-        $this->assertNull($result['phoneNumber']);
+        self::assertNotContains('hashed-password', get_object_vars($view));
     }
 
-    public function testPresentCollectionReturnsArrayOfFormattedUsers(): void
+    public function testAUserWithoutPhoneNorAddressIsPresentedWithNone(): void
     {
-        $email = new Email('user@example.com');
-        $user = new User(
-            'test-uuid-789',
-            $email,
-            'hashed-password',
-            'Test',
-            'User',
-            null,
-            ['ROLE_USER']
-        );
+        $user = new User('user-id', new Email('ada@example.test'), 'hashed-password', 'Ada', 'Lovelace');
 
-        $result = $this->presenter->presentCollection([$user]);
+        $view = $this->presenter->present($user);
 
-        $this->assertCount(1, $result);
-        $this->assertSame('Test', $result[0]['firstName']);
+        self::assertNull($view->phoneNumber);
+        self::assertSame([], $view->addresses);
+        self::assertSame([Role::USER], $view->roles);
     }
 
-    public function testPresentCollectionWithAddresses(): void
+    public function testPresentCollectionKeepsTheOrderAndReturnsAList(): void
     {
-        $email = new Email('user@example.com');
-        $address = new Address(
-            'addr-uuid-1',
-            'shipping',
-            '123 Main St',
-            'Paris',
-            '75001',
-            'France',
-            true
-        );
+        $users = [
+            3 => new User('first', new Email('a@example.test'), 'hash', 'A', 'A'),
+            7 => new User('second', new Email('b@example.test'), 'hash', 'B', 'B'),
+        ];
 
-        $user = new User(
-            'test-uuid-999',
-            $email,
-            'hashed-password',
-            'User',
-            'WithAddress',
-            null,
-            ['ROLE_USER'],
-            [$address]
-        );
+        $views = $this->presenter->presentCollection($users);
 
-        $result = $this->presenter->present($user);
-
-        $this->assertCount(1, $result['addresses']);
-        $this->assertSame('shipping', $result['addresses'][0]['type']);
-        $this->assertSame('123 Main St', $result['addresses'][0]['street']);
-        $this->assertTrue($result['addresses'][0]['isDefault']);
+        self::assertSame([0, 1], array_keys($views));
+        self::assertSame(['first', 'second'], [$views[0]->id, $views[1]->id]);
     }
 }
