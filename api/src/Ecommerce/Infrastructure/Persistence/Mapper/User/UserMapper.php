@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Mapper\User;
 
-use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Model\User\Address;
+use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
-use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
 use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineAddress;
+use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
 
 class UserMapper
 {
@@ -60,7 +62,7 @@ class UserMapper
 
     public function toDomain(DoctrineUser $entity): User
     {
-        $phoneNumber = $entity->getPhoneNumber() !== null
+        $phoneNumber = null !== $entity->getPhoneNumber()
             ? new PhoneNumber($entity->getPhoneNumber())
             : null;
 

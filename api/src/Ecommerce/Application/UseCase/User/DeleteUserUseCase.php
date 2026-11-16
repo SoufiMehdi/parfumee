@@ -10,7 +10,7 @@ use Symfony\Component\Uid\Uuid;
 readonly class DeleteUserUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
     ) {
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
@@ -7,7 +9,7 @@ use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 class GetProductsUseCase
 {
     public function __construct(
-        private ProductRepositoryInterface $productRepository
+        private ProductRepositoryInterface $productRepository,
     ) {
     }
 

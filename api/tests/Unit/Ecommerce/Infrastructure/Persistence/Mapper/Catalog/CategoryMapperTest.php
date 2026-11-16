@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Mapper\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Category;

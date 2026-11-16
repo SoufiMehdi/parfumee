@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Ecommerce\Domain\Model\Catalog;
+declare(strict_types=1);
 
-use App\Ecommerce\Domain\Model\Catalog\Picture;
+namespace App\Ecommerce\Domain\Model\Catalog;
 
 class Category
 {
@@ -19,13 +19,26 @@ class Category
     }
 
     // Getters
-    public function getId(): string { return $this->id; }
-    public function getName(): string { return $this->name; }
-    public function getSlug(): string { return $this->slug; }
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
+
     public function addPicture(Picture $picture): void
     {
         $this->pictures[] = $picture;
     }
+
     public function getPictures(): ?array
     {
         return $this->pictures;

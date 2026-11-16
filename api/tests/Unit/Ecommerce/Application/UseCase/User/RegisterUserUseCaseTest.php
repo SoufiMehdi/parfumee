@@ -12,8 +12,8 @@ use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordHasherInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class RegisterUserUseCaseTest extends TestCase
 {
@@ -56,8 +56,8 @@ class RegisterUserUseCaseTest extends TestCase
             ->expects($this->once())
             ->method('save')
             ->with($this->callback(function (User $user) use ($dto) {
-                return $user->getEmail()->getValue() === $dto->email &&
-                       $user->getFirstName() === $dto->firstName;
+                return $user->getEmail()->getValue() === $dto->email
+                       && $user->getFirstName() === $dto->firstName;
             }));
 
         $this->useCase->execute($dto);

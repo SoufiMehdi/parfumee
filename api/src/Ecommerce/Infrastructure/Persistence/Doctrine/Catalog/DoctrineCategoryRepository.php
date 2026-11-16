@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Category;
@@ -28,18 +31,21 @@ class DoctrineCategoryRepository implements CategoryRepositoryInterface
     public function findById(string $id): ?Category
     {
         $doctrineCategory = $this->entityManager->getRepository(DoctrineCategory::class)->find($id);
+
         return $doctrineCategory ? $this->mapper->toDomain($doctrineCategory) : null;
     }
 
     public function findBySlug(string $slug): ?Category
     {
         $doctrineCategory = $this->entityManager->getRepository(DoctrineCategory::class)->findOneBy(['slug' => $slug]);
+
         return $doctrineCategory ? $this->mapper->toDomain($doctrineCategory) : null;
     }
 
     public function findAll(): array
     {
         $doctrineCategories = $this->entityManager->getRepository(DoctrineCategory::class)->findAll();
+
         return array_map([$this->mapper, 'toDomain'], $doctrineCategories);
     }
 }

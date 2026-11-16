@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Ecommerce\Domain\Model\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Attribute;

@@ -10,8 +10,8 @@ use App\Ecommerce\Infrastructure\Persistence\Doctrine\User\DoctrineUserRepositor
 use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\User\UserMapper;
 use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 class DoctrineUserRepositoryTest extends TestCase

@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Mapper\Catalog;
 
-use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;

@@ -17,7 +17,7 @@ class UserPresenter
             'lastName' => $user->getLastName(),
             'phoneNumber' => $user->getPhoneNumber()?->getValue(),
             'roles' => $user->getRoles(),
-            'addresses' => array_map(fn($address) => [
+            'addresses' => array_map(fn ($address) => [
                 'id' => $address->getId(),
                 'type' => $address->getType(),
                 'street' => $address->getStreet(),

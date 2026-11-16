@@ -9,8 +9,8 @@ use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 class UpdateUserUseCaseTest extends TestCase

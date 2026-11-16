@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
-use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
 use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
-use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
+use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\ProductMapper;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -34,7 +35,7 @@ class DoctrineProductRepository implements ProductRepositoryInterface
             // C'est une mise à jour (Logique d'update)
             $doctrineCategory = $this->entityManager->getReference(DoctrineCategory::class, $product->getCategory()->getId());
             // Tu ajoutes une méthode dans ton Mapper pour mettre à jour l'entité existante
-             $this->mapper->mapDomainToEntity($product, $doctrineProduct, $doctrineCategory);
+            $this->mapper->mapDomainToEntity($product, $doctrineProduct, $doctrineCategory);
         }
 
         // On persiste l'entité Doctrine
@@ -45,12 +46,14 @@ class DoctrineProductRepository implements ProductRepositoryInterface
     public function findById(string $id): ?Product
     {
         $doctrineProduct = $this->entityManager->getRepository(DoctrineProduct::class)->find($id);
+
         return $doctrineProduct ? $this->mapper->toDomain($doctrineProduct) : null;
     }
 
     public function findAll(): array
     {
         $doctrineProducts = $this->entityManager->getRepository(DoctrineProduct::class)->findAll();
+
         return array_map([$this->mapper, 'toDomain'], $doctrineProducts);
     }
 
@@ -66,21 +69,21 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         $rsm = new \Doctrine\ORM\Query\ResultSetMappingBuilder($this->entityManager);
         $rsm->addRootEntityFromClassMetadata(DoctrineProduct::class, 'p');
 
-        $sql = "SELECT p.* FROM products p WHERE 1=1";
+        $sql = 'SELECT p.* FROM products p WHERE 1=1';
         $params = [];
         // 1. Filtre par catégorie
         if ($filterDto->categoryId) {
-            $sql .= " AND p.category_id = :categoryId";
+            $sql .= ' AND p.category_id = :categoryId';
             $params['categoryId'] = $filterDto->categoryId;
         }
 
         // 2. Filtres par prix
-        if ($filterDto->minPrice !== null) {
-            $sql .= " AND p.price >= :minPrice";
+        if (null !== $filterDto->minPrice) {
+            $sql .= ' AND p.price >= :minPrice';
             $params['minPrice'] = $filterDto->minPrice;
         }
-        if ($filterDto->maxPrice !== null) {
-            $sql .= " AND p.price <= :maxPrice";
+        if (null !== $filterDto->maxPrice) {
+            $sql .= ' AND p.price <= :maxPrice';
             $params['maxPrice'] = $filterDto->maxPrice;
         }
 

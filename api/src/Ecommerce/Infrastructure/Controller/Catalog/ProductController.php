@@ -1,21 +1,24 @@
 <?php
 
-namespace App\Ecommerce\Infrastructure\Controller\Catalog;  
+declare(strict_types=1);
 
+namespace App\Ecommerce\Infrastructure\Controller\Catalog;
+
+use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
+use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
+use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
-use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
-use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
-use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use Symfony\Component\HttpKernel\Attribute\MapQueryString;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Attribute\MapUploadedFile;
@@ -23,7 +26,6 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Validator\Constraints as Assert;
-use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 
 class ProductController extends AbstractController
 {
@@ -35,6 +37,7 @@ class ProductController extends AbstractController
     {
         $products = $useCase->execute();
         $data = $presenter->presentCollection($products);
+
         return new JsonResponse($data);
     }
 
@@ -42,6 +45,7 @@ class ProductController extends AbstractController
     public function getById(string $id, GetProductUseCase $useCase, ProductPresenter $presenter): JsonResponse
     {
         $data = $presenter->present($useCase->execute($id));
+
         return new JsonResponse($data);
     }
 

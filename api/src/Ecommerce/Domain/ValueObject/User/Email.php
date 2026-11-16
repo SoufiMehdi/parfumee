@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Domain\ValueObject\User;
 
 use App\Ecommerce\Domain\Exception\User\InvalidEmailException;

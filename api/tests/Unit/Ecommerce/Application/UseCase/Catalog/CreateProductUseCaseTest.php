@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
@@ -50,7 +52,7 @@ class CreateProductUseCaseTest extends TestCase
             attributes: ['fragrance' => 'Vanille']
         );
 
-        $category = new Category($categoryId, 'Bougies', 'bougies');
+        $category = new Category($categoryId->toRfc4122(), 'Bougies', 'bougies');
 
         $this->categoryRepository
             ->expects($this->once())
@@ -90,7 +92,7 @@ class CreateProductUseCaseTest extends TestCase
 
         // 2 & 3. Vérification de l'exception
         $this->expectException(CategoryNotFoundException::class);
-        
+
         $this->useCase->execute($dto);
     }
 }

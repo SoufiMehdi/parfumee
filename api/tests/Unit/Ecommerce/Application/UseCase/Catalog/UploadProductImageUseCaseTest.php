@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
@@ -9,8 +11,8 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\PictureRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Storage\FileStorageInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class UploadProductImageUseCaseTest extends TestCase
@@ -37,7 +39,7 @@ class UploadProductImageUseCaseTest extends TestCase
     {
         $productId = 'product-uuid';
         $filePath = 'products/image.jpg';
-        
+
         $product = $this->createMock(Product::class);
         $file = $this->createMock(UploadedFile::class);
 
@@ -72,7 +74,7 @@ class UploadProductImageUseCaseTest extends TestCase
     public function testExecuteThrowsExceptionWhenProductNotFound(): void
     {
         $this->productRepository->method('findById')->willReturn(null);
-        
+
         $file = $this->createMock(UploadedFile::class);
 
         $this->expectException(ProductNotFoundException::class);

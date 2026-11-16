@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Storage;
 
 use App\Ecommerce\Infrastructure\Storage\LocalFileStorage;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
 use Symfony\Component\String\UnicodeString;
@@ -17,7 +19,7 @@ class LocalFileStorageTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->uploadsDirectory = sys_get_temp_dir() . '/uploads';
+        $this->uploadsDirectory = sys_get_temp_dir().'/uploads';
         $this->slugger = $this->createMock(SluggerInterface::class);
         $this->storage = new LocalFileStorage($this->uploadsDirectory, $this->slugger);
 
@@ -31,11 +33,11 @@ class LocalFileStorageTest extends TestCase
         $file = $this->createMock(UploadedFile::class);
         $file->expects($this->once())->method('getClientOriginalName')->willReturn('test image.jpg');
         $file->expects($this->once())->method('guessExtension')->willReturn('jpg');
-        
+
         // Simuler le déplacement du fichier
         $file->expects($this->once())
             ->method('move')
-            ->with($this->stringContains($this->uploadsDirectory . '/products'), $this->anything());
+            ->with($this->stringContains($this->uploadsDirectory.'/products'), $this->anything());
 
         $this->slugger->method('slug')->willReturn(new UnicodeString('test-image'));
 
@@ -48,7 +50,7 @@ class LocalFileStorageTest extends TestCase
     public function testDeleteExistingFile(): void
     {
         $filePath = 'test.txt';
-        $fullPath = $this->uploadsDirectory . '/' . $filePath;
+        $fullPath = $this->uploadsDirectory.'/'.$filePath;
         touch($fullPath);
 
         $this->assertFileExists($fullPath);

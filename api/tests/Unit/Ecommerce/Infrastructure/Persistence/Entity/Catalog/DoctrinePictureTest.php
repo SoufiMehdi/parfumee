@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;

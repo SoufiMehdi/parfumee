@@ -6,14 +6,14 @@ namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 
 use App\Ecommerce\Application\DTO\User\LoginUserRequestDto;
 use App\Ecommerce\Application\UseCase\User\LoginUserUseCase;
+use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordVerifierInterface;
 use App\Ecommerce\Domain\Service\User\TokenGeneratorInterface;
 use App\Ecommerce\Domain\ValueObject\User\Email;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
-use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
+use PHPUnit\Framework\TestCase;
 
 class LoginUserUseCaseTest extends TestCase
 {

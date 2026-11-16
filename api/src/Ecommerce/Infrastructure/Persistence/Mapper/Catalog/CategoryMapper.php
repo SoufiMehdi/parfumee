@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Category;
@@ -24,5 +26,4 @@ class CategoryMapper
             $doctrineCategory->getSlug()
         );
     }
-
 }

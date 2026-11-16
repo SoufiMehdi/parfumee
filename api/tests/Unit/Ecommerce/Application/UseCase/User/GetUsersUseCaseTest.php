@@ -7,8 +7,8 @@ namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 use App\Ecommerce\Application\UseCase\User\GetUsersUseCase;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class GetUsersUseCaseTest extends TestCase
 {
