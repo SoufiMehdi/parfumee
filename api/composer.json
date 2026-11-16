@@ -33,8 +33,7 @@
         "phpunit/phpunit": "^12.5.44",
         "symfony/browser-kit": "8.1.*",
         "symfony/css-selector": "8.1.*",
-        "symfony/maker-bundle": "^1.68",
-        "vimeo/psalm": "^6.20.11"
+        "symfony/maker-bundle": "^1.68"
     },
     "config": {
         "allow-plugins": {
@@ -76,12 +75,34 @@
         "post-update-cmd": [
             "@auto-scripts"
         ],
-        "lint:phpstan": "vendor/bin/phpstan analyze --configuration phpstan.neon src",
-        "lint:psalm": "vendor/bin/psalm --config psalm.xml src",
-        "fix-cs": "vendor/bin/php-cs-fixer fix src"
+        "lint:cs": "php-cs-fixer fix --dry-run --diff",
+        "lint:phpstan": "phpstan analyse --memory-limit=1G",
+        "lint:container": "@php bin/console lint:container",
+        "lint:schema": "@php bin/console doctrine:schema:validate --skip-sync",
+        "lint": [
+            "@lint:cs",
+            "@lint:phpstan",
+            "@lint:container"
+        ],
+        "fix-cs": "php-cs-fixer fix",
+        "test": "phpunit",
+        "check": [
+            "@lint",
+            "@test"
+        ]
     },
     "conflict": {
         "symfony/symfony": "*"
+    },
+    "scripts-descriptions": {
+        "lint:cs": "Check the coding style without changing files",
+        "lint:phpstan": "Run the static analysis (phpstan.dist.neon)",
+        "lint:container": "Check that every service can be built",
+        "lint:schema": "Check the Doctrine mapping (fails until B15 is fixed)",
+        "lint": "Run every linter",
+        "fix-cs": "Fix the coding style",
+        "test": "Run the test suite (needs the test database: docker compose up -d)",
+        "check": "Run the linters, then the tests: what the CI will run"
     },
     "extra": {
         "symfony": {

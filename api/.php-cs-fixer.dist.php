@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $finder = (new PhpCsFixer\Finder())
     ->in(__DIR__)
     ->exclude('var')
@@ -10,8 +12,11 @@ $finder = (new PhpCsFixer\Finder())
 ;
 
 return (new PhpCsFixer\Config())
+    // declare_strict_types changes how PHP runs the file, so it is a "risky" rule.
+    ->setRiskyAllowed(true)
     ->setRules([
         '@Symfony' => true,
+        'declare_strict_types' => true,
     ])
     ->setFinder($finder)
 ;
