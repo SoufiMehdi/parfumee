@@ -6,11 +6,11 @@ namespace App\Ecommerce\Domain\Model\Catalog;
 
 class Attribute
 {
-    private $weight;
-    private $fragrance;
-    private $size;
-    private $description;
-    private $presentation;
+    private ?float $weight;
+    private ?string $fragrance;
+    private ?string $size;
+    private ?string $description;
+    private ?string $presentation;
 
     public function __construct(
         ?float $weight = null,
@@ -77,6 +77,9 @@ class Attribute
         $this->presentation = $presentation;
     }
 
+    /**
+     * @return array{weight: ?float, fragrance: ?string, size: ?string, description: ?string, presentation: ?string}
+     */
     public function toArray(): array
     {
         return [

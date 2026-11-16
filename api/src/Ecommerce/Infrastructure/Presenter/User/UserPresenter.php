@@ -8,6 +8,9 @@ use App\Ecommerce\Domain\Model\User\User;
 
 class UserPresenter
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function present(User $user): array
     {
         return [
@@ -31,6 +34,8 @@ class UserPresenter
 
     /**
      * @param User[] $users
+     *
+     * @return list<array<string, mixed>>
      */
     public function presentCollection(array $users): array
     {

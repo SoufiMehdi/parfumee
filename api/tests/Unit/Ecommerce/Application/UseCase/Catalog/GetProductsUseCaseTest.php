@@ -9,12 +9,13 @@ use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class GetProductsUseCaseTest extends TestCase
 {
-    private $productRepository;
-    private $useCase;
+    private ProductRepositoryInterface&MockObject $productRepository;
+    private GetProductsUseCase $useCase;
 
     protected function setUp(): void
     {
@@ -40,7 +41,6 @@ class GetProductsUseCaseTest extends TestCase
         $result = $this->useCase->execute();
 
         // 3. Assert
-        $this->assertIsArray($result);
         $this->assertCount(2, $result);
         $this->assertSame($productList, $result);
         $this->assertInstanceOf(Product::class, $result[0]);
@@ -57,7 +57,6 @@ class GetProductsUseCaseTest extends TestCase
         $result = $this->useCase->execute();
 
         // 3. Assert
-        $this->assertIsArray($result);
         $this->assertEmpty($result);
     }
 }

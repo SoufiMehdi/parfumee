@@ -42,6 +42,9 @@ class DoctrineCategoryRepository implements CategoryRepositoryInterface
         return $doctrineCategory ? $this->mapper->toDomain($doctrineCategory) : null;
     }
 
+    /**
+     * @return Category[]
+     */
     public function findAll(): array
     {
         $doctrineCategories = $this->entityManager->getRepository(DoctrineCategory::class)->findAll();

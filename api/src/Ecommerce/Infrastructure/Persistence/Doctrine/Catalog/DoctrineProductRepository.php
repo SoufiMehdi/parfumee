@@ -50,6 +50,9 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         return $doctrineProduct ? $this->mapper->toDomain($doctrineProduct) : null;
     }
 
+    /**
+     * @return Product[]
+     */
     public function findAll(): array
     {
         $doctrineProducts = $this->entityManager->getRepository(DoctrineProduct::class)->findAll();
@@ -64,6 +67,9 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         return null !== $doctrineProduct && $doctrineProduct->getId() !== $exceptProductId;
     }
 
+    /**
+     * @return Product[]
+     */
     public function findByFilter(GetProductsFilterDto $filterDto): array
     {
         $rsm = new \Doctrine\ORM\Query\ResultSetMappingBuilder($this->entityManager);

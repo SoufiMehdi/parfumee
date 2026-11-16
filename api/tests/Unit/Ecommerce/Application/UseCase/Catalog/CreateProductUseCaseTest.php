@@ -14,15 +14,16 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 class CreateProductUseCaseTest extends TestCase
 {
-    private $productRepository;
-    private $categoryRepository;
-    private $attributesMapper;
-    private $useCase;
+    private ProductRepositoryInterface&MockObject $productRepository;
+    private CategoryRepositoryInterface&MockObject $categoryRepository;
+    private AttributesMapper&MockObject $attributesMapper;
+    private CreateProductUseCase $useCase;
 
     protected function setUp(): void
     {

@@ -60,7 +60,8 @@ class LocalFileStorageTest extends TestCase
 
     public function testDeleteNonExistentFileDoesNotThrowException(): void
     {
+        $this->expectNotToPerformAssertions();
+
         $this->storage->delete('non-existent.txt');
-        $this->assertTrue(true); // Pas d'exception attendue
     }
 }

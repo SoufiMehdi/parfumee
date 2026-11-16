@@ -119,7 +119,6 @@ class DoctrineCategoryRepositoryTest extends TestCase
 
         $result = $this->repository->findAll();
 
-        $this->assertIsArray($result);
         $this->assertCount(1, $result);
         $this->assertSame($category, $result[0]);
     }

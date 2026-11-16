@@ -72,7 +72,8 @@ class DoctrineUserTest extends TestCase
 
     public function testEraseCredentialsDoesNotThrowException(): void
     {
+        $this->expectNotToPerformAssertions();
+
         $this->user->eraseCredentials();
-        $this->assertTrue(true);
     }
 }

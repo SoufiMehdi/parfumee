@@ -54,7 +54,6 @@ class AttributesMapperTest extends TestCase
 
         $result = $this->mapper->toDto($attribute);
 
-        $this->assertIsArray($result);
         $this->assertEquals([
             'weight' => 1.5,
             'fragrance' => 'Floral',

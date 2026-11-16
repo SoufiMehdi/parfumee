@@ -32,12 +32,19 @@ class DoctrineProduct
     /**
      * C'est ici que réside la magie pour le côté générique.
      * Le type 'json' sur PostgreSQL crée une colonne JSONB par défaut.
+     *
+     * @var array<string, mixed>
      */
     #[ORM\Column(type: 'json')]
     private array $attributes = [];
+
+    /** @var Collection<int, DoctrinePicture> */
     #[ORM\OneToMany(mappedBy: 'product', targetEntity: DoctrinePicture::class, cascade: ['persist', 'remove'])]
     private Collection $pictures;
 
+    /**
+     * @param array<string, mixed> $attributes
+     */
     public function __construct(
         string $id,
         string $name,
@@ -99,16 +106,25 @@ class DoctrineProduct
         $this->category = $category;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getAttributes(): array
     {
         return $this->attributes;
     }
 
+    /**
+     * @param array<string, mixed> $attributes
+     */
     public function setAttributes(array $attributes): void
     {
         $this->attributes = $attributes;
     }
 
+    /**
+     * @return Collection<int, DoctrinePicture>
+     */
     public function getPictures(): Collection
     {
         return $this->pictures;

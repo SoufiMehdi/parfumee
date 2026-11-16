@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
+use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 
 class GetProductsUseCase
@@ -13,6 +14,9 @@ class GetProductsUseCase
     ) {
     }
 
+    /**
+     * @return Product[]
+     */
     public function execute(): array
     {
         return $this->productRepository->findAll();

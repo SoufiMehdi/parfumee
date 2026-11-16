@@ -55,5 +55,6 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 
 - Les clés JWT (`config/jwt/*.pem`) ne sont pas versionnées : `php bin/console lexik:jwt:generate-keypair` sur chaque machine.
 - `.env` ne contient aucun secret : `APP_SECRET` et `JWT_PASSPHRASE` y sont vides exprès. Les valeurs de dev sont dans `.env.dev`, celles de test dans `.env.test` ; `tests/Unit/Config/EnvFilesTest` le vérifie. `.env.local` n'est pas lu en test.
-- La config Psalm (`pslam.xml`) est cassée et l'ancien `.php_cs` est obsolète : utiliser PHPStan (`phpstan.dist.neon`) et `.php-cs-fixer.dist.php`.
+- Avant de pousser : `composer check` (style, PHPStan niveau 6, conteneur, tests). PHPStan est à 0 erreur : ne pas ajouter de baseline ni de `@phpstan-ignore`. `composer fix-cs` corrige le style.
+- Un docblock `@var` de propriété se place **au-dessus** des attributs `#[ORM\…]`, sinon PHPStan ne le lit pas.
 - La migration `Version20260612051158` ajoute des colonnes `NOT NULL` sans défaut : elle échoue si des utilisateurs existent déjà.

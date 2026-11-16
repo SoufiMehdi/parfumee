@@ -8,6 +8,9 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 
 class ProductPresenter
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function present(Product $product): array
     {
         return [
@@ -33,6 +36,8 @@ class ProductPresenter
      * Transforme une liste de produits.
      *
      * @param Product[] $products
+     *
+     * @return list<array<string, mixed>>
      */
     public function presentCollection(array $products): array
     {

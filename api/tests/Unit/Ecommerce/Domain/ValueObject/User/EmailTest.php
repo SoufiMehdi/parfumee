@@ -28,6 +28,9 @@ class EmailTest extends TestCase
         new Email($invalidEmail);
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
     public static function invalidEmailProvider(): array
     {
         return [

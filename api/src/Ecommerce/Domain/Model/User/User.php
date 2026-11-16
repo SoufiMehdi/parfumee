@@ -9,11 +9,16 @@ use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
 
 class User
 {
+    /** @var string[] */
     private array $roles;
 
     /** @var Address[] */
     private array $addresses;
 
+    /**
+     * @param string[]  $roles
+     * @param Address[] $addresses
+     */
     public function __construct(
         private readonly string $id,
         private Email $email,
@@ -54,6 +59,9 @@ class User
         return $this->lastName;
     }
 
+    /**
+     * @return string[]
+     */
     public function getRoles(): array
     {
         return $this->roles;

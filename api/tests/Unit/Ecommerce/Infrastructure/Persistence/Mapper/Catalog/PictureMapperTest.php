@@ -8,20 +8,15 @@ use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrinePicture;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\PictureMapper;
-use Doctrine\ORM\EntityManagerInterface;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class PictureMapperTest extends TestCase
 {
-    private EntityManagerInterface|MockObject $entityManager;
     private PictureMapper $mapper;
 
     protected function setUp(): void
     {
-        $this->entityManager = $this->createMock(EntityManagerInterface::class);
-
-        $this->mapper = new PictureMapper($this->entityManager);
+        $this->mapper = new PictureMapper();
     }
 
     public function testToInfrastructureWithProduct(): void

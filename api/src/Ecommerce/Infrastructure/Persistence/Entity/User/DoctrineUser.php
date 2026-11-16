@@ -27,6 +27,7 @@ class DoctrineUser implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string')]
     private string $lastName;
 
+    /** @var string[] */
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
@@ -36,6 +37,7 @@ class DoctrineUser implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'string', length: 20, nullable: true)]
     private ?string $phoneNumber = null;
 
+    /** @var Collection<int, DoctrineAddress> */
     #[ORM\OneToMany(targetEntity: DoctrineAddress::class, mappedBy: 'user', cascade: ['persist', 'remove'])]
     private Collection $addresses;
 
@@ -109,6 +111,9 @@ class DoctrineUser implements UserInterface, PasswordAuthenticatedUserInterface
         return array_unique($roles);
     }
 
+    /**
+     * @param string[] $roles
+     */
     public function setRoles(array $roles): void
     {
         $this->roles = $roles;
@@ -124,6 +129,9 @@ class DoctrineUser implements UserInterface, PasswordAuthenticatedUserInterface
         $this->phoneNumber = $phoneNumber;
     }
 
+    /**
+     * @return Collection<int, DoctrineAddress>
+     */
     public function getAddresses(): Collection
     {
         return $this->addresses;

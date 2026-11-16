@@ -14,5 +14,8 @@ interface CategoryRepositoryInterface
 
     public function findBySlug(string $slug): ?Category;
 
+    /**
+     * @return Category[]
+     */
     public function findAll(): array;
 }

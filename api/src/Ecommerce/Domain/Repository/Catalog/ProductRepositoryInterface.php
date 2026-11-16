@@ -13,6 +13,9 @@ interface ProductRepositoryInterface
 
     public function findById(string $id): ?Product;
 
+    /**
+     * @return Product[]
+     */
     public function findAll(): array;
 
     /**
@@ -20,5 +23,8 @@ interface ProductRepositoryInterface
      */
     public function slugExists(string $slug, ?string $exceptProductId = null): bool;
 
+    /**
+     * @return Product[]
+     */
     public function findByFilter(GetProductsFilterDto $filter): array;
 }

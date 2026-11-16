@@ -16,6 +16,7 @@ use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
 use App\Tests\Support\AuthenticatesRequests;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,7 +25,7 @@ class ProductControllerTest extends WebTestCase
 {
     use AuthenticatesRequests;
 
-    private $client;
+    private KernelBrowser $client;
 
     protected function setUp(): void
     {

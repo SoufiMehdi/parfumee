@@ -9,7 +9,8 @@ class Category
     private string $id;
     private string $name;
     private string $slug;
-    private ?array $pictures;
+    /** @var Picture[] */
+    private array $pictures = [];
 
     public function __construct(string $id, string $name, string $slug)
     {
@@ -39,7 +40,10 @@ class Category
         $this->pictures[] = $picture;
     }
 
-    public function getPictures(): ?array
+    /**
+     * @return Picture[]
+     */
+    public function getPictures(): array
     {
         return $this->pictures;
     }

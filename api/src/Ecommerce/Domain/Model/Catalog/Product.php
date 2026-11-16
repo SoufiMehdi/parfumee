@@ -18,6 +18,9 @@ class Product
     /** @var Picture[] */
     private array $pictures = []; // Initialisation directe : plus jamais de erreur "non initialisé"
 
+    /**
+     * @param Picture[] $pictures
+     */
     public function __construct(
         string $id,
         string $name,
@@ -33,7 +36,7 @@ class Product
         $this->setPrice($price); // Utilisation d'un setter pour valider le métier
         $this->category = $category;
         $this->attributes = $attributes ?? new Attribute(); // Si aucun attribut n'est fourni, on initialise avec des valeurs par défaut
-        $this->pictures = $pictures ?? []; // On peut aussi injecter les images à la création si besoin, sinon elles seront ajoutées via addPicture() plus tard
+        $this->pictures = $pictures;
     }
 
     public function setPrice(float $price): void
