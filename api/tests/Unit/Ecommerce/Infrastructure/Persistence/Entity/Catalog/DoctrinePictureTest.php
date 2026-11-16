@@ -27,8 +27,8 @@ class DoctrinePictureTest extends TestCase
     public function testAssociations(): void
     {
         $picture = new DoctrinePicture('pic-1', 'url');
-        $product = $this->createMock(DoctrineProduct::class);
-        $category = $this->createMock(DoctrineCategory::class);
+        $product = $this->createStub(DoctrineProduct::class);
+        $category = $this->createStub(DoctrineCategory::class);
 
         $picture->setProduct($product);
         $picture->setCategory($category);

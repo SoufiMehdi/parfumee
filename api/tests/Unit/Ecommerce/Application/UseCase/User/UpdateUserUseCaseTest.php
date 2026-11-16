@@ -9,6 +9,7 @@ use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -55,6 +56,7 @@ class UpdateUserUseCaseTest extends TestCase
         $this->assertSame($user, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteUpdatesPhoneNumber(): void
     {
         $id = Uuid::v4();
@@ -79,6 +81,7 @@ class UpdateUserUseCaseTest extends TestCase
         $this->useCase->execute($id->toRfc4122(), $dto);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
         $id = Uuid::v4();

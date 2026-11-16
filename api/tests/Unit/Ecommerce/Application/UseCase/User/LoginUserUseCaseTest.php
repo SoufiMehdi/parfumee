@@ -12,6 +12,7 @@ use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordVerifierInterface;
 use App\Ecommerce\Domain\Service\User\TokenGeneratorInterface;
 use App\Ecommerce\Domain\ValueObject\User\Email;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -48,6 +49,7 @@ class LoginUserUseCaseTest extends TestCase
         );
 
         $this->userRepository
+            ->expects($this->once())
             ->method('findByEmail')
             ->with('user@example.com')
             ->willReturn($user);
@@ -68,6 +70,7 @@ class LoginUserUseCaseTest extends TestCase
         $this->assertSame(['token' => 'jwt-token-abc'], $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
         $dto = new LoginUserRequestDto(email: 'unknown@example.com', password: 'password');
@@ -85,6 +88,7 @@ class LoginUserUseCaseTest extends TestCase
         $this->useCase->execute($dto);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenPasswordInvalid(): void
     {
         $dto = new LoginUserRequestDto(email: 'user@example.com', password: 'wrongPassword');

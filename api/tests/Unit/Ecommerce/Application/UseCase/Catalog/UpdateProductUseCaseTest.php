@@ -24,7 +24,7 @@ class UpdateProductUseCaseTest extends TestCase
         $productRepo = $this->createMock(ProductRepositoryInterface::class);
         $categoryRepo = $this->createMock(CategoryRepositoryInterface::class);
         $attributeMapper = $this->createMock(AttributesMapper::class);
-        $attributeMock = $this->createMock(Attribute::class);
+        $attributeMock = $this->createStub(Attribute::class);
 
         // 2. Préparation
         $category = new Category('cat-1', 'Bougies', 'bougies');

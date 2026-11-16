@@ -50,6 +50,7 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 - Les tests **fonctionnels** (`tests/Functional/`, `WebTestCase`) couvrent les contrôleurs et la sécurité (401/403 attendus).
 - Le namespace d'un test suit son dossier : `App\Tests\Unit\...`, `App\Tests\Integration\...`.
 - PHPUnit est configuré avec `failOnWarning`, `failOnNotice` et `failOnDeprecation` : un warning PHP fait échouer la suite.
+- Un double sans attente se crée avec `createStub()`, pas `createMock()`. `createMock()` est réservé aux doubles sur lesquels on appelle `expects()` ; sinon PHPUnit affiche un avertissement. La sortie de la suite doit rester « OK » sans réserve.
 
 ## Pièges connus
 

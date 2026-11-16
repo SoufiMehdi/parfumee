@@ -14,7 +14,9 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
@@ -22,14 +24,14 @@ class CreateProductUseCaseTest extends TestCase
 {
     private ProductRepositoryInterface&MockObject $productRepository;
     private CategoryRepositoryInterface&MockObject $categoryRepository;
-    private AttributesMapper&MockObject $attributesMapper;
+    private AttributesMapper&Stub $attributesMapper;
     private CreateProductUseCase $useCase;
 
     protected function setUp(): void
     {
         $this->productRepository = $this->createMock(ProductRepositoryInterface::class);
         $this->categoryRepository = $this->createMock(CategoryRepositoryInterface::class);
-        $this->attributesMapper = $this->createMock(AttributesMapper::class);
+        $this->attributesMapper = $this->createStub(AttributesMapper::class);
 
         $slugGenerator = $this->createStub(SlugGeneratorInterface::class);
         $slugGenerator->method('generate')->willReturn('bougie-parfumee');
@@ -73,6 +75,7 @@ class CreateProductUseCaseTest extends TestCase
         $this->assertTrue(Uuid::isValid($result));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenCategoryNotFound(): void
     {
         // 1. Préparation

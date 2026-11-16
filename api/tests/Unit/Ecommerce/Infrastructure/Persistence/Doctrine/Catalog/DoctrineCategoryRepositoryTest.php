@@ -10,6 +10,7 @@ use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\CategoryMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +29,7 @@ class DoctrineCategoryRepositoryTest extends TestCase
 
     public function testSavePersistsAndFlushesCategory(): void
     {
-        $category = $this->createMock(Category::class);
+        $category = $this->createStub(Category::class);
         $doctrineCategory = new DoctrineCategory(
             'cat-123',
             'Test Category',
@@ -50,6 +51,7 @@ class DoctrineCategoryRepositoryTest extends TestCase
         $this->repository->save($category);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFindByIdReturnsCategory(): void
     {
         $id = 'cat-123';
@@ -58,22 +60,23 @@ class DoctrineCategoryRepositoryTest extends TestCase
             'Test Category',
             'test-category'
         );
-        $category = $this->createMock(Category::class);
+        $category = $this->createStub(Category::class);
 
         $entityRepository = $this->createMock(EntityRepository::class);
-        $entityRepository->method('find')->with($id)->willReturn($doctrineCategory);
+        $entityRepository->expects($this->once())->method('find')->with($id)->willReturn($doctrineCategory);
 
         $this->entityManager->method('getRepository')->willReturn($entityRepository);
-        $this->mapper->method('toDomain')->with($doctrineCategory)->willReturn($category);
+        $this->mapper->expects($this->once())->method('toDomain')->with($doctrineCategory)->willReturn($category);
 
         $result = $this->repository->findById($id);
 
         $this->assertSame($category, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFindByIdReturnsNullIfNotFound(): void
     {
-        $entityRepository = $this->createMock(EntityRepository::class);
+        $entityRepository = $this->createStub(EntityRepository::class);
         $entityRepository->method('find')->willReturn(null);
 
         $this->entityManager->method('getRepository')->willReturn($entityRepository);
@@ -81,6 +84,7 @@ class DoctrineCategoryRepositoryTest extends TestCase
         $this->assertNull($this->repository->findById('non-existent'));
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFindBySlugReturnsCategory(): void
     {
         $slug = 'test-category';
@@ -89,19 +93,20 @@ class DoctrineCategoryRepositoryTest extends TestCase
             'Test Category',
             $slug
         );
-        $category = $this->createMock(Category::class);
+        $category = $this->createStub(Category::class);
 
         $entityRepository = $this->createMock(EntityRepository::class);
-        $entityRepository->method('findOneBy')->with(['slug' => $slug])->willReturn($doctrineCategory);
+        $entityRepository->expects($this->once())->method('findOneBy')->with(['slug' => $slug])->willReturn($doctrineCategory);
 
         $this->entityManager->method('getRepository')->willReturn($entityRepository);
-        $this->mapper->method('toDomain')->with($doctrineCategory)->willReturn($category);
+        $this->mapper->expects($this->once())->method('toDomain')->with($doctrineCategory)->willReturn($category);
 
         $result = $this->repository->findBySlug($slug);
 
         $this->assertSame($category, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFindAllReturnsArrayOfCategories(): void
     {
         $doctrineCategory = new DoctrineCategory(
@@ -109,9 +114,9 @@ class DoctrineCategoryRepositoryTest extends TestCase
             'Test Category',
             'test-category'
         );
-        $category = $this->createMock(Category::class);
+        $category = $this->createStub(Category::class);
 
-        $entityRepository = $this->createMock(EntityRepository::class);
+        $entityRepository = $this->createStub(EntityRepository::class);
         $entityRepository->method('findAll')->willReturn([$doctrineCategory]);
 
         $this->entityManager->method('getRepository')->willReturn($entityRepository);
@@ -123,9 +128,10 @@ class DoctrineCategoryRepositoryTest extends TestCase
         $this->assertSame($category, $result[0]);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testSaveThrowsExceptionOnDatabaseError(): void
     {
-        $category = $this->createMock(Category::class);
+        $category = $this->createStub(Category::class);
 
         $this->mapper->method('toInfrastructure')->willReturn(new DoctrineCategory(
             'cat-123',

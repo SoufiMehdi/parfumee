@@ -8,6 +8,7 @@ use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -26,7 +27,7 @@ class GetUserUseCaseTest extends TestCase
     public function testExecuteReturnsUser(): void
     {
         $id = Uuid::v4();
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
 
         $this->userRepository
             ->expects($this->once())
@@ -39,6 +40,7 @@ class GetUserUseCaseTest extends TestCase
         $this->assertSame($user, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
         $id = Uuid::v4();

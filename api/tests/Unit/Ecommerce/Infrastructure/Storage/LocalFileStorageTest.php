@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Storage;
 
 use App\Ecommerce\Infrastructure\Storage\LocalFileStorage;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -14,13 +14,13 @@ use Symfony\Component\String\UnicodeString;
 class LocalFileStorageTest extends TestCase
 {
     private string $uploadsDirectory;
-    private SluggerInterface&MockObject $slugger;
+    private SluggerInterface&Stub $slugger;
     private LocalFileStorage $storage;
 
     protected function setUp(): void
     {
         $this->uploadsDirectory = sys_get_temp_dir().'/uploads';
-        $this->slugger = $this->createMock(SluggerInterface::class);
+        $this->slugger = $this->createStub(SluggerInterface::class);
         $this->storage = new LocalFileStorage($this->uploadsDirectory, $this->slugger);
 
         if (!is_dir($this->uploadsDirectory)) {

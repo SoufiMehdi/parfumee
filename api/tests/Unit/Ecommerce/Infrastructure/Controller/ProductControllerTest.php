@@ -60,7 +60,7 @@ class ProductControllerTest extends WebTestCase
     {
         $useCaseMock = $this->createMock(GetProductUseCase::class);
         $presenterMock = $this->createMock(ProductPresenter::class);
-        $productMock = $this->createMock(Product::class);
+        $productMock = $this->createStub(Product::class);
 
         $useCaseMock->expects($this->once())->method('execute')->with('11111111-1111-4111-8111-111111111111')->willReturn($productMock);
         $presenterMock->expects($this->once())->method('present')->with($productMock)->willReturn(['id' => '11111111-1111-4111-8111-111111111111', 'name' => 'Parfum']);
@@ -122,7 +122,7 @@ class ProductControllerTest extends WebTestCase
     public function testUpdateProduct(): void
     {
         $useCaseMock = $this->createMock(UpdateProductUseCase::class);
-        $productMock = $this->createMock(Product::class);
+        $productMock = $this->createStub(Product::class);
         $productMock->method('getId')->willReturn('11111111-1111-4111-8111-111111111111');
 
         $useCaseMock->expects($this->once())
@@ -147,7 +147,7 @@ class ProductControllerTest extends WebTestCase
     public function testUploadPictureSuccess(): void
     {
         $useCaseMock = $this->createMock(UploadProductImageUseCase::class);
-        $imageMock = $this->createMock(Picture::class);
+        $imageMock = $this->createStub(Picture::class);
         $imageMock->method('getId')->willReturn('img-999');
 
         $useCaseMock->expects($this->once())

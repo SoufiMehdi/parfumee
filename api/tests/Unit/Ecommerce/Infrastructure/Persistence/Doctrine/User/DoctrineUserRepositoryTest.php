@@ -10,6 +10,7 @@ use App\Ecommerce\Infrastructure\Persistence\Doctrine\User\DoctrineUserRepositor
 use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\User\UserMapper;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
@@ -30,8 +31,8 @@ class DoctrineUserRepositoryTest extends TestCase
     public function testFindByIdReturnsUser(): void
     {
         $id = Uuid::v4();
-        $doctrineUser = $this->createMock(DoctrineUser::class);
-        $domainUser = $this->createMock(User::class);
+        $doctrineUser = $this->createStub(DoctrineUser::class);
+        $domainUser = $this->createStub(User::class);
 
         $this->entityManager
             ->expects($this->once())
@@ -50,6 +51,7 @@ class DoctrineUserRepositoryTest extends TestCase
         $this->assertSame($domainUser, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFindByIdThrowsExceptionWhenNotFound(): void
     {
         $id = Uuid::v4();
@@ -65,9 +67,9 @@ class DoctrineUserRepositoryTest extends TestCase
 
     public function testSaveCreatesNewUser(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
         $user->method('getId')->willReturn(Uuid::v4()->toRfc4122());
-        $doctrineUser = $this->createMock(DoctrineUser::class);
+        $doctrineUser = $this->createStub(DoctrineUser::class);
 
         // Simulate user not found (new user)
         $this->entityManager
@@ -88,9 +90,9 @@ class DoctrineUserRepositoryTest extends TestCase
 
     public function testSaveUpdatesExistingUser(): void
     {
-        $user = $this->createMock(User::class);
+        $user = $this->createStub(User::class);
         $user->method('getId')->willReturn(Uuid::v4()->toRfc4122());
-        $existingDoctrineUser = $this->createMock(DoctrineUser::class);
+        $existingDoctrineUser = $this->createStub(DoctrineUser::class);
 
         // Simulate user found (existing user)
         $this->entityManager
@@ -108,10 +110,11 @@ class DoctrineUserRepositoryTest extends TestCase
         $this->repository->save($user);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteRemovesAndFlushes(): void
     {
         $id = Uuid::v4();
-        $doctrineUser = $this->createMock(DoctrineUser::class);
+        $doctrineUser = $this->createStub(DoctrineUser::class);
 
         $this->entityManager
             ->expects($this->once())
@@ -125,6 +128,7 @@ class DoctrineUserRepositoryTest extends TestCase
         $this->repository->delete($id);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testDeleteThrowsExceptionWhenUserNotFound(): void
     {
         $id = Uuid::v4();
@@ -141,16 +145,18 @@ class DoctrineUserRepositoryTest extends TestCase
     public function testFindByEmailReturnsUser(): void
     {
         $email = 'test@example.com';
-        $doctrineUser = $this->createMock(DoctrineUser::class);
-        $domainUser = $this->createMock(User::class);
+        $doctrineUser = $this->createStub(DoctrineUser::class);
+        $domainUser = $this->createStub(User::class);
 
         $entityRepository = $this->createMock(\Doctrine\ORM\EntityRepository::class);
         $this->entityManager
+            ->expects($this->once())
             ->method('getRepository')
             ->with(DoctrineUser::class)
             ->willReturn($entityRepository);
 
         $entityRepository
+            ->expects($this->once())
             ->method('findOneBy')
             ->with(['email' => $email])
             ->willReturn($doctrineUser);
@@ -165,11 +171,12 @@ class DoctrineUserRepositoryTest extends TestCase
         $this->assertSame($domainUser, $result);
     }
 
+    #[AllowMockObjectsWithoutExpectations]
     public function testFindByEmailReturnsNullWhenNotFound(): void
     {
         $email = 'notfound@example.com';
 
-        $entityRepository = $this->createMock(\Doctrine\ORM\EntityRepository::class);
+        $entityRepository = $this->createStub(\Doctrine\ORM\EntityRepository::class);
         $this->entityManager
             ->method('getRepository')
             ->willReturn($entityRepository);
