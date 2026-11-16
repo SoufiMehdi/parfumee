@@ -166,8 +166,8 @@ final class InputValidationTest extends WebTestCase
         yield 'login without password' => ['POST', '/api/v1/shop/login', ['email' => 'a@example.test'], 'password'];
 
         // B9: a partial PUT used to erase the missing names.
-        yield 'account update without last name' => ['PUT', '/api/v1/shop/users/'.self::ID, ['first_name' => 'Ada'], 'last_name'];
-        yield 'account update with a blank first name' => ['PUT', '/api/v1/shop/users/'.self::ID, ['first_name' => '', 'last_name' => 'Lovelace'], 'first_name'];
+        yield 'account update without last name' => ['PUT', '/api/v1/shop/me', ['first_name' => 'Ada'], 'last_name'];
+        yield 'account update with a blank first name' => ['PUT', '/api/v1/shop/me', ['first_name' => '', 'last_name' => 'Lovelace'], 'first_name'];
 
         yield 'product without category' => ['POST', '/api/v1/admin/products', array_diff_key($product, ['category_id' => 0]), 'category_id'];
         yield 'product with a category that is not a UUID' => ['POST', '/api/v1/admin/products', ['category_id' => 'candles'] + $product, 'category_id'];
@@ -186,7 +186,7 @@ final class InputValidationTest extends WebTestCase
         yield 'registration with a malformed phone number' => ['POST', '/api/v1/shop/register', ['phone_number' => 'call me'] + $user, 'phone_number'];
         yield 'registration with an address without postal code' => ['POST', '/api/v1/shop/register', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'country' => 'France']] + $user, 'address.postal_code'];
         yield 'registration with an unknown address type' => ['POST', '/api/v1/shop/register', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'postal_code' => '75002', 'country' => 'France', 'type' => 'home']] + $user, 'address.type'];
-        yield 'account update with a malformed phone number' => ['PUT', '/api/v1/shop/users/'.self::ID, ['first_name' => 'Ada', 'last_name' => 'Lovelace', 'phone_number' => 'x'], 'phone_number'];
+        yield 'account update with a malformed phone number' => ['PUT', '/api/v1/shop/me', ['first_name' => 'Ada', 'last_name' => 'Lovelace', 'phone_number' => 'x'], 'phone_number'];
 
         // B16: an empty body used to create a product named '' at price 0.
         yield 'product update with an empty object' => ['PUT', '/api/v1/admin/products/'.self::ID, [], 'name'];
@@ -289,9 +289,9 @@ final class InputValidationTest extends WebTestCase
         yield 'read product' => ['GET', '/api/v1/shop/products/abc'];
         yield 'update product' => ['PUT', '/api/v1/admin/products/abc'];
         yield 'upload picture' => ['POST', '/api/v1/admin/products/abc/pictures'];
-        yield 'read account' => ['GET', '/api/v1/shop/users/abc'];
-        yield 'update account' => ['PUT', '/api/v1/shop/users/abc'];
-        yield 'delete account' => ['DELETE', '/api/v1/shop/users/abc'];
+        yield 'read user' => ['GET', '/api/v1/admin/users/abc'];
+        yield 'update user' => ['PUT', '/api/v1/admin/users/abc'];
+        yield 'delete user' => ['DELETE', '/api/v1/admin/users/abc'];
         // Upper case is refused too: ids are always produced in lower case.
         yield 'upper-case id' => ['GET', '/api/v1/shop/products/AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA'];
     }

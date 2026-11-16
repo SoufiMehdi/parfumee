@@ -20,9 +20,10 @@
 - **Fait :** le nettoyage de la sortie des tests (PR #18) et la collection Bruno (PR #19), mergés dans `main`.
 - **Fait :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), mergée dans `main` (PR #20). **La phase 0 est terminée.**
 - **Phase en cours : phase 1** — socle API pour deux fronts.
-- **En relecture :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), sur la branche `feat/P1-01-shop-admin-routes`. La PR #22 a été mergée par erreur dans une branche de travail et non dans `main` : une nouvelle PR la remplace.
-- **En relecture :** `P1-06` (rôles et commande de création d'admin), sur la branche `feat/P1-06-roles-admin-command`, qui part de celle de `P1-01` : merger `P1-01` (PR #23) d'abord.
-- **Prochaine tâche conseillée :** `P1-05` (`GET /api/v1/shop/me` et refresh token), puis `P1-03` (OpenAPI). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **Fait :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), mergée dans `main` (PR #23, qui remplace la #22).
+- **Fait :** `P1-06` (rôles et commande de création d'admin), mergée dans `main` (PR #24).
+- **En relecture :** `P1-05` (`/me` et refresh token), sur la branche `feat/P1-05-me-refresh-token`.
+- **Prochaine tâche conseillée :** `P1-03` (OpenAPI), puis `P1-02` (CORS) et `P1-04` (format de liste). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -40,7 +41,11 @@
 - Droits par espace (`config/packages/security.yaml`) : tout `/api/v1/admin` exige `ROLE_ADMIN`, tout `/api/v1/shop` exige `ROLE_USER`, sauf les routes publiques listées. Une nouvelle route **publique** doit donc y être ajoutée explicitement, sinon elle répond 401.
 - Les anciennes routes (`/create-product`, `/users/login`…) n'existent plus depuis `P1-01` : elles répondent 404. Il n'y a pas de redirection, aucun client n'existant encore.
 - Les deux connexions (`/api/v1/shop/login` et `/api/v1/admin/login`) délivrent le même jeton : un client peut se connecter par celle du back-office, son jeton y sera simplement refusé partout (403).
-- `/api/v1/shop/users/{id}` oblige encore le client à connaître son identifiant, que la connexion ne renvoie pas : à remplacer par `/api/v1/shop/me` (`P1-05`).
+- Sessions : le JWT vit 15 minutes, le refresh token 30 jours et ne sert qu'une fois (`POST /api/v1/token/refresh`). Un front doit donc remplacer son refresh token à chaque renouvellement, et ne pas lancer deux renouvellements en parallèle : le second serait refusé.
+- Pas de déconnexion côté serveur : aucune route ne révoque un refresh token, et un JWT émis reste valable jusqu'à son expiration, même après suppression du rôle. Seule la suppression du compte coupe la session. Une route de déconnexion reste à écrire, au plus tard avec les fronts (`P1-09`, `P3-07`).
+- Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
+- Les erreurs de `/api/v1/token/refresh` sortent au format du bundle (`{"code": 401, "message": ...}`), comme les 401 du pare-feu JWT : à harmoniser avec `P1-03`.
+- Le bundle de refresh token n'a pas de recipe Flex officielle : il est enregistré à la main dans `config/bundles.php` et configuré dans `config/packages/gesdinet_jwt_refresh_token.yaml`.
 - Un compte du back-office ne se crée que par la commande `php bin/console app:user:create-admin` (options `--editor` et `--promote`). Aucune route ne donne de rôle. Les rôles sont relus en base à chaque requête : une promotion prend effet sans se reconnecter.
 - Rôles : `ROLE_ADMIN` inclut `ROLE_EDITOR`, qui inclut `ROLE_USER` (`role_hierarchy`). L'éditeur n'a accès qu'à `/api/v1/admin/products` ; toute nouvelle route du back-office est réservée aux administrateurs tant qu'on ne l'ouvre pas aux éditeurs dans `security.yaml`.
 - Aucune commande ne retire un rôle : pour rétrograder un compte, il faut encore passer par SQL.
@@ -77,6 +82,14 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P1-05 : `/me` et refresh token (branche `feat/P1-05-me-refresh-token`, en relecture)
+- `GET`, `PUT` et `DELETE /api/v1/shop/me` remplacent `/api/v1/shop/users/{id}` : le compte est toujours celui du jeton, le client n'a plus à connaître son identifiant. `UserAccountVoter`, devenu inutile, est supprimé.
+- `GET /api/v1/admin/me` donne l'identité et les rôles du compte connecté au back-office (ouvert aux éditeurs).
+- La connexion renvoie un `refresh_token` en plus du `token`. `POST /api/v1/token/refresh` l'échange contre un nouveau couple.
+- Réglages : JWT de 15 minutes (une heure auparavant, par défaut), refresh token de 30 jours, à usage unique, stocké haché. Migration `Version20261116102013` (table `refresh_tokens`).
+- Le refresh token est émis par un port du domaine (`RefreshTokenIssuerInterface`), implémenté avec `gesdinet/jwt-refresh-token-bundle` 3.1.
+- Vérifications : `composer check` vert ; 12 tests du parcours complet sur PostgreSQL (connexion, `/me`, renouvellement, jeton rejoué, jeton haché en base, compte supprimé) ; collection Bruno, 20 requêtes sur 20.
 
 ### 2026-11-16 — P1-06 : rôles et commande de création d'admin (branche `feat/P1-06-roles-admin-command`, en relecture)
 - Trois rôles emboîtés, décrits dans `Domain/Model/User/Role` : client, éditeur, administrateur. L'éditeur gère les produits, sans accès aux comptes clients.

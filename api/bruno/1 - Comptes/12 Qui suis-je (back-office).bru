@@ -1,0 +1,27 @@
+meta {
+  name: 12 Qui suis-je (back-office)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("200, avec les rôles du compte et le jeton renouvelé", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().email).to.equal(bru.getEnvVar("adminEmail"));
+    expect(res.getBody().roles).to.include("ROLE_ADMIN");
+  });
+}
+
+docs {
+  Identité et rôles du compte connecté au back-office. Ouverte aux éditeurs comme aux administrateurs.
+}

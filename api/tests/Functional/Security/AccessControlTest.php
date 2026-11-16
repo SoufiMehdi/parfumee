@@ -47,9 +47,10 @@ final class AccessControlTest extends WebTestCase
      */
     public static function protectedRoutes(): iterable
     {
-        yield 'shop: read account' => ['GET', '/api/v1/shop/users/'.self::OWNER_ID];
-        yield 'shop: update account' => ['PUT', '/api/v1/shop/users/'.self::OWNER_ID];
-        yield 'shop: delete account' => ['DELETE', '/api/v1/shop/users/'.self::OWNER_ID];
+        yield 'shop: read my account' => ['GET', '/api/v1/shop/me'];
+        yield 'shop: update my account' => ['PUT', '/api/v1/shop/me'];
+        yield 'shop: delete my account' => ['DELETE', '/api/v1/shop/me'];
+        yield 'admin: who am I' => ['GET', '/api/v1/admin/me'];
         yield from self::adminOnlyRoutes();
     }
 
@@ -149,24 +150,35 @@ final class AccessControlTest extends WebTestCase
     }
 
     /**
-     * An editor is also a customer: they keep access to their own account.
+     * An editor is also a customer: they keep access to their own account,
+     * and the back-office can ask who they are.
      */
-    public function testEditorReachesTheirOwnAccount(): void
+    #[DataProvider('identityRoutes')]
+    public function testEditorReadsTheirOwnIdentity(string $uri): void
     {
-        $this->stubAccountUseCases(self::EDITOR_ID);
+        $this->expectAccountUseCasesToTarget(self::EDITOR_ID);
         $this->authenticateAs($this->client, self::EDITOR_ID, ['ROLE_EDITOR']);
 
-        $this->client->request('GET', '/api/v1/shop/users/'.self::EDITOR_ID);
+        $this->client->request('GET', $uri);
 
         self::assertResponseIsSuccessful();
     }
 
-    public function testEditorIsForbiddenOnSomeoneElsesAccount(): void
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function identityRoutes(): iterable
+    {
+        yield 'shop' => ['/api/v1/shop/me'];
+        yield 'back-office' => ['/api/v1/admin/me'];
+    }
+
+    public function testCustomerCannotAskTheBackOfficeWhoTheyAre(): void
     {
         $this->forbidUseCases();
-        $this->authenticateAs($this->client, self::EDITOR_ID, ['ROLE_EDITOR']);
+        $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request('GET', '/api/v1/shop/users/'.self::OWNER_ID);
+        $this->client->request('GET', '/api/v1/admin/me');
 
         self::assertResponseStatusCodeSame(403);
     }
@@ -181,25 +193,17 @@ final class AccessControlTest extends WebTestCase
         yield 'delete' => ['DELETE'];
     }
 
-    #[DataProvider('accountMethods')]
-    public function testCustomerIsForbiddenOnSomeoneElsesAccount(string $method): void
-    {
-        $this->forbidUseCases();
-        $this->authenticateAs($this->client, self::OWNER_ID);
-
-        $this->client->request($method, '/api/v1/shop/users/'.self::OTHER_ID, content: '{}');
-
-        self::assertResponseStatusCodeSame(403);
-        self::assertSame('{"error":"Access denied."}', $this->client->getResponse()->getContent());
-    }
-
+    /**
+     * /me carries no id: the account is always the one of the token. The use
+     * cases are mocks that fail the test if they are given any other id.
+     */
     #[DataProvider('accountMethods')]
     public function testCustomerReachesTheirOwnAccount(string $method): void
     {
-        $this->stubAccountUseCases(self::OWNER_ID);
+        $this->expectAccountUseCasesToTarget(self::OWNER_ID);
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/api/v1/shop/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
+        $this->client->request($method, '/api/v1/shop/me', server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
     }
@@ -266,6 +270,8 @@ final class AccessControlTest extends WebTestCase
         yield 'create product' => ['POST', '/create-product'];
         yield 'update product' => ['PUT', '/edit-product/'.self::OTHER_ID];
         yield 'upload picture' => ['POST', '/upload-picture/'.self::OTHER_ID];
+        // Replaced by /api/v1/shop/me in P1-05: an account is no longer addressed by its id in the shop.
+        yield 'shop account by id' => ['GET', '/api/v1/shop/users/'.self::OWNER_ID];
     }
 
     /**
@@ -324,6 +330,26 @@ final class AccessControlTest extends WebTestCase
         $get = $this->createStub(GetProductUseCase::class);
         $get->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));
         static::getContainer()->set(GetProductUseCase::class, $get);
+    }
+
+    /**
+     * Stubs the account use cases and fails the test unless they are called with this id.
+     */
+    private function expectAccountUseCasesToTarget(string $id): void
+    {
+        $user = new User($id, new Email('owner@example.test'), 'hash', 'Test', 'User');
+
+        $get = $this->createMock(GetUserUseCase::class);
+        $get->expects(self::atMost(1))->method('execute')->with($id)->willReturn($user);
+        static::getContainer()->set(GetUserUseCase::class, $get);
+
+        $update = $this->createMock(UpdateUserUseCase::class);
+        $update->expects(self::atMost(1))->method('execute')->with($id, self::anything())->willReturn($user);
+        static::getContainer()->set(UpdateUserUseCase::class, $update);
+
+        $delete = $this->createMock(DeleteUserUseCase::class);
+        $delete->expects(self::atMost(1))->method('execute')->with($id);
+        static::getContainer()->set(DeleteUserUseCase::class, $delete);
     }
 
     private function stubAccountUseCases(string $id): void

@@ -1,0 +1,16 @@
+# Refresh tokens: a long-lived secret exchanged for a new short-lived JWT
+# on POST /api/v1/token/refresh (see the "main" firewall in security.yaml).
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineRefreshToken
+
+    # 30 days. A session that is not refreshed for that long has to sign in again.
+    ttl: 2592000
+
+    # Each refresh replaces the token it used: a stolen token stops working
+    # as soon as its owner (or the thief) uses it once.
+    single_use: true
+
+    # Only the hash is stored: a copy of the database cannot be used to refresh.
+    hash_tokens:
+        enabled: true
+        accept_stored_in_the_clear: false

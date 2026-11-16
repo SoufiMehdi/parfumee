@@ -30,6 +30,10 @@ security:
             provider: app_user_provider
             stateless: true
             jwt: ~
+            refresh_jwt:
+                check_path: api_token_refresh
+            # Two authenticators: a request without credentials is answered by the JWT one (401).
+            entry_point: jwt
 
     # Two spaces, one rule each (CLAUDE.md, "Architecture cible"):
     #   /api/v1/shop/*   the shop: public for the catalogue and authentication, ROLE_USER otherwise
@@ -38,16 +42,20 @@ security:
     # Anything outside these two spaces falls into the last rule and is admin-only:
     # a new route is closed until it is explicitly opened.
     access_control:
+        # Token renewal, shared by both fronts: the refresh token is the credential
+        - { path: ^/api/v1/token/refresh$, methods: [POST], roles: PUBLIC_ACCESS }
+
         # Shop, public: authentication and catalogue reading
         - { path: ^/api/v1/shop/(login|register)$, methods: [POST], roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/shop/products(/[^/]+)?$, methods: [GET], roles: PUBLIC_ACCESS }
 
-        # Shop, signed-in customer. Ownership of an account is then enforced by UserAccountVoter.
+        # Shop, signed-in customer. /me always targets the account of the token: no id to check.
         - { path: ^/api/v1/shop/, roles: ROLE_USER }
 
         # Back-office. Its sign-in route is public (see the "login" firewall).
-        # Editors manage the catalogue only; everything else needs an administrator.
+        # Editors manage the catalogue and read their own identity; everything else needs an administrator.
         - { path: ^/api/v1/admin/products(/|$), roles: ROLE_EDITOR }
+        - { path: ^/api/v1/admin/me$, roles: ROLE_EDITOR }
         - { path: ^/api/v1/admin/, roles: ROLE_ADMIN }
 
         # Everything else

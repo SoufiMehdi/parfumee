@@ -1,0 +1,38 @@
+meta {
+  name: 11 Renouveler le jeton
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/v1/token/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refresh_token": "{{refreshToken}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("token", res.getBody().token);
+    bru.setVar("refreshToken", res.getBody().refresh_token);
+  }
+}
+
+tests {
+  test("200, un nouveau jeton et un nouveau refresh token", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().token).to.be.a("string");
+    expect(res.getBody().refresh_token).to.be.a("string");
+  });
+}
+
+docs {
+  Échange le refresh token contre un nouveau jeton, sans redonner le mot de passe.
+
+  Un refresh token ne sert qu'une fois : la réponse en contient un nouveau, enregistré à la place de l'ancien. Relancer cette requête deux fois de suite fonctionne donc, mais rejouer un ancien refresh token répond 401.
+}

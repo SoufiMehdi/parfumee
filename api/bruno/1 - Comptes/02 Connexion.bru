@@ -20,16 +20,20 @@ body:json {
 script:post-response {
   if (res.getStatus() === 200) {
     bru.setVar("token", res.getBody().token);
+    bru.setVar("refreshToken", res.getBody().refresh_token);
   }
 }
 
 tests {
-  test("200 et un jeton", function () {
+  test("200, un jeton et un refresh token", function () {
     expect(res.getStatus()).to.equal(200);
     expect(res.getBody().token).to.be.a("string");
+    expect(res.getBody().refresh_token).to.be.a("string");
   });
 }
 
 docs {
   Enregistre le jeton dans la variable `token` : toutes les requêtes protégées l'envoient ensuite automatiquement.
+
+  Le jeton expire au bout de 15 minutes. Relancer cette requête, ou `11 Renouveler le jeton`, pour en obtenir un nouveau.
 }
