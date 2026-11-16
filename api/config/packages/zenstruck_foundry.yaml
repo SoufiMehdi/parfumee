@@ -1,0 +1,12 @@
+# Foundry only builds test data: the factories live in tests/Factory.
+# The database itself is prepared by App\Tests\Support\DatabaseTestCase
+# (migrations once, then one rolled-back transaction per test), not by Foundry's ResetDatabase.
+when@dev: &dev
+    zenstruck_foundry:
+        faker:
+            locale: fr_FR
+        persistence:
+            # Flush only once per call of `PersistentObjectFactory::create()`
+            flush_once: true
+
+when@test: *dev

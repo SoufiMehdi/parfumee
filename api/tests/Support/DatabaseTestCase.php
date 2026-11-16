@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Zenstruck\Foundry\Test\Factories;
 
 /**
  * Base class of the tests that need a real PostgreSQL database.
@@ -19,11 +20,17 @@ use Symfony\Component\Console\Output\BufferedOutput;
  * per PHPUnit run, so the migrations are exercised too. Each test then runs
  * in a transaction that is rolled back: tests do not see each other's data.
  *
+ * Foundry's ResetDatabase trait is deliberately not used: it would rebuild the
+ * schema for every test class.
+ *
  * Without the database these tests fail, on purpose: a skipped test would
  * hide a regression.
  */
 abstract class DatabaseTestCase extends KernelTestCase
 {
+    // Test data is built with the Foundry factories of tests/Factory.
+    use Factories;
+
     private const string START_HINT = 'Start the test database with "docker compose up -d" from api/.';
 
     private static bool $schemaIsUpToDate = false;
