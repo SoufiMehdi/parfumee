@@ -15,8 +15,9 @@
 - **Fait :** `P0-06` (slug produit, B4), mergée dans `main` (PR #13).
 - **Fait :** `P0-08` (secrets, S4), mergée dans `main` (PR #14).
 - **Fait :** `P0-09` (outillage qualité), mergée dans `main` (PR #15).
-- **En relecture :** `P0-11` (CI GitHub Actions), sur la branche `chore/P0-11-ci`.
-- **Prochaine tâche conseillée :** `P0-12` (README d'installation), puis le reste de `P0-10`.
+- **Fait :** `P0-11` (CI GitHub Actions), mergée dans `main` (PR #16).
+- **En relecture :** `P0-12` (README d'installation), sur la branche `docs/P0-12-readme`.
+- **Prochaine tâche conseillée :** le reste de `P0-10`, dernière tâche de la phase 0.
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -63,6 +64,12 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P0-12 : README d'installation (branche `docs/P0-12-readme`, en relecture)
+- Nouveau `README.md` à la racine : prérequis, installation de l'API en 7 étapes, création d'un compte administrateur, routes actuelles, commandes de vérification, fichiers d'environnement, problèmes fréquents.
+- La procédure a été répétée dans un clone neuf du dépôt, sur une base jetable : dépendances, clés JWT, migrations, fixtures, inscription, promotion et connexion d'un administrateur.
+- Non répété : `docker compose up -d` lui-même, pour ne pas perturber les conteneurs déjà lancés sur ce PC.
+- Piste d'amélioration : donner un port fixe à la base de dev supprimerait l'étape 3 du README (`.env.local`) et le piège du port qui change.
 
 ### 2026-11-16 — P0-11 : CI GitHub Actions (branche `chore/P0-11-ci`, en relecture)
 - Nouveau workflow `.github/workflows/api.yml`, lancé sur les PR et sur `main` quand `api/` change.
