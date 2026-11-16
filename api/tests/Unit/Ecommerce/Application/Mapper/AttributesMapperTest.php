@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Application\Mapper;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
@@ -27,7 +29,7 @@ class AttributesMapperTest extends TestCase
                 'fragrance' => 'Floral',
                 'size' => 'Large',
                 'description' => 'A nice product',
-                'presentation' => 'Box'
+                'presentation' => 'Box',
             ]
         );
 
@@ -52,13 +54,12 @@ class AttributesMapperTest extends TestCase
 
         $result = $this->mapper->toDto($attribute);
 
-        $this->assertIsArray($result);
         $this->assertEquals([
             'weight' => 1.5,
             'fragrance' => 'Floral',
             'size' => 'Large',
             'description' => 'A nice product',
-            'presentation' => 'Box'
+            'presentation' => 'Box',
         ], $result);
     }
 
@@ -69,7 +70,7 @@ class AttributesMapperTest extends TestCase
             'fragrance' => 'Woody',
             'size' => 'Small',
             'description' => 'Another product',
-            'presentation' => 'Bag'
+            'presentation' => 'Bag',
         ];
 
         $attribute = $this->mapper->fromArray($data);
@@ -82,29 +83,29 @@ class AttributesMapperTest extends TestCase
         $this->assertEquals('Bag', $attribute->getPresentation());
     }
 
-  /*  public function testFromDtoHandlesMissingValues(): void
-    {
-        $dto = new CreateProductDto(
-            name: 'Test',
-            price: 0.0,
-            categoryId: 'cat',
-            attributes: [
-                'weight' => null,
-                'fragrance' => null,
-                'size' => 'Medium',
-                'description' => null,
-                'presentation' => null
-            ]
-        );
+    /*  public function testFromDtoHandlesMissingValues(): void
+      {
+          $dto = new CreateProductDto(
+              name: 'Test',
+              price: 0.0,
+              categoryId: 'cat',
+              attributes: [
+                  'weight' => null,
+                  'fragrance' => null,
+                  'size' => 'Medium',
+                  'description' => null,
+                  'presentation' => null
+              ]
+          );
 
-        $attribute = $this->mapper->fromDto($dto);
+          $attribute = $this->mapper->fromDto($dto);
 
-        $this->assertNull($attribute->getWeight());
-        $this->assertNull($attribute->getFragrance());
-        $this->assertEquals('Medium', $attribute->getSize());
-        $this->assertNull($attribute->getDescription());
-        $this->assertNull($attribute->getPresentation());
-    }*/
+          $this->assertNull($attribute->getWeight());
+          $this->assertNull($attribute->getFragrance());
+          $this->assertEquals('Medium', $attribute->getSize());
+          $this->assertNull($attribute->getDescription());
+          $this->assertNull($attribute->getPresentation());
+      }*/
 
     public function testMissingAttributesAreNullAndRaiseNoWarning(): void
     {

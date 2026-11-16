@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Storage;
 
 use App\Ecommerce\Domain\Storage\FileStorageInterface;
@@ -10,7 +12,7 @@ class LocalFileStorage implements FileStorageInterface
 {
     public function __construct(
         private string $uploadsDirectory, // Configuré dans services.yaml
-        private SluggerInterface $slugger
+        private SluggerInterface $slugger,
     ) {
     }
 
@@ -18,16 +20,16 @@ class LocalFileStorage implements FileStorageInterface
     {
         $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
         $safeFilename = $this->slugger->slug($originalFilename);
-        $fileName = $safeFilename . '-' . uniqid() . '.' . $file->guessExtension();
+        $fileName = $safeFilename.'-'.uniqid().'.'.$file->guessExtension();
 
-        $file->move($this->uploadsDirectory . '/' . $directory, $fileName);
+        $file->move($this->uploadsDirectory.'/'.$directory, $fileName);
 
-        return $directory . '/' . $fileName;
+        return $directory.'/'.$fileName;
     }
 
     public function delete(string $filePath): void
     {
-        $fullPath = $this->uploadsDirectory . '/' . $filePath;
+        $fullPath = $this->uploadsDirectory.'/'.$filePath;
         if (file_exists($fullPath)) {
             unlink($fullPath);
         }

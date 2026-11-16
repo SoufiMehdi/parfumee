@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
+use App\Ecommerce\Application\Mapper\AttributesMapper;
 use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
-use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
-use App\Ecommerce\Domain\Model\Catalog\Product;
-use App\Ecommerce\Domain\Model\Catalog\Category;
-use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
-use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Model\Catalog\Attribute;
-use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Domain\Model\Catalog\Category;
+use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
+use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
 use PHPUnit\Framework\TestCase;
 
 class UpdateProductUseCaseTest extends TestCase
@@ -33,13 +35,13 @@ class UpdateProductUseCaseTest extends TestCase
             name: 'Nouveau Nom',
             price: 15.0,
             categoryId: 'cat-1',
-            attributes: ['fragrance' => 'Lavande']    
+            attributes: ['fragrance' => 'Lavande']
         );
 
         // 3. Configuration
         $productRepo->expects($this->once())->method('findById')->willReturn($product);
         $categoryRepo->expects($this->once())->method('findById')->willReturn($category);
-        
+
         $attributeMapper
             ->expects($this->once())
             ->method('fromDto')

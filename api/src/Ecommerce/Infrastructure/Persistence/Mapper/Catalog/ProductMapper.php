@@ -1,27 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog;
 
-use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
-use App\Ecommerce\Domain\Model\Catalog\Product;
-use App\Ecommerce\Domain\Model\Catalog\Category;
-use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
-use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
-use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\CategoryMapper;
 use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
+use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 
 class ProductMapper
 {
     public function __construct(
         private CategoryMapper $categoryMapper,
         private AttributesMapper $attributesMapper,
-        private PictureMapper $pictureMapper
-    )
-    {
+        private PictureMapper $pictureMapper,
+    ) {
         // Si tu as besoin d'injecter d'autres mappers ou services, tu peux le faire ici
     }
+
     /**
-     * Transforme un modèle Domaine en entité Doctrine (Infrastructure)
+     * Transforme un modèle Domaine en entité Doctrine (Infrastructure).
      */
     public function toInfrastructure(Product $product, DoctrineCategory $category): DoctrineProduct
     {
@@ -36,7 +35,7 @@ class ProductMapper
     }
 
     /**
-     * Mappe un modèle Domaine vers une entité Doctrine
+     * Mappe un modèle Domaine vers une entité Doctrine.
      */
     public function mapDomainToEntity(Product $product, DoctrineProduct $doctrineProduct, DoctrineCategory $category): void
     {
@@ -48,7 +47,7 @@ class ProductMapper
     }
 
     /**
-     * Transforme une entité Doctrine en modèle Domaine
+     * Transforme une entité Doctrine en modèle Domaine.
      */
     public function toDomain(DoctrineProduct $doctrineProduct): Product
     {
@@ -59,7 +58,7 @@ class ProductMapper
             $doctrineProduct->getPrice(),
             $this->categoryMapper->toDomain($doctrineProduct->getCategory()),
             $this->attributesMapper->fromArray($doctrineProduct->getAttributes()),
-            array_map(fn($doctrinePicture) => $this->pictureMapper->toDomain($doctrinePicture), $doctrineProduct->getPictures()->toArray())
+            array_map(fn ($doctrinePicture) => $this->pictureMapper->toDomain($doctrinePicture), $doctrineProduct->getPictures()->toArray())
         );
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit\Ecommerce\Infrastructure\Presenter\Catalog;
 
 use App\Ecommerce\Application\Mapper\AttributesMapper;
@@ -8,7 +10,6 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
 use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 
 class ProductPresenterTest extends TestCase
 {
@@ -34,7 +35,7 @@ class ProductPresenterTest extends TestCase
                 'description' => 'A nice product',
                 'presentation' => 'box',
             ]
-            );
+        );
 
         $productMock = $this->createMock(Product::class);
         $productMock->method('getId')->willReturn('prod-123');
@@ -45,7 +46,7 @@ class ProductPresenterTest extends TestCase
         $productMock->method('getAttributes')->willReturn($attributesMock);
 
         $result = $this->presenter->present($productMock);
-        
+
         $this->assertEquals([
             'id' => 'prod-123',
             'name' => 'Laptop',
@@ -53,7 +54,7 @@ class ProductPresenterTest extends TestCase
             'price' => 999.99,
             'category' => [
                 'id' => 'cat-123',
-                'name' => 'Electronics'
+                'name' => 'Electronics',
             ],
             'attributes' => [
                 'weight' => 12.5,
@@ -62,7 +63,7 @@ class ProductPresenterTest extends TestCase
                 'description' => 'A nice product',
                 'presentation' => 'box',
             ],
-            'pictures' => []
+            'pictures' => [],
         ], $result);
     }
 
@@ -86,7 +87,7 @@ class ProductPresenterTest extends TestCase
                 'description' => 'A nice product',
                 'presentation' => 'box',
             ]
-            );
+        );
         $productMock->method('getAttributes')->willReturn($attributesMock);
 
         $result = $this->presenter->presentCollection([$productMock, $productMock]);
@@ -102,7 +103,7 @@ class ProductPresenterTest extends TestCase
         $productMock->method('getCategory')->willThrowException(new \Error('Call to a member function getId() on null'));
 
         $this->expectException(\Error::class);
-        
+
         $this->presenter->present($productMock);
     }
 }

@@ -10,7 +10,7 @@ use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 readonly class GetUsersUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
     ) {
     }
 

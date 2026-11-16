@@ -1,16 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Category;
-use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog\DoctrineCategoryRepository;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\CategoryMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class DoctrineCategoryRepositoryTest extends TestCase
 {
@@ -118,7 +119,6 @@ class DoctrineCategoryRepositoryTest extends TestCase
 
         $result = $this->repository->findAll();
 
-        $this->assertIsArray($result);
         $this->assertCount(1, $result);
         $this->assertSame($category, $result[0]);
     }
@@ -126,7 +126,7 @@ class DoctrineCategoryRepositoryTest extends TestCase
     public function testSaveThrowsExceptionOnDatabaseError(): void
     {
         $category = $this->createMock(Category::class);
-        
+
         $this->mapper->method('toInfrastructure')->willReturn(new DoctrineCategory(
             'cat-123',
             'Test Category',

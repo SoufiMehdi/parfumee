@@ -6,8 +6,8 @@ namespace App\Tests\Unit\Ecommerce\Domain\Model\User;
 
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\ValueObject\User\Email;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class UserTest extends TestCase
 {

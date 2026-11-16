@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Integration\Ecommerce\Infrastructure\Controller\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
@@ -14,15 +16,16 @@ use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
 use App\Tests\Support\AuthenticatesRequests;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ProductControllerTest extends WebTestCase
 {
     use AuthenticatesRequests;
 
-    private $client;
+    private KernelBrowser $client;
 
     protected function setUp(): void
     {
@@ -106,7 +109,7 @@ class ProductControllerTest extends WebTestCase
             'name' => 'Oud Intense',
             'price' => 120.50,
             'category_id' => '22222222-2222-4222-8222-222222222222',
-            'attributes' => ['capacity' => '100ml']
+            'attributes' => ['capacity' => '100ml'],
         ];
 
         $this->client->request('POST', '/create-product', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
@@ -185,6 +188,7 @@ class ProductControllerTest extends WebTestCase
         $this->assertSame(JsonResponse::HTTP_BAD_REQUEST, $response->getStatusCode());
         $this->assertSame(['error' => 'The "file" field is required.'], json_decode($response->getContent(), true));
     }
+
     protected static function getKernelClass(): string
     {
         return \App\Kernel::class;

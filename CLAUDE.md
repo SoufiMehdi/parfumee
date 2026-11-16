@@ -55,7 +55,8 @@ composer install
 php bin/console doctrine:migrations:migrate
 php bin/console doctrine:fixtures:load
 php bin/console lexik:jwt:generate-keypair # une seule fois par machine
-vendor/bin/phpunit                         # les tests d'intégration exigent la base de test
-vendor/bin/phpstan analyse                 # utilise phpstan.dist.neon
-vendor/bin/php-cs-fixer fix --dry-run --diff
+composer check                             # tout : style + PHPStan + conteneur + tests (ce que lancera la CI)
+composer lint                              # style (dry-run), PHPStan niveau 6, lint du conteneur
+composer test                              # PHPUnit ; les tests d'intégration exigent la base de test
+composer fix-cs                            # corrige le style (php-cs-fixer)
 ```

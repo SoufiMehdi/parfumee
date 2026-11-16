@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
@@ -12,15 +14,16 @@ use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 class CreateProductUseCaseTest extends TestCase
 {
-    private $productRepository;
-    private $categoryRepository;
-    private $attributesMapper;
-    private $useCase;
+    private ProductRepositoryInterface&MockObject $productRepository;
+    private CategoryRepositoryInterface&MockObject $categoryRepository;
+    private AttributesMapper&MockObject $attributesMapper;
+    private CreateProductUseCase $useCase;
 
     protected function setUp(): void
     {
@@ -50,7 +53,7 @@ class CreateProductUseCaseTest extends TestCase
             attributes: ['fragrance' => 'Vanille']
         );
 
-        $category = new Category($categoryId, 'Bougies', 'bougies');
+        $category = new Category($categoryId->toRfc4122(), 'Bougies', 'bougies');
 
         $this->categoryRepository
             ->expects($this->once())
@@ -90,7 +93,7 @@ class CreateProductUseCaseTest extends TestCase
 
         // 2 & 3. Vérification de l'exception
         $this->expectException(CategoryNotFoundException::class);
-        
+
         $this->useCase->execute($dto);
     }
 }

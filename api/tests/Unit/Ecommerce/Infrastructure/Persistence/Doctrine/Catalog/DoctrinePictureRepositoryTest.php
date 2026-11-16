@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Picture;
@@ -10,8 +12,8 @@ use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\PictureMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class DoctrinePictureRepositoryTest extends TestCase
 {
@@ -30,7 +32,7 @@ class DoctrinePictureRepositoryTest extends TestCase
     {
         $product = $this->createMock(Product::class);
         $product->method('getId')->willReturn('prod-123');
-        
+
         $picture = $this->createMock(Picture::class);
         $picture->method('getProduct')->willReturn($product);
 
@@ -41,7 +43,7 @@ class DoctrinePictureRepositoryTest extends TestCase
         $productRepo->expects($this->once())->method('find')->with('prod-123')->willReturn($productEntity);
 
         $this->entityManager->method('getRepository')->with(DoctrineProduct::class)->willReturn($productRepo);
-        
+
         $this->mapper->expects($this->once())
             ->method('toInfrastructure')
             ->with($picture, $productEntity)
@@ -61,7 +63,7 @@ class DoctrinePictureRepositoryTest extends TestCase
         $pictureEntity = $this->createMock(DoctrinePicture::class);
 
         $this->entityManager->expects($this->never())->method('getRepository');
-        
+
         $this->mapper->expects($this->once())
             ->method('toInfrastructure')
             ->with($picture, null)
@@ -123,14 +125,13 @@ class DoctrinePictureRepositoryTest extends TestCase
 
     public function testSaveThrowsExceptionOnDatabaseError(): void
     {
-        
         $picture = $this->createMock(Picture::class);
         $this->mapper->method('toInfrastructure')->willReturn(new DoctrinePicture(
             'pic-123',
             'http://example.com/pic.jpg',
             null
         ));
-        
+
         $this->entityManager->method('persist')->willThrowException(new \RuntimeException('DB Error'));
 
         $this->expectException(\RuntimeException::class);

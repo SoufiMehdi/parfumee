@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Service\User;
 
 use App\Ecommerce\Infrastructure\Service\User\PasswordHasher;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 class PasswordHasherTest extends TestCase
 {
-    private UserPasswordHasherInterface $symfonyHasher;
+    private UserPasswordHasherInterface&MockObject $symfonyHasher;
     private PasswordHasher $passwordHasher;
 
     protected function setUp(): void

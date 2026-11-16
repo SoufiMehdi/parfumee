@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Domain\Repository\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Picture;
@@ -7,7 +9,9 @@ use App\Ecommerce\Domain\Model\Catalog\Picture;
 interface PictureRepositoryInterface
 {
     public function save(Picture $picture): void;
+
     public function findById(string $id): ?Picture;
+
     /**
      * @return Picture[]
      */

@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
-use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Model\Catalog\Category;
+use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog\DoctrineProductRepository;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
@@ -12,8 +14,8 @@ use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\ProductMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\NativeQuery;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
 class DoctrineProductRepositoryTest extends TestCase
 {
@@ -45,7 +47,7 @@ class DoctrineProductRepositoryTest extends TestCase
             $doctrineCategory,
             [
                 'description' => 'Description of Product 1',
-                'size' => 'M'
+                'size' => 'M',
             ]
         );
 
@@ -88,8 +90,7 @@ class DoctrineProductRepositoryTest extends TestCase
             new DoctrineCategory('cat-1', 'Category 1', 'slug-cat-1'),
             [
                 'description' => 'Description of Product 1',
-                'size' => 'M'
-
+                'size' => 'M',
             ]
         );
         $product = $this->createMock(Product::class);
@@ -113,13 +114,14 @@ class DoctrineProductRepositoryTest extends TestCase
 
         $this->assertSame($product, $result);
     }
-     public function testFindAllReturnsCollectionOfProducts(): void
+
+    public function testFindAllReturnsCollectionOfProducts(): void
     {
         $doctrineProduct1 = $this->createMock(DoctrineProduct::class);
         $doctrineProduct2 = $this->createMock(DoctrineProduct::class);
         $product1 = $this->createMock(Product::class);
         $product2 = $this->createMock(Product::class);
-        
+
         $repository = $this->createMock(EntityRepository::class);
 
         $this->entityManager->method('getRepository')
@@ -178,4 +180,3 @@ class DoctrineProductRepositoryTest extends TestCase
         $this->assertSame([$product], $result);
     }
 }
-

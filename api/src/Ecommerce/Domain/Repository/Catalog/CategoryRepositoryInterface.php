@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Domain\Repository\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Category;
@@ -7,7 +9,13 @@ use App\Ecommerce\Domain\Model\Catalog\Category;
 interface CategoryRepositoryInterface
 {
     public function save(Category $category): void;
+
     public function findById(string $id): ?Category;
+
     public function findBySlug(string $slug): ?Category;
+
+    /**
+     * @return Category[]
+     */
     public function findAll(): array;
 }

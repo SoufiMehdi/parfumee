@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
+use App\Ecommerce\Domain\Repository\Catalog\PictureRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Storage\FileStorageInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Uid\Uuid;
-use App\Ecommerce\Domain\Repository\Catalog\PictureRepositoryInterface;
 
 class UploadProductImageUseCase
 {
     public function __construct(
         private ProductRepositoryInterface $productRepository,
         private FileStorageInterface $fileStorage,
-        private PictureRepositoryInterface $pictureRepository
+        private PictureRepositoryInterface $pictureRepository,
     ) {
     }
 

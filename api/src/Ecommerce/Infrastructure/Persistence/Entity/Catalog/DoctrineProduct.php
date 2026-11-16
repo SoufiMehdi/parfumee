@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
-use Doctrine\ORM\Mapping as ORM;
-use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'products')]
@@ -28,24 +29,29 @@ class DoctrineProduct
     #[ORM\JoinColumn(nullable: false)]
     private DoctrineCategory $category;
 
-
     /**
      * C'est ici que réside la magie pour le côté générique.
      * Le type 'json' sur PostgreSQL crée une colonne JSONB par défaut.
+     *
+     * @var array<string, mixed>
      */
     #[ORM\Column(type: 'json')]
     private array $attributes = [];
+
+    /** @var Collection<int, DoctrinePicture> */
     #[ORM\OneToMany(mappedBy: 'product', targetEntity: DoctrinePicture::class, cascade: ['persist', 'remove'])]
     private Collection $pictures;
 
+    /**
+     * @param array<string, mixed> $attributes
+     */
     public function __construct(
-        string $id, 
+        string $id,
         string $name,
         string $slug,
-         float $price, DoctrineCategory $category, 
-         array $attributes = []
-         )
-    {
+        float $price, DoctrineCategory $category,
+        array $attributes = [],
+    ) {
         $this->id = $id;
         $this->name = $name;
         $this->slug = $slug;
@@ -55,24 +61,80 @@ class DoctrineProduct
         $this->pictures = new ArrayCollection();
     }
 
-    public function getId(): string { return $this->id; }
-    public function getName(): string { return $this->name; }
-    public function setName(string $name): void { $this->name = $name; }
-    public function getSlug(): string { return $this->slug; }
-    public function setSlug(string $slug): void { $this->slug = $slug; }
-    public function getPrice(): float { return $this->price; }
-    public function setPrice(float $price): void { $this->price = $price;}
-    public function getCategory(): DoctrineCategory { return $this->category; }
-    public function setCategory(DoctrineCategory $category): void { $this->category = $category; }
-    public function getAttributes(): array { return $this->attributes; }
-    public function setAttributes(array $attributes): void { $this->attributes = $attributes;}
-    public function getPictures(): Collection { return $this->pictures; }
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): void
+    {
+        $this->slug = $slug;
+    }
+
+    public function getPrice(): float
+    {
+        return $this->price;
+    }
+
+    public function setPrice(float $price): void
+    {
+        $this->price = $price;
+    }
+
+    public function getCategory(): DoctrineCategory
+    {
+        return $this->category;
+    }
+
+    public function setCategory(DoctrineCategory $category): void
+    {
+        $this->category = $category;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getAttributes(): array
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * @param array<string, mixed> $attributes
+     */
+    public function setAttributes(array $attributes): void
+    {
+        $this->attributes = $attributes;
+    }
+
+    /**
+     * @return Collection<int, DoctrinePicture>
+     */
+    public function getPictures(): Collection
+    {
+        return $this->pictures;
+    }
+
     public function addPicture(DoctrinePicture $picture): void
     {
         if (!$this->pictures->contains($picture)) {
             $this->pictures[] = $picture;
-            $picture->setProduct($this);    
+            $picture->setProduct($this);
         }
     }
-
 }

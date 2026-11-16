@@ -7,8 +7,8 @@ namespace App\Tests\Unit\Ecommerce\Application\UseCase\User;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 class DeleteUserUseCaseTest extends TestCase

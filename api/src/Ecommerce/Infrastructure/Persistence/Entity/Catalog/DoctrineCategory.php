@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -26,10 +28,28 @@ class DoctrineCategory
     }
 
     // Getters / Setters...
-    public function getId(): string { return $this->id; }
-    public function getName(): string { return $this->name; }
-    public function setName(string $name): void { $this->name = $name; }
-    public function getSlug(): string { return $this->slug; }   
-    public function setSlug(string $slug): void { $this->slug = $slug; }
+    public function getId(): string
+    {
+        return $this->id;
+    }
 
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): void
+    {
+        $this->slug = $slug;
+    }
 }

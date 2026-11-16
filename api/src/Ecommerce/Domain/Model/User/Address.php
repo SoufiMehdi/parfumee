@@ -18,15 +18,43 @@ class Address
         private string $postalCode,
         private string $country,
         private bool $isDefault = false,
-    ) {}
+    ) {
+    }
 
-    public function getId(): string { return $this->id; }
-    public function getType(): string { return $this->type; }
-    public function getStreet(): string { return $this->street; }
-    public function getCity(): string { return $this->city; }
-    public function getPostalCode(): string { return $this->postalCode; }
-    public function getCountry(): string { return $this->country; }
-    public function isDefault(): bool { return $this->isDefault; }
+    public function getId(): string
+    {
+        return $this->id;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function getStreet(): string
+    {
+        return $this->street;
+    }
+
+    public function getCity(): string
+    {
+        return $this->city;
+    }
+
+    public function getPostalCode(): string
+    {
+        return $this->postalCode;
+    }
+
+    public function getCountry(): string
+    {
+        return $this->country;
+    }
+
+    public function isDefault(): bool
+    {
+        return $this->isDefault;
+    }
 
     public function update(string $street, string $city, string $postalCode, string $country): void
     {

@@ -1,15 +1,17 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 namespace App\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
+use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Product;
-use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
-use App\Ecommerce\Application\Mapper\AttributesMapper;
-use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
+use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 
 class UpdateProductUseCase
 {
@@ -47,6 +49,7 @@ class UpdateProductUseCase
         );
 
         $this->productRepository->save($product);
+
         return $product;
     }
 }

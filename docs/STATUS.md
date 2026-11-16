@@ -13,8 +13,9 @@
 - **Fait :** `P0-05` (validation des entrées), mergée dans `main` (PR #11).
 - **Fait :** `P0-07` (bugs ponctuels B5, B6, B7), mergée dans `main` (PR #12).
 - **Fait :** `P0-06` (slug produit, B4), mergée dans `main` (PR #13).
-- **En relecture :** `P0-08` (secrets, S4), sur la branche `fix/P0-08-secrets`.
-- **Prochaine tâche conseillée :** `P0-09` (outillage qualité).
+- **Fait :** `P0-08` (secrets, S4), mergée dans `main` (PR #14).
+- **En relecture :** `P0-09` (outillage qualité), sur la branche `chore/P0-09-quality-tooling`.
+- **Prochaine tâche conseillée :** `P0-11` (CI GitHub Actions), qui n'a plus qu'à lancer `composer check`.
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -59,6 +60,14 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P0-09 : outillage qualité (branche `chore/P0-09-quality-tooling`, en relecture)
+- Psalm est retiré (config `pslam.xml` cassée et dépendance `vimeo/psalm`), ainsi que l'ancien `.php_cs`. PHPStan fait l'analyse statique.
+- Scripts Composer réparés et complétés : `composer lint` (style, PHPStan, conteneur), `composer test`, `composer check` (les deux), `composer fix-cs`.
+- PHP-CS-Fixer est passé sur tout le code (76 fichiers), avec la règle `declare_strict_types` : tous les fichiers PHP déclarent `strict_types`.
+- `strict_types` a révélé un bug caché : `CreateProductUseCase` passait un objet `Uuid` à un repository qui attend une chaîne. Corrigé.
+- PHPStan niveau 6 : 0 erreur, contre 54. Au passage, `Category::getPictures()` plantait tant qu'aucune image n'était ajoutée (propriété non initialisée) : corrigé.
+- Vérifications : `composer check` vert (style, PHPStan, conteneur, PHPUnit 267 tests) ; essai HTTP réel de toutes les routes sous `strict_types`.
 
 ### 2026-11-14 — P0-08 : secrets, S4 (branche `fix/P0-08-secrets`, en relecture)
 - `.env` ne contient plus aucun secret : `JWT_PASSPHRASE` y est vidé, comme `APP_SECRET`.

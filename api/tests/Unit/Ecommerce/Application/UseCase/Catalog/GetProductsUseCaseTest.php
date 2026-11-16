@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Application\UseCase\Catalog;
 
 use App\Ecommerce\Application\UseCase\Catalog\GetProductsUseCase;
+use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
-use App\Ecommerce\Domain\Model\Catalog\Attribute;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class GetProductsUseCaseTest extends TestCase
 {
-    private $productRepository;
-    private $useCase;
+    private ProductRepositoryInterface&MockObject $productRepository;
+    private GetProductsUseCase $useCase;
 
     protected function setUp(): void
     {
@@ -26,7 +29,7 @@ class GetProductsUseCaseTest extends TestCase
         $category = new Category('cat-1', 'Parfums', 'parfums');
         $productList = [
             new Product('p1', 'Oud Royal', 'oud-royal', 120.0, $category, new Attribute()),
-            new Product('p2', 'Rose Night', 'rose-night', 85.0, $category, new Attribute())
+            new Product('p2', 'Rose Night', 'rose-night', 85.0, $category, new Attribute()),
         ];
 
         $this->productRepository
@@ -38,7 +41,6 @@ class GetProductsUseCaseTest extends TestCase
         $result = $this->useCase->execute();
 
         // 3. Assert
-        $this->assertIsArray($result);
         $this->assertCount(2, $result);
         $this->assertSame($productList, $result);
         $this->assertInstanceOf(Product::class, $result[0]);
@@ -55,7 +57,6 @@ class GetProductsUseCaseTest extends TestCase
         $result = $this->useCase->execute();
 
         // 3. Assert
-        $this->assertIsArray($result);
         $this->assertEmpty($result);
     }
 }

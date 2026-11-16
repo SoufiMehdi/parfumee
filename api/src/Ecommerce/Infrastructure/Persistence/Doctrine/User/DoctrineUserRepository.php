@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Persistence\Doctrine\User;
 
-use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Model\User\User;
-use Symfony\Component\Uid\Uuid;
-use Doctrine\ORM\EntityManagerInterface;
-use App\Ecommerce\Infrastructure\Persistence\Mapper\User\UserMapper;
+use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
+use App\Ecommerce\Infrastructure\Persistence\Mapper\User\UserMapper;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Uid\Uuid;
 
 class DoctrineUserRepository implements UserRepositoryInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private UserMapper $mapper
+        private UserMapper $mapper,
     ) {
     }
 

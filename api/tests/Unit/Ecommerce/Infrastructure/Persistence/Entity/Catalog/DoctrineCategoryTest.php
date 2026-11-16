@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
@@ -24,14 +26,14 @@ class DoctrineCategoryTest extends TestCase
     public function testSetNameUpdatesValue(): void
     {
         $this->category->setName('Home Appliances');
-        
+
         $this->assertSame('Home Appliances', $this->category->getName());
     }
 
     public function testSetSlugUpdatesValue(): void
     {
         $this->category->setSlug('home-appliances');
-        
+
         $this->assertSame('home-appliances', $this->category->getSlug());
     }
 }

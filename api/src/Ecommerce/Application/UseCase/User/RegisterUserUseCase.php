@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Application\UseCase\User;
 
+use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Domain\Exception\User\DuplicateEmailException;
 use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordHasherInterface;
-use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
 use Symfony\Component\Uid\Uuid;
@@ -18,8 +18,9 @@ readonly class RegisterUserUseCase
 {
     public function __construct(
         private UserRepositoryInterface $userRepository,
-        private PasswordHasherInterface $passwordHasher
-    ) {}
+        private PasswordHasherInterface $passwordHasher,
+    ) {
+    }
 
     public function execute(RegisterUserRequestDto $dto): void
     {

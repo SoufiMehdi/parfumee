@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
@@ -38,7 +40,7 @@ class DoctrineProductTest extends TestCase
     public function testSettersUpdateValues(): void
     {
         $newCategory = new DoctrineCategory('cat-2', 'Gadgets', 'gadgets');
-        
+
         $this->product->setName('New Smartphone');
         $this->product->setPrice(899.99);
         $this->product->setCategory($newCategory);
@@ -53,7 +55,7 @@ class DoctrineProductTest extends TestCase
     public function testAddPictureAddsToCollectionAndSetsProduct(): void
     {
         $picture = $this->createMock(DoctrinePicture::class);
-        
+
         // On s'assure que setProduct est bien appelé sur l'image
         $picture->expects($this->once())
             ->method('setProduct')

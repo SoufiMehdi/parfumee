@@ -8,6 +8,9 @@ use App\Ecommerce\Domain\Model\User\User;
 
 class UserPresenter
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function present(User $user): array
     {
         return [
@@ -17,7 +20,7 @@ class UserPresenter
             'lastName' => $user->getLastName(),
             'phoneNumber' => $user->getPhoneNumber()?->getValue(),
             'roles' => $user->getRoles(),
-            'addresses' => array_map(fn($address) => [
+            'addresses' => array_map(fn ($address) => [
                 'id' => $address->getId(),
                 'type' => $address->getType(),
                 'street' => $address->getStreet(),
@@ -31,6 +34,8 @@ class UserPresenter
 
     /**
      * @param User[] $users
+     *
+     * @return list<array<string, mixed>>
      */
     public function presentCollection(array $users): array
     {

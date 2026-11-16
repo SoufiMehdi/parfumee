@@ -1,10 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
-use App\Ecommerce\Domain\Model\Catalog\Picture;
 use Doctrine\ORM\Mapping as ORM;
-use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'pictures')]
@@ -37,7 +37,7 @@ class DoctrinePicture
         ?string $alt = null,
         ?int $sortOrder = null,
         ?DoctrineProduct $product = null,
-        ?DoctrineCategory $category = null
+        ?DoctrineCategory $category = null,
     ) {
         $this->id = $id;
         $this->url = $url;
@@ -46,46 +46,57 @@ class DoctrinePicture
         $this->product = $product;
         $this->category = $category;
     }
+
     public function getId(): string
     {
         return $this->id;
     }
+
     public function getUrl(): string
     {
         return $this->url;
     }
+
     public function setUrl(string $url): void
     {
         $this->url = $url;
     }
+
     public function getAlt(): ?string
     {
         return $this->alt;
     }
+
     public function setAlt(?string $alt): void
     {
         $this->alt = $alt;
     }
+
     public function getSortOrder(): ?int
     {
         return $this->sortOrder;
     }
+
     public function setSortOrder(?int $sortOrder): void
     {
         $this->sortOrder = $sortOrder;
     }
+
     public function getProduct(): ?DoctrineProduct
     {
         return $this->product;
     }
+
     public function setProduct(?DoctrineProduct $product): void
     {
         $this->product = $product;
     }
+
     public function getCategory(): ?DoctrineCategory
     {
         return $this->category;
     }
+
     public function setCategory(?DoctrineCategory $category): void
     {
         $this->category = $category;

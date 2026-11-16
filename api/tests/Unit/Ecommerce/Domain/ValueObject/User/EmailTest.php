@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Unit\Ecommerce\Domain\ValueObject\User;
 
-use App\Ecommerce\Domain\ValueObject\User\Email;
-use PHPUnit\Framework\TestCase;
 use App\Ecommerce\Domain\Exception\User\InvalidEmailException;
+use App\Ecommerce\Domain\ValueObject\User\Email;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
 class EmailTest extends TestCase
 {
     public function testItShouldCreateAValidEmail(): void
@@ -25,6 +28,9 @@ class EmailTest extends TestCase
         new Email($invalidEmail);
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
     public static function invalidEmailProvider(): array
     {
         return [

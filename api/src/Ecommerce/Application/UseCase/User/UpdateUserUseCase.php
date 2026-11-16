@@ -13,7 +13,7 @@ use Symfony\Component\Uid\Uuid;
 readonly class UpdateUserUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
     ) {
     }
 
@@ -23,7 +23,7 @@ readonly class UpdateUserUseCase
 
         $user->updateProfile($dto->firstName, $dto->lastName);
 
-        if ($dto->phoneNumber !== null) {
+        if (null !== $dto->phoneNumber) {
             $user->updatePhoneNumber(new PhoneNumber($dto->phoneNumber));
         }
 
