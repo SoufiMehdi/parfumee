@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Ecommerce\Infrastructure\Security;
 
 use App\Ecommerce\Domain\Service\User\PasswordHasherInterface;
+use App\Ecommerce\Infrastructure\Security\RefreshTokenFailureHandler;
 use App\Tests\Factory\User\DoctrineUserFactory;
 use App\Tests\Support\DatabaseTestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -95,7 +96,11 @@ final class TokenRefreshTest extends DatabaseTestCase
 
     public function testAnUnknownRefreshTokenIsRefused(): void
     {
-        self::assertSame(401, $this->refresh(str_repeat('a', 128))->getStatusCode());
+        $response = $this->refresh(str_repeat('a', 128));
+
+        self::assertSame(401, $response->getStatusCode());
+        // The error format of the API (the Error schema of the contract), not the one of the bundle.
+        self::assertSame(['error' => RefreshTokenFailureHandler::MESSAGE], $this->decode($response));
     }
 
     public function testRefreshingWithoutATokenIsRefused(): void

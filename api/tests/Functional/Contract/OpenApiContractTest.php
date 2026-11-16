@@ -159,6 +159,9 @@ final class OpenApiContractTest extends WebTestCase
     /**
      * Error bodies are built by hand in listeners, not from a class: this is
      * what ties them to the Error schema of the contract.
+     *
+     * No request here may reach the database: functional tests run without one. The
+     * refused token refresh, which reads it, is checked in TokenRefreshTest.
      */
     public function testRealErrorResponsesMatchTheErrorSchema(): void
     {
@@ -174,10 +177,6 @@ final class OpenApiContractTest extends WebTestCase
         $client->request('GET', '/api/v1/shop/me', server: ['HTTP_AUTHORIZATION' => 'Bearer not-a-jwt']);
         self::assertSame(401, $client->getResponse()->getStatusCode());
         self::assertSame(['error' => JwtFailureListener::INVALID], $this->decode($client));
-
-        $client->request('POST', '/api/v1/token/refresh', server: ['CONTENT_TYPE' => 'application/json'], content: '{"refresh_token": "unknown"}');
-        self::assertSame(401, $client->getResponse()->getStatusCode());
-        self::assertSame(['error'], array_keys($this->decode($client)));
 
         $client->request('GET', '/api/v1/shop/products/not-a-uuid');
         self::assertSame(404, $client->getResponse()->getStatusCode());
