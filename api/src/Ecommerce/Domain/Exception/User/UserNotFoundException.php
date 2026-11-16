@@ -12,4 +12,12 @@ class UserNotFoundException extends \DomainException implements NotFoundExceptio
     {
         parent::__construct(sprintf('User with ID "%s" not found.', $userId));
     }
+
+    public static function withEmail(string $email): self
+    {
+        $exception = new self($email);
+        $exception->message = \sprintf('User with email "%s" not found.', $email);
+
+        return $exception;
+    }
 }

@@ -10,6 +10,11 @@ security:
                 class: App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser
                 property: email
 
+    # Mirrors App\Ecommerce\Domain\Model\User\Role: each role includes the previous one.
+    role_hierarchy:
+        ROLE_EDITOR: ROLE_USER
+        ROLE_ADMIN: ROLE_EDITOR
+
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
@@ -28,7 +33,7 @@ security:
 
     # Two spaces, one rule each (CLAUDE.md, "Architecture cible"):
     #   /api/v1/shop/*   the shop: public for the catalogue and authentication, ROLE_USER otherwise
-    #   /api/v1/admin/*  the back-office: ROLE_ADMIN
+    #   /api/v1/admin/*  the back-office: ROLE_ADMIN, or ROLE_EDITOR for the catalogue
     # Only the *first* matching rule is applied, so the order matters.
     # Anything outside these two spaces falls into the last rule and is admin-only:
     # a new route is closed until it is explicitly opened.
@@ -41,6 +46,8 @@ security:
         - { path: ^/api/v1/shop/, roles: ROLE_USER }
 
         # Back-office. Its sign-in route is public (see the "login" firewall).
+        # Editors manage the catalogue only; everything else needs an administrator.
+        - { path: ^/api/v1/admin/products(/|$), roles: ROLE_EDITOR }
         - { path: ^/api/v1/admin/, roles: ROLE_ADMIN }
 
         # Everything else

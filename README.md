@@ -105,21 +105,34 @@ curl http://127.0.0.1:8000/api/v1/shop/products
 
 ### Créer un compte administrateur
 
-Presque toutes les routes d'écriture sont réservées aux administrateurs, et aucune commande ne crée encore de compte admin. En attendant, créer un compte puis le promouvoir en base.
+Le back-office est réservé aux comptes qui ont un rôle, et aucune route ne permet d'en donner un : cela passe par une commande.
 
 ```bash
-# 1. Créer un compte (mot de passe : 8 caractères minimum)
-curl -X POST http://127.0.0.1:8000/api/v1/shop/register \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.test","password":"change-me-123","first_name":"Ada","last_name":"Admin"}'
+php bin/console app:user:create-admin
+```
 
-# 2. Le promouvoir administrateur
-php bin/console dbal:run-sql "UPDATE users SET roles = '[\"ROLE_ADMIN\"]' WHERE email = 'admin@example.test'"
+Elle demande l'email, le prénom, le nom et le mot de passe (12 caractères minimum, saisie masquée). Variantes :
 
-# 3. Se connecter : la réponse contient le jeton
+```bash
+# Un éditeur : il gère le catalogue, sans accès aux comptes clients
+php bin/console app:user:create-admin editeur@example.test --editor
+
+# Donner le rôle à un compte déjà inscrit, sans toucher à son mot de passe
+php bin/console app:user:create-admin client@example.test --promote
+```
+
+| Rôle | Droits |
+|---|---|
+| Client (`ROLE_USER`) | Son propre compte |
+| Éditeur (`ROLE_EDITOR`) | Ceux du client, plus la gestion des produits (`/api/v1/admin/products`) |
+| Administrateur (`ROLE_ADMIN`) | Ceux de l'éditeur, plus tout le reste du back-office, dont les comptes clients |
+
+Se connecter ensuite ; la réponse contient le jeton :
+
+```bash
 curl -X POST http://127.0.0.1:8000/api/v1/admin/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.test","password":"change-me-123"}'
+  -d '{"email":"admin@example.test","password":"<mot de passe>"}'
 ```
 
 Le jeton s'envoie ensuite dans l'en-tête `Authorization: Bearer <jeton>`. Exemple, avec l'identifiant fixe de la catégorie « Bougies Parfumées » des fixtures :
@@ -142,7 +155,7 @@ Le dossier `api/bruno/` est une collection [Bruno](https://www.usebruno.com/) : 
 3. Lancer `1 - Comptes / 01 Inscription`, puis promouvoir ce compte administrateur, une seule fois :
 
    ```bash
-   php bin/console dbal:run-sql "UPDATE users SET roles = '[\"ROLE_ADMIN\"]' WHERE email = 'admin@example.test'"
+   php bin/console app:user:create-admin admin@example.test --promote
    ```
 
 4. Lancer `02 Connexion` : le jeton est enregistré, les autres requêtes l'envoient toutes seules.
@@ -177,15 +190,15 @@ Deux espaces, un par front. Ils partagent les mêmes cas d'usage ; seuls les con
 | Méthode | Route | Accès |
 |---|---|---|
 | `POST` | `/api/v1/admin/login` | Public |
-| `GET` | `/api/v1/admin/products` | Administrateur. Mêmes filtres que la boutique |
-| `GET` | `/api/v1/admin/products/{id}` | Administrateur |
-| `POST` | `/api/v1/admin/products` | Administrateur |
-| `PUT` | `/api/v1/admin/products/{id}` | Administrateur |
-| `POST` | `/api/v1/admin/products/{id}/pictures` | Administrateur |
+| `GET` | `/api/v1/admin/products` | Éditeur. Mêmes filtres que la boutique |
+| `GET` | `/api/v1/admin/products/{id}` | Éditeur |
+| `POST` | `/api/v1/admin/products` | Éditeur |
+| `PUT` | `/api/v1/admin/products/{id}` | Éditeur |
+| `POST` | `/api/v1/admin/products/{id}/pictures` | Éditeur |
 | `GET` | `/api/v1/admin/users` | Administrateur |
 | `GET` `PUT` `DELETE` | `/api/v1/admin/users/{id}` | Administrateur |
 
-Tout le reste de `/api/v1/admin` est réservé aux administrateurs, et tout le reste de `/api/v1/shop` aux clients connectés.
+« Éditeur » inclut les administrateurs. Tout le reste de `/api/v1/admin` est réservé aux administrateurs, et tout le reste de `/api/v1/shop` aux clients connectés.
 
 ## Vérifier son travail
 

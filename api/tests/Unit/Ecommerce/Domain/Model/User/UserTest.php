@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Ecommerce\Domain\Model\User;
 
+use App\Ecommerce\Domain\Exception\User\UnknownRoleException;
+use App\Ecommerce\Domain\Model\User\Role;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use PHPUnit\Framework\MockObject\Stub;
@@ -89,5 +91,28 @@ class UserTest extends TestCase
         $user->changePassword($newHash);
 
         $this->assertEquals($newHash, $user->getPasswordHash());
+    }
+
+    public function testGrantRoleAddsTheRoleOnce(): void
+    {
+        $user = new User($this->id, $this->emailMock, $this->passwordHash, $this->firstName, $this->lastName);
+
+        $user->grantRole(Role::EDITOR);
+        $user->grantRole(Role::EDITOR);
+
+        $this->assertSame([Role::USER, Role::EDITOR], $user->getRoles());
+    }
+
+    public function testGrantRoleRefusesAnUnknownRole(): void
+    {
+        $user = new User($this->id, $this->emailMock, $this->passwordHash, $this->firstName, $this->lastName);
+
+        $this->expectException(UnknownRoleException::class);
+
+        try {
+            $user->grantRole('ROLE_SUPER_ADMIN');
+        } finally {
+            $this->assertSame([Role::USER], $user->getRoles());
+        }
     }
 }
