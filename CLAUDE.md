@@ -20,8 +20,8 @@ Site e-commerce de **bougies parfumées**. Un seul dépôt contient une API et l
 ## Architecture cible
 
 - **Une API, deux espaces de routes :**
-  - `/api/shop/*` est consommé par la boutique (public + `ROLE_USER`) ;
-  - `/api/admin/*` est consommé par le back-office (`ROLE_ADMIN`).
+  - `/api/v1/shop/*` est consommé par la boutique (public + `ROLE_USER`) ;
+  - `/api/v1/admin/*` est consommé par le back-office (`ROLE_ADMIN`).
 - **Les deux espaces réutilisent les mêmes use cases.** Seuls les contrôleurs, la sécurité et les presenters diffèrent.
 - **Le contrat d'API est décrit en OpenAPI.** Les fronts génèrent leur client TypeScript à partir de lui ; on ne l'écrit pas à la main.
 - **Déploiement :** un VPS IONOS (datacenter Allemagne) avec Docker Compose et Caddy (HTTPS automatique). La même stack Compose tourne en dev et en prod (ADR 0004).

@@ -50,7 +50,7 @@ final class InputValidationTest extends WebTestCase
     {
         $dto = $this->captureDto(RegisterUserUseCase::class);
 
-        $this->sendJson('POST', '/users/create', self::USER + ['phone_number' => '+33 6 12 34 56 78']);
+        $this->sendJson('POST', '/api/v1/shop/register', self::USER + ['phone_number' => '+33 6 12 34 56 78']);
 
         self::assertResponseStatusCodeSame(201);
         self::assertInstanceOf(RegisterUserRequestDto::class, $dto->value);
@@ -64,7 +64,7 @@ final class InputValidationTest extends WebTestCase
     {
         $dto = $this->captureDto(RegisterUserUseCase::class);
 
-        $this->sendJson('POST', '/users/create', self::USER + [
+        $this->sendJson('POST', '/api/v1/shop/register', self::USER + [
             'address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'postal_code' => '75002', 'country' => 'France'],
         ]);
 
@@ -79,7 +79,7 @@ final class InputValidationTest extends WebTestCase
     {
         $dto = $this->captureDto(CreateProductUseCase::class, self::ID);
 
-        $this->sendJson('POST', '/create-product', array_diff_key(self::PRODUCT, ['attributes' => 0]));
+        $this->sendJson('POST', '/api/v1/admin/products', array_diff_key(self::PRODUCT, ['attributes' => 0]));
 
         self::assertResponseStatusCodeSame(201);
         self::assertInstanceOf(CreateProductDto::class, $dto->value);
@@ -90,7 +90,7 @@ final class InputValidationTest extends WebTestCase
     {
         $this->captureDto(CreateProductUseCase::class, self::ID);
 
-        $this->sendJson('POST', '/create-product', ['attributes' => ['wax' => 'soy', 'weight' => 180.5]] + self::PRODUCT);
+        $this->sendJson('POST', '/api/v1/admin/products', ['attributes' => ['wax' => 'soy', 'weight' => 180.5]] + self::PRODUCT);
 
         self::assertResponseStatusCodeSame(201);
     }
@@ -99,7 +99,7 @@ final class InputValidationTest extends WebTestCase
     {
         $dto = $this->captureDto(RegisterUserUseCase::class);
 
-        $this->sendJson('POST', '/users/create', self::USER + ['roles' => ['ROLE_ADMIN']]);
+        $this->sendJson('POST', '/api/v1/shop/register', self::USER + ['roles' => ['ROLE_ADMIN']]);
 
         self::assertResponseStatusCodeSame(201);
         self::assertObjectNotHasProperty('roles', $dto->value);
@@ -110,7 +110,7 @@ final class InputValidationTest extends WebTestCase
         $dto = $this->captureDto(CreateProductUseCase::class, self::ID);
 
         // An integer price is what a JSON client sends for a round amount.
-        $this->sendJson('POST', '/create-product', ['price' => 25] + self::PRODUCT);
+        $this->sendJson('POST', '/api/v1/admin/products', ['price' => 25] + self::PRODUCT);
 
         self::assertResponseStatusCodeSame(201);
         self::assertInstanceOf(CreateProductDto::class, $dto->value);
@@ -124,7 +124,7 @@ final class InputValidationTest extends WebTestCase
     {
         $dto = $this->captureDto(GetFilteredProductsUseCase::class, []);
 
-        $this->client->request('GET', '/products/filter?category_id='.self::ID.'&min_price=10&max_price=30.5&scent=amber');
+        $this->client->request('GET', '/api/v1/shop/products?category_id='.self::ID.'&min_price=10&max_price=30.5&scent=amber');
 
         self::assertResponseStatusCodeSame(200);
         self::assertInstanceOf(GetProductsFilterDto::class, $dto->value);
@@ -139,7 +139,7 @@ final class InputValidationTest extends WebTestCase
     {
         $dto = $this->captureDto(GetFilteredProductsUseCase::class, []);
 
-        $this->client->request('GET', '/products/filter');
+        $this->client->request('GET', '/api/v1/shop/products');
 
         self::assertResponseStatusCodeSame(200);
         self::assertEquals(new GetProductsFilterDto(), $dto->value);
@@ -155,42 +155,42 @@ final class InputValidationTest extends WebTestCase
         $user = self::USER;
         $product = self::PRODUCT;
 
-        yield 'registration without email' => ['POST', '/users/create', array_diff_key($user, ['email' => 0]), 'email'];
-        yield 'registration with a malformed email' => ['POST', '/users/create', ['email' => 'nope'] + $user, 'email'];
-        yield 'registration with a number as email' => ['POST', '/users/create', ['email' => 123] + $user, 'email'];
-        yield 'registration with a short password' => ['POST', '/users/create', ['password' => 'short'] + $user, 'password'];
-        yield 'registration with a blank first name' => ['POST', '/users/create', ['first_name' => ' '] + $user, 'first_name'];
-        yield 'registration with a 256-character last name' => ['POST', '/users/create', ['last_name' => str_repeat('a', 256)] + $user, 'last_name'];
-        yield 'registration with an empty object' => ['POST', '/users/create', [], 'email'];
+        yield 'registration without email' => ['POST', '/api/v1/shop/register', array_diff_key($user, ['email' => 0]), 'email'];
+        yield 'registration with a malformed email' => ['POST', '/api/v1/shop/register', ['email' => 'nope'] + $user, 'email'];
+        yield 'registration with a number as email' => ['POST', '/api/v1/shop/register', ['email' => 123] + $user, 'email'];
+        yield 'registration with a short password' => ['POST', '/api/v1/shop/register', ['password' => 'short'] + $user, 'password'];
+        yield 'registration with a blank first name' => ['POST', '/api/v1/shop/register', ['first_name' => ' '] + $user, 'first_name'];
+        yield 'registration with a 256-character last name' => ['POST', '/api/v1/shop/register', ['last_name' => str_repeat('a', 256)] + $user, 'last_name'];
+        yield 'registration with an empty object' => ['POST', '/api/v1/shop/register', [], 'email'];
 
-        yield 'login without password' => ['POST', '/users/login', ['email' => 'a@example.test'], 'password'];
+        yield 'login without password' => ['POST', '/api/v1/shop/login', ['email' => 'a@example.test'], 'password'];
 
         // B9: a partial PUT used to erase the missing names.
-        yield 'account update without last name' => ['PUT', '/users/'.self::ID, ['first_name' => 'Ada'], 'last_name'];
-        yield 'account update with a blank first name' => ['PUT', '/users/'.self::ID, ['first_name' => '', 'last_name' => 'Lovelace'], 'first_name'];
+        yield 'account update without last name' => ['PUT', '/api/v1/shop/users/'.self::ID, ['first_name' => 'Ada'], 'last_name'];
+        yield 'account update with a blank first name' => ['PUT', '/api/v1/shop/users/'.self::ID, ['first_name' => '', 'last_name' => 'Lovelace'], 'first_name'];
 
-        yield 'product without category' => ['POST', '/create-product', array_diff_key($product, ['category_id' => 0]), 'category_id'];
-        yield 'product with a category that is not a UUID' => ['POST', '/create-product', ['category_id' => 'candles'] + $product, 'category_id'];
-        yield 'product with a negative price' => ['POST', '/create-product', ['price' => -1] + $product, 'price'];
-        yield 'product with a price too large for the column' => ['POST', '/create-product', ['price' => 100000000] + $product, 'price'];
-        yield 'product with a text price' => ['POST', '/create-product', ['price' => 'cheap'] + $product, 'price'];
-        yield 'product with a blank name' => ['POST', '/create-product', ['name' => ''] + $product, 'name'];
-        yield 'product with a 256-character name' => ['POST', '/create-product', ['name' => str_repeat('a', 256)] + $product, 'name'];
+        yield 'product without category' => ['POST', '/api/v1/admin/products', array_diff_key($product, ['category_id' => 0]), 'category_id'];
+        yield 'product with a category that is not a UUID' => ['POST', '/api/v1/admin/products', ['category_id' => 'candles'] + $product, 'category_id'];
+        yield 'product with a negative price' => ['POST', '/api/v1/admin/products', ['price' => -1] + $product, 'price'];
+        yield 'product with a price too large for the column' => ['POST', '/api/v1/admin/products', ['price' => 100000000] + $product, 'price'];
+        yield 'product with a text price' => ['POST', '/api/v1/admin/products', ['price' => 'cheap'] + $product, 'price'];
+        yield 'product with a blank name' => ['POST', '/api/v1/admin/products', ['name' => ''] + $product, 'name'];
+        yield 'product with a 256-character name' => ['POST', '/api/v1/admin/products', ['name' => str_repeat('a', 256)] + $product, 'name'];
 
         // B5: "180g" used to be read as 180 without a word.
-        yield 'product with a text weight' => ['POST', '/create-product', ['attributes' => ['weight' => '180g']] + $product, 'attributes[weight]'];
-        yield 'product with a negative weight' => ['POST', '/create-product', ['attributes' => ['weight' => -1]] + $product, 'attributes[weight]'];
-        yield 'product with a number as fragrance' => ['POST', '/create-product', ['attributes' => ['fragrance' => 12]] + $product, 'attributes[fragrance]'];
+        yield 'product with a text weight' => ['POST', '/api/v1/admin/products', ['attributes' => ['weight' => '180g']] + $product, 'attributes[weight]'];
+        yield 'product with a negative weight' => ['POST', '/api/v1/admin/products', ['attributes' => ['weight' => -1]] + $product, 'attributes[weight]'];
+        yield 'product with a number as fragrance' => ['POST', '/api/v1/admin/products', ['attributes' => ['fragrance' => 12]] + $product, 'attributes[fragrance]'];
 
         // B7: phone number and address are now part of a registration.
-        yield 'registration with a malformed phone number' => ['POST', '/users/create', ['phone_number' => 'call me'] + $user, 'phone_number'];
-        yield 'registration with an address without postal code' => ['POST', '/users/create', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'country' => 'France']] + $user, 'address.postal_code'];
-        yield 'registration with an unknown address type' => ['POST', '/users/create', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'postal_code' => '75002', 'country' => 'France', 'type' => 'home']] + $user, 'address.type'];
-        yield 'account update with a malformed phone number' => ['PUT', '/users/'.self::ID, ['first_name' => 'Ada', 'last_name' => 'Lovelace', 'phone_number' => 'x'], 'phone_number'];
+        yield 'registration with a malformed phone number' => ['POST', '/api/v1/shop/register', ['phone_number' => 'call me'] + $user, 'phone_number'];
+        yield 'registration with an address without postal code' => ['POST', '/api/v1/shop/register', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'country' => 'France']] + $user, 'address.postal_code'];
+        yield 'registration with an unknown address type' => ['POST', '/api/v1/shop/register', ['address' => ['street' => '1 rue de la Paix', 'city' => 'Paris', 'postal_code' => '75002', 'country' => 'France', 'type' => 'home']] + $user, 'address.type'];
+        yield 'account update with a malformed phone number' => ['PUT', '/api/v1/shop/users/'.self::ID, ['first_name' => 'Ada', 'last_name' => 'Lovelace', 'phone_number' => 'x'], 'phone_number'];
 
         // B16: an empty body used to create a product named '' at price 0.
-        yield 'product update with an empty object' => ['PUT', '/edit-product/'.self::ID, [], 'name'];
-        yield 'product update with a negative price' => ['PUT', '/edit-product/'.self::ID, ['price' => -5] + $product, 'price'];
+        yield 'product update with an empty object' => ['PUT', '/api/v1/admin/products/'.self::ID, [], 'name'];
+        yield 'product update with a negative price' => ['PUT', '/api/v1/admin/products/'.self::ID, ['price' => -5] + $product, 'price'];
     }
 
     /**
@@ -216,7 +216,7 @@ final class InputValidationTest extends WebTestCase
     {
         $this->forbidUseCases();
 
-        $this->sendJson('POST', '/users/create', ['email' => 'nope', 'password' => 'short', 'first_name' => '', 'last_name' => 'Lovelace']);
+        $this->sendJson('POST', '/api/v1/shop/register', ['email' => 'nope', 'password' => 'short', 'first_name' => '', 'last_name' => 'Lovelace']);
 
         self::assertResponseStatusCodeSame(422);
         $fields = array_column($this->decodedResponse()['violations'], 'field');
@@ -228,7 +228,7 @@ final class InputValidationTest extends WebTestCase
     {
         $this->forbidUseCases();
 
-        $this->client->request('POST', '/users/create', server: ['CONTENT_TYPE' => 'application/json'], content: '{not json');
+        $this->client->request('POST', '/api/v1/shop/register', server: ['CONTENT_TYPE' => 'application/json'], content: '{not json');
 
         self::assertResponseStatusCodeSame(400);
         self::assertArrayHasKey('error', $this->decodedResponse());
@@ -238,7 +238,7 @@ final class InputValidationTest extends WebTestCase
     {
         $this->forbidUseCases();
 
-        $this->client->request('POST', '/create-product', server: ['CONTENT_TYPE' => 'application/json'], content: '');
+        $this->client->request('POST', '/api/v1/admin/products', server: ['CONTENT_TYPE' => 'application/json'], content: '');
 
         self::assertResponseStatusCodeSame(400);
         self::assertArrayHasKey('error', $this->decodedResponse());
@@ -251,7 +251,7 @@ final class InputValidationTest extends WebTestCase
     {
         $this->forbidUseCases();
 
-        $this->client->request('POST', '/users/create', content: (string) json_encode(self::USER));
+        $this->client->request('POST', '/api/v1/shop/register', content: (string) json_encode(self::USER));
 
         self::assertResponseStatusCodeSame(400);
         self::assertArrayHasKey('error', $this->decodedResponse());
@@ -275,7 +275,7 @@ final class InputValidationTest extends WebTestCase
     public function testInvalidFilterIsRefused(string $query, string $expectedField): void
     {
         $this->forbidUseCases();
-        $this->client->request('GET', '/products/filter?'.$query);
+        $this->client->request('GET', '/api/v1/shop/products?'.$query);
 
         self::assertResponseStatusCodeSame(422);
         self::assertContains($expectedField, array_column($this->decodedResponse()['violations'], 'field'));
@@ -286,14 +286,14 @@ final class InputValidationTest extends WebTestCase
      */
     public static function routesWithAnIdThatIsNotAUuid(): iterable
     {
-        yield 'read product' => ['GET', '/product/abc'];
-        yield 'update product' => ['PUT', '/edit-product/abc'];
-        yield 'upload picture' => ['POST', '/upload-picture/abc'];
-        yield 'read account' => ['GET', '/users/abc'];
-        yield 'update account' => ['PUT', '/users/abc'];
-        yield 'delete account' => ['DELETE', '/users/abc'];
+        yield 'read product' => ['GET', '/api/v1/shop/products/abc'];
+        yield 'update product' => ['PUT', '/api/v1/admin/products/abc'];
+        yield 'upload picture' => ['POST', '/api/v1/admin/products/abc/pictures'];
+        yield 'read account' => ['GET', '/api/v1/shop/users/abc'];
+        yield 'update account' => ['PUT', '/api/v1/shop/users/abc'];
+        yield 'delete account' => ['DELETE', '/api/v1/shop/users/abc'];
         // Upper case is refused too: ids are always produced in lower case.
-        yield 'upper-case id' => ['GET', '/product/AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA'];
+        yield 'upper-case id' => ['GET', '/api/v1/shop/products/AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA'];
     }
 
     #[DataProvider('routesWithAnIdThatIsNotAUuid')]

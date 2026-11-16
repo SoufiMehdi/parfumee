@@ -19,7 +19,9 @@
 - **Fait :** `P0-12` (README d'installation), mergée dans `main` (PR #17).
 - **Fait :** le nettoyage de la sortie des tests (PR #18) et la collection Bruno (PR #19), mergés dans `main`.
 - **Fait :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), mergée dans `main` (PR #20). **La phase 0 est terminée.**
-- **Prochaine tâche conseillée :** `P1-01`, première tâche de la phase 1 (socle API pour deux fronts). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **Phase en cours : phase 1** — socle API pour deux fronts.
+- **En relecture :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), sur la branche `feat/P1-01-shop-admin-routes`. La PR #22 a été mergée par erreur dans une branche de travail et non dans `main` : une nouvelle PR la remplace.
+- **Prochaine tâche conseillée :** `P1-06` (commande de création d'admin) ou `P1-05` (`GET /api/v1/shop/me` et refresh token), puis `P1-03` (OpenAPI). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -34,7 +36,10 @@
 
 ## Pièges connus en cours
 
-- Toute route absente de `access_control` (`config/packages/security.yaml`) est réservée à `ROLE_ADMIN`. Une nouvelle route publique ou client doit donc y être ajoutée explicitement, sinon elle répond 401/403.
+- Droits par espace (`config/packages/security.yaml`) : tout `/api/v1/admin` exige `ROLE_ADMIN`, tout `/api/v1/shop` exige `ROLE_USER`, sauf les routes publiques listées. Une nouvelle route **publique** doit donc y être ajoutée explicitement, sinon elle répond 401.
+- Les anciennes routes (`/create-product`, `/users/login`…) n'existent plus depuis `P1-01` : elles répondent 404. Il n'y a pas de redirection, aucun client n'existant encore.
+- Les deux connexions (`/api/v1/shop/login` et `/api/v1/admin/login`) délivrent le même jeton : un client peut se connecter par celle du back-office, son jeton y sera simplement refusé partout (403).
+- `/api/v1/shop/users/{id}` oblige encore le client à connaître son identifiant, que la connexion ne renvoie pas : à remplacer par `/api/v1/shop/me` (`P1-05`).
 - Il n'existe aucun moyen de créer un administrateur avant `P1-06`. En attendant, promouvoir un compte en SQL : `UPDATE users SET roles = '["ROLE_ADMIN"]' WHERE email = '…';`. Les rôles sont relus en base à chaque requête, donc pas besoin de se reconnecter.
 - Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. La CI génère sa propre paire à chaque exécution.
 - CI (`.github/workflows/api.yml`) : elle ne se lance que si `api/` ou le workflow change. La branche `main` n'est pas protégée : rien n'empêche encore de merger une PR rouge. Si on rend les checks obligatoires dans GitHub, une PR qui ne touche pas `api/` resterait bloquée en attente, à cause de ce filtre par chemin : il faudra alors le retirer.
@@ -50,7 +55,7 @@
 - Les 401 du pare-feu JWT (token absent, invalide ou expiré) sont produits par le bundle lexik au format `{"code": 401, "message": "..."}`, pas en `{"error": "..."}`. À harmoniser au plus tard avec le contrat OpenAPI (`P1-03`).
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
-- Collection Bruno (`api/bruno/`) : à mettre à jour quand une route change (les routes seront renommées en `P1-01`). La lancer avec `bru run --env local -r` depuis `api/bruno`, l'API démarrée et le compte `admin@example.test` promu administrateur.
+- Collection Bruno (`api/bruno/`) : à mettre à jour quand une route change La lancer avec `bru run --env local -r` depuis `api/bruno`, l'API démarrée et le compte `admin@example.test` promu administrateur.
 - Modifier un utilisateur n'enregistre pas ses adresses : `UserMapper::mapDomainToEntity()` les ignore. Sans effet aujourd'hui, aucune route ne modifiant les adresses ; à corriger avec `P3-01`.
 - Foundry est une dépendance de dev : aucune classe de `src/` ne doit l'utiliser, sinon le conteneur de production ne se construit plus. Les factories vivent dans `tests/Factory/`.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
@@ -60,6 +65,7 @@
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
 - Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
 - `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
+- Une PR se crée toujours vers `main`, même si sa branche part d'une autre branche de travail : la PR #22, créée vers la branche de la #21, a été mergée dans cette branche et n'est jamais arrivée dans `main`.
 - Tests d'intégration (`tests/Integration/`) : ils exigent la base de test, c'est-à-dire le service `database_test` lancé par `docker compose up -d` depuis `api/` (`127.0.0.1:54320`). Sans elle ils **échouent**, avec un message qui dit quoi lancer. `vendor/bin/phpunit tests/Unit` reste utilisable sans base.
 - La base de test vit en mémoire : elle est vide après chaque redémarrage du conteneur, et le premier test d'intégration rejoue les migrations. Rien à faire à la main.
 - **Le dépôt GitHub est public.** L'ancien `.env.test` contenait le mot de passe du compte `postgres` d'une base sur `192.168.1.28:5433`. Il est retiré du fichier mais **reste lisible par tous dans l'historique git** : le changer sur ce serveur, et partout où il serait réutilisé. Réécrire l'historique ne suffirait pas, le mot de passe ayant déjà été publié.
@@ -68,6 +74,15 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P1-01 : routes `/api/v1/shop` et `/api/v1/admin` (branche `feat/P1-01-shop-admin-routes`, en relecture)
+- Les contrôleurs sont répartis en deux espaces : `Controller/Shop/` (catalogue en lecture, inscription, connexion, compte du client) et `Controller/Admin/` (connexion, produits, utilisateurs). Les mêmes use cases servent aux deux.
+- Routes REST : `POST /api/v1/admin/products` remplace `/create-product`, `PUT /api/v1/admin/products/{id}` remplace `/edit-product/{id}`, `POST /api/v1/admin/products/{id}/pictures` remplace `/upload-picture/{id}`, etc. Le tableau complet est dans le `README.md`.
+- `GET /products` et `GET /products/filter` fusionnent en `GET /api/v1/shop/products`, dont les filtres sont optionnels. `GetProductsUseCase`, devenu inutile, est supprimé.
+- Le back-office gagne quatre routes : liste et détail des produits, détail, modification et suppression d'un utilisateur.
+- `access_control` protège chaque espace en bloc. L'envoi d'image répond maintenant 201 au lieu de 200.
+- Toutes les routes sont sous le préfixe de version `/api/v1`, décidé en review et défini une seule fois dans `config/routes.yaml`.
+- Vérifications : `composer check` vert, PHPUnit « OK (293 tests) » ; collection Bruno mise à jour et lancée contre un serveur de test, 18 requêtes sur 18.
 
 ### 2026-11-16 — Suppression des tests unitaires de repositories (branche `chore/P0-10-remove-mocked-repository-tests`, en relecture)
 - Les quatre tests unitaires de `tests/Unit/.../Persistence/Doctrine/` simulaient l'EntityManager : ils vérifiaient les appels faits à Doctrine, pas le résultat en base, et avaient laissé passer le bug B1. Supprimés à la demande, les tests d'intégration les remplacent.

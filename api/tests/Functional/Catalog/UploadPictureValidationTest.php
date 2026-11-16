@@ -22,7 +22,7 @@ final class UploadPictureValidationTest extends WebTestCase
 {
     use AuthenticatesRequests;
 
-    private const string URI = '/upload-picture/11111111-1111-4111-8111-111111111111';
+    private const string URI = '/api/v1/admin/products/11111111-1111-4111-8111-111111111111/pictures';
     private const string SVG = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>';
 
     private KernelBrowser $client;
@@ -68,7 +68,7 @@ final class UploadPictureValidationTest extends WebTestCase
 
         $this->upload($content, $name, 'image/jpeg');
 
-        self::assertResponseStatusCodeSame(200);
+        self::assertResponseStatusCodeSame(201);
     }
 
     /**

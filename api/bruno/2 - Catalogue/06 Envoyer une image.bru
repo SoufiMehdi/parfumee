@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/upload-picture/{{productId}}
+  url: {{baseUrl}}/api/v1/admin/products/{{productId}}/pictures
   body: multipartForm
   auth: bearer
 }
@@ -20,8 +20,8 @@ body:multipart-form {
 }
 
 tests {
-  test("200 et l'identifiant de l'image", function () {
-    expect(res.getStatus()).to.equal(200);
+  test("201 et l'identifiant de l'image", function () {
+    expect(res.getStatus()).to.equal(201);
     expect(res.getBody().data).to.be.a("string");
   });
 }

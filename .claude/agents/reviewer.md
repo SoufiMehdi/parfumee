@@ -32,7 +32,7 @@ Par défaut : `git diff main...HEAD`. Sinon, le diff ou les fichiers indiqués.
 4. **Contrat d'API**
    - Codes HTTP corrects (201, 204, 400/422, 401, 403, 404, 409).
    - Format de liste standard (pagination, tri, total).
-   - Routes REST sous `/api/shop` ou `/api/admin`.
+   - Routes REST sous `/api/v1/shop` ou `/api/v1/admin`.
    - Documentation OpenAPI à jour.
 5. **Tests**
    - Le nouveau code est couvert.

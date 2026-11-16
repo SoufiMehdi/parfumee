@@ -11,7 +11,7 @@ Suis les étapes **dans l'ordre**. Prends toujours exemple sur le code existant 
 - Retrouve la tâche dans `docs/compte-rendus/07-roadmap.md` (ID, dépendances) et vérifie que ses dépendances sont faites.
 - Écris en 3 lignes :
   - ce que la fonctionnalité fait ;
-  - qui l'appelle : `/api/shop` (public ou `ROLE_USER`) ou `/api/admin` (`ROLE_ADMIN`) ;
+  - qui l'appelle : `/api/v1/shop` (public ou `ROLE_USER`) ou `/api/v1/admin` (`ROLE_ADMIN`) ;
   - les règles métier concernées.
 
 ## 1. Domaine (`Domain/`)
@@ -38,7 +38,7 @@ Suis les étapes **dans l'ordre**. Prends toujours exemple sur le code existant 
 
 ## 4. Exposition HTTP (`Infrastructure/`)
 - **Contrôleur** dans `Controller/<Module>/` :
-  - une route REST sous `/api/shop/...` ou `/api/admin/...` ;
+  - une route REST sous `/api/v1/shop/...` ou `/api/v1/admin/...` ;
   - `requirements: ['id' => Requirement::UUID]` sur les ids ;
   - le DTO reçu via `#[MapRequestPayload]` ou `#[MapQueryString]` ;
   - `#[IsGranted(...)]` si nécessaire ;

@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Ecommerce\Infrastructure\Controller\Catalog;
+namespace App\Ecommerce\Infrastructure\Controller\Admin;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
 use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
-use App\Ecommerce\Application\UseCase\Catalog\GetProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
@@ -27,30 +26,17 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Catalogue management of the back-office. The whole /api/admin space requires ROLE_ADMIN.
+ */
+#[Route('/admin/products', name: 'admin_products_')]
 class ProductController extends AbstractController
 {
     private const string PICTURE_MAX_SIZE = '5M';
     private const array PICTURE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-    #[Route('/products', name: 'get_products', methods: [Request::METHOD_GET])]
-    public function get(GetProductsUseCase $useCase, ProductPresenter $presenter): JsonResponse
-    {
-        $products = $useCase->execute();
-        $data = $presenter->presentCollection($products);
-
-        return new JsonResponse($data);
-    }
-
-    #[Route('/product/{id}', name: 'get_product', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_GET])]
-    public function getById(string $id, GetProductUseCase $useCase, ProductPresenter $presenter): JsonResponse
-    {
-        $data = $presenter->present($useCase->execute($id));
-
-        return new JsonResponse($data);
-    }
-
-    #[Route('/products/filter', name: 'get_filtered_products', methods: [Request::METHOD_GET])]
-    public function getFiltered(
+    #[Route('', name: 'list', methods: [Request::METHOD_GET])]
+    public function list(
         GetFilteredProductsUseCase $useCase,
         ProductPresenter $presenter,
         // 422 like any other invalid input: the attribute answers 404 by default.
@@ -60,13 +46,19 @@ class ProductController extends AbstractController
         return new JsonResponse($presenter->presentCollection($useCase->execute($filter)));
     }
 
-    #[Route('/create-product', name: 'create_product', methods: [Request::METHOD_POST])]
+    #[Route('/{id}', name: 'get', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_GET])]
+    public function get(string $id, GetProductUseCase $useCase, ProductPresenter $presenter): JsonResponse
+    {
+        return new JsonResponse($presenter->present($useCase->execute($id)));
+    }
+
+    #[Route('', name: 'create', methods: [Request::METHOD_POST])]
     public function create(#[MapRequestPayload] CreateProductDto $dto, CreateProductUseCase $useCase): JsonResponse
     {
         return new JsonResponse($useCase->execute($dto), JsonResponse::HTTP_CREATED);
     }
 
-    #[Route('/edit-product/{id}', name: 'update_product', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_PUT])]
+    #[Route('/{id}', name: 'update', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_PUT])]
     public function update(string $id, #[MapRequestPayload] UpdateProductDto $dto, UpdateProductUseCase $useCase): JsonResponse
     {
         $product = $useCase->execute($dto, $id);
@@ -77,9 +69,9 @@ class ProductController extends AbstractController
         ]);
     }
 
-    #[Route('/upload-picture/{productId}', name: 'upload_picture', requirements: ['productId' => Requirement::UUID], methods: [Request::METHOD_POST])]
+    #[Route('/{id}/pictures', name: 'upload_picture', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_POST])]
     public function uploadPicture(
-        string $productId,
+        string $id,
         Request $request,
         UploadProductImageUseCase $useCase,
         // The type is read from the file content, never from the name or the
@@ -100,11 +92,11 @@ class ProductController extends AbstractController
             throw new BadRequestHttpException('The "file" field is required.');
         }
 
-        $picture = $useCase->execute($productId, $file, $alt);
+        $picture = $useCase->execute($id, $file, $alt);
 
         return new JsonResponse([
             'result' => 'Image uploaded successfully',
             'data' => $picture->getId(),
-        ]);
+        ], JsonResponse::HTTP_CREATED);
     }
 }
