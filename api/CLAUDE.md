@@ -54,6 +54,6 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 ## Pièges connus
 
 - Les clés JWT (`config/jwt/*.pem`) ne sont pas versionnées : `php bin/console lexik:jwt:generate-keypair` sur chaque machine.
-- `.env` : `APP_SECRET` est vide. Le définir dans `.env.local`.
+- `.env` ne contient aucun secret : `APP_SECRET` et `JWT_PASSPHRASE` y sont vides exprès. Les valeurs de dev sont dans `.env.dev`, celles de test dans `.env.test` ; `tests/Unit/Config/EnvFilesTest` le vérifie. `.env.local` n'est pas lu en test.
 - La config Psalm (`pslam.xml`) est cassée et l'ancien `.php_cs` est obsolète : utiliser PHPStan (`phpstan.dist.neon`) et `.php-cs-fixer.dist.php`.
 - La migration `Version20260612051158` ajoute des colonnes `NOT NULL` sans défaut : elle échoue si des utilisateurs existent déjà.

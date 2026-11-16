@@ -12,8 +12,9 @@
 - **Fait :** `P0-04` (gestion d'erreurs centralisée), mergée dans `main` (PR #10).
 - **Fait :** `P0-05` (validation des entrées), mergée dans `main` (PR #11).
 - **Fait :** `P0-07` (bugs ponctuels B5, B6, B7), mergée dans `main` (PR #12).
-- **En relecture :** `P0-06` (slug produit, B4), sur la branche `fix/P0-06-product-slug`.
-- **Prochaine tâche conseillée :** `P0-08` (secrets), puis `P0-09` (outillage qualité).
+- **Fait :** `P0-06` (slug produit, B4), mergée dans `main` (PR #13).
+- **En relecture :** `P0-08` (secrets, S4), sur la branche `fix/P0-08-secrets`.
+- **Prochaine tâche conseillée :** `P0-09` (outillage qualité).
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -52,12 +53,22 @@
 - `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
 - Tests d'intégration (`tests/Integration/`) : ils exigent la base de test, c'est-à-dire le service `database_test` lancé par `docker compose up -d` depuis `api/` (`127.0.0.1:54320`). Sans elle ils **échouent**, avec un message qui dit quoi lancer. `vendor/bin/phpunit tests/Unit` reste utilisable sans base.
 - La base de test vit en mémoire : elle est vide après chaque redémarrage du conteneur, et le premier test d'intégration rejoue les migrations. Rien à faire à la main.
-- L'ancien `.env.test` contenait le mot de passe d'une base PostgreSQL sur `192.168.1.28`. Il est retiré du fichier mais **reste dans l'historique git** : le changer si cette base sert encore (`P0-08`).
+- **Le dépôt GitHub est public.** L'ancien `.env.test` contenait le mot de passe du compte `postgres` d'une base sur `192.168.1.28:5433`. Il est retiré du fichier mais **reste lisible par tous dans l'historique git** : le changer sur ce serveur, et partout où il serait réutilisé. Réécrire l'historique ne suffirait pas, le mot de passe ayant déjà été publié.
+- Secrets : `.env` n'en contient aucun (`APP_SECRET` et `JWT_PASSPHRASE` y sont vides exprès). Les valeurs de dev et de test sont dans `.env.dev` et `.env.test`, versionnées et publiques. En production, les fournir par de vraies variables d'environnement ou par les secrets Symfony, avec une nouvelle paire de clés JWT : sans elles l'application échoue au lieu de tourner avec une valeur connue (`P7-01`).
+- `.env.local` n'est **pas** lu en environnement de test : pour une surcharge locale des tests, utiliser `.env.test.local`.
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
 
-### 2026-11-14 — P0-06 : slug produit persisté, B4 (branche `fix/P0-06-product-slug`, en relecture)
+### 2026-11-14 — P0-08 : secrets, S4 (branche `fix/P0-08-secrets`, en relecture)
+- `.env` ne contient plus aucun secret : `JWT_PASSPHRASE` y est vidé, comme `APP_SECRET`.
+- Nouveau `.env.dev` versionné (retiré de `.gitignore`) : `APP_SECRET` de dev et passphrase de la paire de clés locale. `.env.test` reçoit la même passphrase et est nettoyé (`APP_ENV` et `XDEBUG_MODE` y étaient sans effet).
+- La passphrase JWT n'a pas changé : les clés déjà générées sur chaque PC restent valables.
+- `tests/Unit/Config/EnvFilesTest` échoue si un secret revient dans `.env`.
+- Audit de l'historique git : aucune clé privée ni clé d'API ; seuls y figurent la passphrase JWT de dev et l'ancien mot de passe de la base `192.168.1.28` (voir les pièges).
+- Vérifications : PHPUnit 267 tests verts (6 nouveaux) ; en `prod`, `APP_SECRET` et `JWT_PASSPHRASE` sont bien vides sans configuration.
+
+### 2026-11-14 — P0-06 : slug produit persisté, B4 (mergée, PR #13)
 - La table `products` a une colonne `slug` unique et non nulle. Le slug est enregistré et relu : plus de `slug-placeholder`.
 - Le slug est généré par le `SluggerInterface` de Symfony, derrière le port `Domain/Service/Catalog/SlugGeneratorInterface`. « Bougie Été à l'Ambre » donne `bougie-ete-a-l-ambre`.
 - `ProductSlugResolver` rend le slug unique : un nom déjà pris reçoit `-2`, `-3`… Un nom sans aucun caractère utilisable (`!!!`) donne `product`.
