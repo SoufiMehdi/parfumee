@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Security\Voter;
 
+use App\Ecommerce\Domain\Model\User\Role;
 use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\AccessDecisionManagerInterface;
@@ -40,7 +41,7 @@ final class UserAccountVoter extends Voter
             return false;
         }
 
-        if ($this->accessDecisionManager->decide($token, ['ROLE_ADMIN'])) {
+        if ($this->accessDecisionManager->decide($token, [Role::ADMIN])) {
             return true;
         }
 

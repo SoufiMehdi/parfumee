@@ -21,7 +21,8 @@
 - **Fait :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), mergée dans `main` (PR #20). **La phase 0 est terminée.**
 - **Phase en cours : phase 1** — socle API pour deux fronts.
 - **En relecture :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), sur la branche `feat/P1-01-shop-admin-routes`. La PR #22 a été mergée par erreur dans une branche de travail et non dans `main` : une nouvelle PR la remplace.
-- **Prochaine tâche conseillée :** `P1-06` (commande de création d'admin) ou `P1-05` (`GET /api/v1/shop/me` et refresh token), puis `P1-03` (OpenAPI). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **En relecture :** `P1-06` (rôles et commande de création d'admin), sur la branche `feat/P1-06-roles-admin-command`, qui part de celle de `P1-01` : merger `P1-01` (PR #23) d'abord.
+- **Prochaine tâche conseillée :** `P1-05` (`GET /api/v1/shop/me` et refresh token), puis `P1-03` (OpenAPI). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -40,7 +41,9 @@
 - Les anciennes routes (`/create-product`, `/users/login`…) n'existent plus depuis `P1-01` : elles répondent 404. Il n'y a pas de redirection, aucun client n'existant encore.
 - Les deux connexions (`/api/v1/shop/login` et `/api/v1/admin/login`) délivrent le même jeton : un client peut se connecter par celle du back-office, son jeton y sera simplement refusé partout (403).
 - `/api/v1/shop/users/{id}` oblige encore le client à connaître son identifiant, que la connexion ne renvoie pas : à remplacer par `/api/v1/shop/me` (`P1-05`).
-- Il n'existe aucun moyen de créer un administrateur avant `P1-06`. En attendant, promouvoir un compte en SQL : `UPDATE users SET roles = '["ROLE_ADMIN"]' WHERE email = '…';`. Les rôles sont relus en base à chaque requête, donc pas besoin de se reconnecter.
+- Un compte du back-office ne se crée que par la commande `php bin/console app:user:create-admin` (options `--editor` et `--promote`). Aucune route ne donne de rôle. Les rôles sont relus en base à chaque requête : une promotion prend effet sans se reconnecter.
+- Rôles : `ROLE_ADMIN` inclut `ROLE_EDITOR`, qui inclut `ROLE_USER` (`role_hierarchy`). L'éditeur n'a accès qu'à `/api/v1/admin/products` ; toute nouvelle route du back-office est réservée aux administrateurs tant qu'on ne l'ouvre pas aux éditeurs dans `security.yaml`.
+- Aucune commande ne retire un rôle : pour rétrograder un compte, il faut encore passer par SQL.
 - Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. La CI génère sa propre paire à chaque exécution.
 - CI (`.github/workflows/api.yml`) : elle ne se lance que si `api/` ou le workflow change. La branche `main` n'est pas protégée : rien n'empêche encore de merger une PR rouge. Si on rend les checks obligatoires dans GitHub, une PR qui ne touche pas `api/` resterait bloquée en attente, à cause de ce filtre par chemin : il faudra alors le retirer.
 - CI : les actions sont épinglées par SHA de commit. Pour les mettre à jour, changer le SHA et le commentaire de version ensemble.
@@ -74,6 +77,13 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P1-06 : rôles et commande de création d'admin (branche `feat/P1-06-roles-admin-command`, en relecture)
+- Trois rôles emboîtés, décrits dans `Domain/Model/User/Role` : client, éditeur, administrateur. L'éditeur gère les produits, sans accès aux comptes clients.
+- Commande `app:user:create-admin` : crée un administrateur, ou un éditeur avec `--editor`, ou donne le rôle à un compte existant avec `--promote`. Le mot de passe est demandé en saisie masquée, 12 caractères minimum.
+- Deux use cases derrière : `CreateBackOfficeUserUseCase` et `GrantRoleUseCase`. `User::grantRole()` refuse un rôle inconnu.
+- Le README et la collection Bruno n'utilisent plus la promotion en SQL.
+- Vérifications : `composer check` vert, PHPUnit « OK (315 tests) » ; commande lancée en vrai sur la base de test ; en faussant la règle d'accès de l'éditeur puis la hiérarchie des rôles, les tests échouent bien.
 
 ### 2026-11-16 — P1-01 : routes `/api/v1/shop` et `/api/v1/admin` (branche `feat/P1-01-shop-admin-routes`, en relecture)
 - Les contrôleurs sont répartis en deux espaces : `Controller/Shop/` (catalogue en lecture, inscription, connexion, compte du client) et `Controller/Admin/` (connexion, produits, utilisateurs). Les mêmes use cases servent aux deux.

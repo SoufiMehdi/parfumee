@@ -38,6 +38,6 @@ docs {
   Il doit ensuite être promu administrateur, une seule fois, depuis `api/` :
 
   ```
-  php bin/console dbal:run-sql "UPDATE users SET roles = '[\"ROLE_ADMIN\"]' WHERE email = 'admin@example.test'"
+  php bin/console app:user:create-admin admin@example.test --promote
   ```
 }

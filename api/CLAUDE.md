@@ -38,6 +38,8 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 - **Identifiants :** UUID v4 en `string` (RFC 4122), générés dans le use case.
 - **Montants :** en **centimes (`int`)** pour tout nouveau code (panier, commandes). `Product::price` est encore un `float` : dette à migrer avant la phase 4.
 - **Slugs :** générés par le port `SlugGeneratorInterface` (`SluggerInterface` de Symfony derrière), jamais avec `str_replace`. Pour un produit, passer par `ProductSlugResolver`, qui garantit l'unicité.
+- **Rôles :** utiliser les constantes de `Domain/Model/User/Role`, jamais la chaîne `'ROLE_ADMIN'`. Un rôle ne se donne que par `User::grantRole()`, et seule la commande `app:user:create-admin` l'appelle : aucune route ne doit permettre de changer un rôle.
+- **Commandes console :** dans `Infrastructure/Console/`, fines comme un contrôleur (elles appellent un use case).
 - **Nommage :** suffixe `Dto` (et non `DTO`), messages d'exception en anglais.
 - **Routes :** REST, dans deux espaces (`GET /api/v1/shop/products`, `POST /api/v1/admin/products`, `PUT /api/v1/admin/products/{id}`…).
   - Les contrôleurs sont rangés par espace : `Infrastructure/Controller/Shop/` et `Infrastructure/Controller/Admin/`. L'attribut `#[Route]` de la classe porte l'espace et le nom (`/shop/...` + `shop_...`) ; le préfixe `/api/v1` est ajouté une seule fois, dans `config/routes.yaml`.

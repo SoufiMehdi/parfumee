@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Domain\Model\User;
 
+use App\Ecommerce\Domain\Exception\User\UnknownRoleException;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
 
@@ -26,7 +27,7 @@ class User
         private string $firstName,
         private string $lastName,
         private ?PhoneNumber $phoneNumber = null,
-        array $roles = ['ROLE_USER'],
+        array $roles = [Role::USER],
         array $addresses = [],
     ) {
         $this->roles = $roles;
@@ -94,6 +95,20 @@ class User
     public function updatePhoneNumber(PhoneNumber $phoneNumber): void
     {
         $this->phoneNumber = $phoneNumber;
+    }
+
+    /**
+     * Granting a role the account already holds changes nothing.
+     */
+    public function grantRole(string $role): void
+    {
+        if (!\in_array($role, Role::ALL, true)) {
+            throw new UnknownRoleException($role);
+        }
+
+        if (!\in_array($role, $this->roles, true)) {
+            $this->roles[] = $role;
+        }
     }
 
     public function addAddress(Address $address): void

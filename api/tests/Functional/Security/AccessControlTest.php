@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Security;
 
 use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
 use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
+use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Tests\Support\AuthenticatesRequests;
@@ -30,6 +32,7 @@ final class AccessControlTest extends WebTestCase
     private const string OWNER_ID = '11111111-1111-4111-8111-111111111111';
     private const string OTHER_ID = '22222222-2222-4222-8222-222222222222';
     private const string ADMIN_ID = '99999999-9999-4999-8999-999999999999';
+    private const string EDITOR_ID = '88888888-8888-4888-8888-888888888888';
     private const string ACCOUNT_BODY = '{"first_name": "Ada", "last_name": "Lovelace"}';
 
     private KernelBrowser $client;
@@ -92,6 +95,78 @@ final class AccessControlTest extends WebTestCase
         $this->authenticateAs($this->client, self::OWNER_ID);
 
         $this->client->request($method, $uri);
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function catalogueManagementRoutes(): iterable
+    {
+        yield 'list products' => ['GET', '/api/v1/admin/products'];
+        yield 'read product' => ['GET', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'create product' => ['POST', '/api/v1/admin/products'];
+        yield 'update product' => ['PUT', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'upload picture' => ['POST', '/api/v1/admin/products/'.self::OTHER_ID.'/pictures'];
+    }
+
+    /**
+     * The body is empty on purpose: the controller refuses it (400 or 404) or answers,
+     * but the firewall must have let the editor through.
+     */
+    #[DataProvider('catalogueManagementRoutes')]
+    public function testEditorManagesTheCatalogue(string $method, string $uri): void
+    {
+        $this->stubCatalogueReadUseCases();
+        $this->authenticateAs($this->client, self::EDITOR_ID, ['ROLE_EDITOR']);
+
+        $this->client->request($method, $uri, content: 'not-json');
+
+        self::assertNotContains($this->client->getResponse()->getStatusCode(), [401, 403]);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function customerDataRoutes(): iterable
+    {
+        yield 'list users' => ['GET', '/api/v1/admin/users'];
+        yield 'read user' => ['GET', '/api/v1/admin/users/'.self::OWNER_ID];
+        yield 'update user' => ['PUT', '/api/v1/admin/users/'.self::OWNER_ID];
+        yield 'delete user' => ['DELETE', '/api/v1/admin/users/'.self::OWNER_ID];
+    }
+
+    #[DataProvider('customerDataRoutes')]
+    public function testEditorHasNoAccessToCustomerData(string $method, string $uri): void
+    {
+        $this->forbidUseCases();
+        $this->authenticateAs($this->client, self::EDITOR_ID, ['ROLE_EDITOR']);
+
+        $this->client->request($method, $uri, content: '{}');
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * An editor is also a customer: they keep access to their own account.
+     */
+    public function testEditorReachesTheirOwnAccount(): void
+    {
+        $this->stubAccountUseCases(self::EDITOR_ID);
+        $this->authenticateAs($this->client, self::EDITOR_ID, ['ROLE_EDITOR']);
+
+        $this->client->request('GET', '/api/v1/shop/users/'.self::EDITOR_ID);
+
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testEditorIsForbiddenOnSomeoneElsesAccount(): void
+    {
+        $this->forbidUseCases();
+        $this->authenticateAs($this->client, self::EDITOR_ID, ['ROLE_EDITOR']);
+
+        $this->client->request('GET', '/api/v1/shop/users/'.self::OWNER_ID);
 
         self::assertResponseStatusCodeSame(403);
     }
@@ -238,6 +313,17 @@ final class AccessControlTest extends WebTestCase
             $useCase->expects(self::never())->method('execute');
             static::getContainer()->set($class, $useCase);
         }
+    }
+
+    private function stubCatalogueReadUseCases(): void
+    {
+        $list = $this->createStub(GetFilteredProductsUseCase::class);
+        $list->method('execute')->willReturn([]);
+        static::getContainer()->set(GetFilteredProductsUseCase::class, $list);
+
+        $get = $this->createStub(GetProductUseCase::class);
+        $get->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));
+        static::getContainer()->set(GetProductUseCase::class, $get);
     }
 
     private function stubAccountUseCases(string $id): void
