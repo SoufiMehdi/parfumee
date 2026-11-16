@@ -1,0 +1,21 @@
+meta {
+  name: 10 Supprimer le compte jetable
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/users/{{throwawayId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

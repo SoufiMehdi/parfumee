@@ -133,6 +133,31 @@ curl -X POST http://127.0.0.1:8000/create-product \
 
 Un corps JSON doit toujours être envoyé avec `Content-Type: application/json`, sinon l'API répond 400.
 
+## Tester avec Bruno
+
+Le dossier `api/bruno/` est une collection [Bruno](https://www.usebruno.com/) : 18 requêtes qui couvrent toutes les routes, avec le jeton géré automatiquement.
+
+1. Dans Bruno : **Open Collection**, choisir le dossier `api/bruno`.
+2. En haut à droite, sélectionner l'environnement **local** (API sur `http://127.0.0.1:8000`).
+3. Lancer `1 - Comptes / 01 Inscription`, puis promouvoir ce compte administrateur, une seule fois :
+
+   ```bash
+   php bin/console dbal:run-sql "UPDATE users SET roles = '[\"ROLE_ADMIN\"]' WHERE email = 'admin@example.test'"
+   ```
+
+4. Lancer `02 Connexion` : le jeton est enregistré, les autres requêtes l'envoient toutes seules.
+
+Les requêtes du catalogue utilisent la catégorie des fixtures (étape 6 de l'installation). Elles se lancent dans l'ordre : `02 Créer un produit` enregistre l'identifiant dont les suivantes ont besoin.
+
+Pour tout lancer d'un coup, clic droit sur la collection puis **Run**, ou en ligne de commande :
+
+```bash
+npm install -g @usebruno/cli      # une seule fois
+cd api/bruno && bru run --env local -r
+```
+
+Chaque exécution crée un produit et une image dans la base de développement.
+
 ## Routes actuelles
 
 | Méthode | Route | Accès |

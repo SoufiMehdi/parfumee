@@ -49,6 +49,7 @@
 - Les 401 du pare-feu JWT (token absent, invalide ou expiré) sont produits par le bundle lexik au format `{"code": 401, "message": "..."}`, pas en `{"error": "..."}`. À harmoniser au plus tard avec le contrat OpenAPI (`P1-03`).
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
+- Collection Bruno (`api/bruno/`) : à mettre à jour quand une route change (les routes seront renommées en `P1-01`). La lancer avec `bru run --env local -r` depuis `api/bruno`, l'API démarrée et le compte `admin@example.test` promu administrateur.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
 - Slug produit : il suit le nom. Renommer un produit change donc son slug, et l'ancienne URL ne redirige nulle part. À revoir avant l'ouverture de la boutique (`P2-07`) : slug figé, ou table de redirections.
 - Slug produit : deux créations simultanées du même nom peuvent viser le même slug. L'index unique refuse la seconde, qui répond 500 au lieu d'obtenir un suffixe. Sans gravité tant que seul le back-office crée des produits.
@@ -64,6 +65,12 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — Collection Bruno (branche `chore/bruno-collection`, en relecture)
+- Nouveau dossier `api/bruno/` : 18 requêtes (comptes et catalogue) avec leurs vérifications, un environnement `local`, le jeton et les identifiants enchaînés automatiquement.
+- Elle couvre aussi les refus attendus : mauvais mot de passe (401), entrées invalides (422), écriture sans connexion (401).
+- Vérification : `bru run` contre un serveur de test, 18 requêtes sur 18 réussies.
+- Constat : la connexion ne renvoie pas l'identifiant du compte et il n'existe pas de route « mon compte ». Un client non administrateur ne peut donc pas connaître son propre identifiant ; la collection passe par la liste des utilisateurs, réservée aux administrateurs. À traiter en phase 1 ou 3.
 
 ### 2026-11-16 — P0-12 : README d'installation (branche `docs/P0-12-readme`, en relecture)
 - Nouveau `README.md` à la racine : prérequis, installation de l'API en 7 étapes, création d'un compte administrateur, routes actuelles, commandes de vérification, fichiers d'environnement, problèmes fréquents.

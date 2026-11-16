@@ -1,0 +1,25 @@
+meta {
+  name: 08 Créer un produit sans être connecté
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/create-product
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Bougie interdite",
+    "price": 10,
+    "category_id": "{{categoryId}}"
+  }
+}
+
+tests {
+  test("401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

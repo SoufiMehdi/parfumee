@@ -1,0 +1,35 @@
+meta {
+  name: 02 Connexion
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/users/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "password": "{{adminPassword}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("token", res.getBody().token);
+  }
+}
+
+tests {
+  test("200 et un jeton", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().token).to.be.a("string");
+  });
+}
+
+docs {
+  Enregistre le jeton dans la variable `token` : toutes les requêtes protégées l'envoient ensuite automatiquement.
+}
