@@ -1,0 +1,43 @@
+meta {
+  name: 01 Inscription
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/users/create
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "password": "{{adminPassword}}",
+    "first_name": "Ada",
+    "last_name": "Admin",
+    "phone_number": "+33612345678",
+    "address": {
+      "street": "1 rue des Bougies",
+      "city": "Lyon",
+      "postal_code": "69001",
+      "country": "FR"
+    }
+  }
+}
+
+tests {
+  test("201 à la première inscription, 409 si le compte existe déjà", function () {
+    expect([201, 409]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Crée le compte utilisé par toute la collection.
+
+  Il doit ensuite être promu administrateur, une seule fois, depuis `api/` :
+
+  ```
+  php bin/console dbal:run-sql "UPDATE users SET roles = '[\"ROLE_ADMIN\"]' WHERE email = 'admin@example.test'"
+  ```
+}

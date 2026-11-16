@@ -1,0 +1,48 @@
+meta {
+  name: 02 Créer un produit
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/create-product
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Bougie Été à l'Ambre",
+    "price": 24.9,
+    "category_id": "{{categoryId}}",
+    "attributes": {
+      "weight": 180,
+      "fragrance": "ambre",
+      "size": "M",
+      "description": "Bougie parfumée à l'ambre, cire de soja."
+    }
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("productId", res.getBody());
+  }
+}
+
+tests {
+  test("201 et l'identifiant du produit", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody()).to.be.a("string");
+  });
+}
+
+docs {
+  Réservée aux administrateurs. La catégorie `categoryId` est celle des fixtures (`php bin/console doctrine:fixtures:load`).
+
+  Enregistre l'identifiant du produit dans `productId` pour les requêtes suivantes. Chaque exécution crée un nouveau produit.
+}

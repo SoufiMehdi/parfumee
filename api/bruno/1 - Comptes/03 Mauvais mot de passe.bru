@@ -1,0 +1,25 @@
+meta {
+  name: 03 Mauvais mot de passe
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/users/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "password": "pas-le-bon-mot-de-passe"
+  }
+}
+
+tests {
+  test("401 et un message d'erreur", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getBody().error).to.be.a("string");
+  });
+}

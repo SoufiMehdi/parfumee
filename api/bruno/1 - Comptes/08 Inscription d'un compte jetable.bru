@@ -1,0 +1,34 @@
+meta {
+  name: 08 Inscription d'un compte jetable
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/users/create
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{throwawayEmail}}",
+    "password": "mot-de-passe-jetable",
+    "first_name": "Compte",
+    "last_name": "Jetable"
+  }
+}
+
+script:pre-request {
+  bru.setVar("throwawayEmail", "jetable-" + Date.now() + "@example.test");
+}
+
+tests {
+  test("201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Crée un compte à l'adresse unique, que les deux requêtes suivantes retrouvent puis suppriment.
+}

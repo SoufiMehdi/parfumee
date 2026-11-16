@@ -1,0 +1,27 @@
+meta {
+  name: 05 Filtrer les produits
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/products/filter?category_id={{categoryId}}&min_price=20&max_price=30&scent=ambre&size=L
+  body: none
+  auth: none
+}
+
+params:query {
+  category_id: {{categoryId}}
+  min_price: 20
+  max_price: 30
+  scent: ambre
+  size: L
+}
+
+tests {
+  test("200 et le produit modifié est dans le résultat", function () {
+    expect(res.getStatus()).to.equal(200);
+    const ids = res.getBody().map((product) => product.id);
+    expect(ids).to.include(bru.getVar("productId"));
+  });
+}

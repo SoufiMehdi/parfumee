@@ -1,0 +1,28 @@
+meta {
+  name: 07 Inscription invalide
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/users/create
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "pas-un-email",
+    "password": "court",
+    "first_name": "",
+    "last_name": "Test"
+  }
+}
+
+tests {
+  test("422 et la liste des champs en faute", function () {
+    expect(res.getStatus()).to.equal(422);
+    const fields = res.getBody().violations.map((violation) => violation.field);
+    expect(fields).to.include.members(["email", "password", "first_name"]);
+  });
+}

@@ -1,0 +1,32 @@
+meta {
+  name: 09 Retrouver le compte jetable
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/users/list
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const throwaway = res.getBody().find((user) => user.email === bru.getVar("throwawayEmail"));
+    if (throwaway) {
+      bru.setVar("throwawayId", throwaway.id);
+    }
+  }
+}
+
+tests {
+  test("le compte jetable est dans la liste", function () {
+    expect(res.getStatus()).to.equal(200);
+    const emails = res.getBody().map((user) => user.email);
+    expect(emails).to.include(bru.getVar("throwawayEmail"));
+  });
+}
