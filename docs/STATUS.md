@@ -14,8 +14,9 @@
 - **Fait :** `P0-07` (bugs ponctuels B5, B6, B7), mergée dans `main` (PR #12).
 - **Fait :** `P0-06` (slug produit, B4), mergée dans `main` (PR #13).
 - **Fait :** `P0-08` (secrets, S4), mergée dans `main` (PR #14).
-- **En relecture :** `P0-09` (outillage qualité), sur la branche `chore/P0-09-quality-tooling`.
-- **Prochaine tâche conseillée :** `P0-11` (CI GitHub Actions), qui n'a plus qu'à lancer `composer check`.
+- **Fait :** `P0-09` (outillage qualité), mergée dans `main` (PR #15).
+- **En relecture :** `P0-11` (CI GitHub Actions), sur la branche `chore/P0-11-ci`.
+- **Prochaine tâche conseillée :** `P0-12` (README d'installation), puis le reste de `P0-10`.
 - **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -33,7 +34,9 @@
 
 - Toute route absente de `access_control` (`config/packages/security.yaml`) est réservée à `ROLE_ADMIN`. Une nouvelle route publique ou client doit donc y être ajoutée explicitement, sinon elle répond 401/403.
 - Il n'existe aucun moyen de créer un administrateur avant `P1-06`. En attendant, promouvoir un compte en SQL : `UPDATE users SET roles = '["ROLE_ADMIN"]' WHERE email = '…';`. Les rôles sont relus en base à chaque requête, donc pas besoin de se reconnecter.
-- Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. À prévoir dans la CI (`P0-11`).
+- Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. La CI génère sa propre paire à chaque exécution.
+- CI (`.github/workflows/api.yml`) : elle ne se lance que si `api/` ou le workflow change. La branche `main` n'est pas protégée : rien n'empêche encore de merger une PR rouge. Si on rend les checks obligatoires dans GitHub, une PR qui ne touche pas `api/` resterait bloquée en attente, à cause de ce filtre par chemin : il faudra alors le retirer.
+- CI : les actions sont épinglées par SHA de commit. Pour les mettre à jour, changer le SHA et le commentaire de version ensemble.
 - Upload d'images : la limite applicative est de 5 Mo, mais PHP refuse avant elle tout fichier au-delà de `upload_max_filesize` (2 Mo par défaut) et ignore le corps entier au-delà de `post_max_size` (8 Mo par défaut). À régler dans l'image Docker (`P7-01`) : `upload_max_filesize = 5M` au minimum.
 - `#[MapUploadedFile]`, `#[MapRequestPayload]` et `#[MapQueryString]` **ignorent silencieusement leurs contraintes** si `symfony/validator` est absent. Il est installé depuis `P0-02` : ne pas le retirer.
 - Un body JSON doit être envoyé avec `Content-Type: application/json`. Sans cet en-tête, il est lu comme un formulaire et la réponse est un 400.
@@ -60,6 +63,13 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — P0-11 : CI GitHub Actions (branche `chore/P0-11-ci`, en relecture)
+- Nouveau workflow `.github/workflows/api.yml`, lancé sur les PR et sur `main` quand `api/` change.
+- Job `lint` (PHP 8.4) : `composer validate`, style, PHPStan, lint du conteneur.
+- Job `tests` (PHP 8.4 et 8.5) : PHPUnit avec un service PostgreSQL 16 sur le port 54320 attendu par `.env.test`, et une paire de clés JWT générée à la volée.
+- Sécurité : actions épinglées par SHA, jeton en lecture seule, aucun secret GitHub nécessaire.
+- Vérification : première exécution verte sur la PR #16 en une minute environ (267 tests sur chaque version de PHP).
 
 ### 2026-11-16 — P0-09 : outillage qualité (branche `chore/P0-09-quality-tooling`, en relecture)
 - Psalm est retiré (config `pslam.xml` cassée et dépendance `vimeo/psalm`), ainsi que l'ancien `.php_cs`. PHPStan fait l'analyse statique.
