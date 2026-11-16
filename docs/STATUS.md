@@ -17,9 +17,9 @@
 - **Fait :** `P0-09` (outillage qualité), mergée dans `main` (PR #15).
 - **Fait :** `P0-11` (CI GitHub Actions), mergée dans `main` (PR #16).
 - **Fait :** `P0-12` (README d'installation), mergée dans `main` (PR #17).
-- **En relecture :** le nettoyage de la sortie des tests (partie de `P0-10`), sur la branche `chore/P0-10-clean-test-output`.
-- **Prochaine tâche conseillée :** le reste de `P0-10`, dernière tâche de la phase 0.
-- **Reste de `P0-10` :** Foundry, les factories et les tests d'intégration des repositories produit, catégorie et utilisateur.
+- **Fait :** le nettoyage de la sortie des tests (PR #18) et la collection Bruno (PR #19), mergés dans `main`.
+- **En relecture :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), sur la branche `test/P0-10-foundry-integration-tests`. C'est la dernière tâche de la phase 0.
+- **Prochaine tâche conseillée :** `P1-01`, première tâche de la phase 1 (socle API pour deux fronts). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -51,6 +51,8 @@
 - Aucun bundle de logs n'est installé : les erreurs partent sur la sortie d'erreur du serveur PHP. Monolog et le suivi d'erreurs sont prévus en `P7-03`.
 - En production, vider le cache (`cache:clear`) à chaque déploiement : un cache `prod` périmé garde l'ancien câblage des services et répond 500 en HTML.
 - Collection Bruno (`api/bruno/`) : à mettre à jour quand une route change (les routes seront renommées en `P1-01`). La lancer avec `bru run --env local -r` depuis `api/bruno`, l'API démarrée et le compte `admin@example.test` promu administrateur.
+- Modifier un utilisateur n'enregistre pas ses adresses : `UserMapper::mapDomainToEntity()` les ignore. Sans effet aujourd'hui, aucune route ne modifiant les adresses ; à corriger avec `P3-01`.
+- Foundry est une dépendance de dev : aucune classe de `src/` ne doit l'utiliser, sinon le conteneur de production ne se construit plus. Les factories vivent dans `tests/Factory/`.
 - Dans un `WebTestCase`, une route protégée s'appelle avec le trait `App\Tests\Support\AuthenticatesRequests` (`authenticateAs()`), qui ne demande pas de base de données.
 - Slug produit : il suit le nom. Renommer un produit change donc son slug, et l'ancienne URL ne redirige nulle part. À revoir avant l'ouverture de la boutique (`P2-07`) : slug figé, ou table de redirections.
 - Slug produit : deux créations simultanées du même nom peuvent viser le même slug. L'index unique refuse la seconde, qui répond 500 au lieu d'obtenir un suffixe. Sans gravité tant que seul le back-office crée des produits.
@@ -66,6 +68,13 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — Fin de P0-10 : Foundry et tests d'intégration des repositories (branche `test/P0-10-foundry-integration-tests`, en relecture)
+- `zenstruck/foundry` installé (dev). Cinq factories dans `tests/Factory/` : catégorie, produit, image, utilisateur, adresse.
+- `DatabaseTestCase` charge les factories. Le `ResetDatabase` de Foundry n'est pas utilisé : la base reste préparée par les migrations puis une transaction annulée par test.
+- Nouveaux tests d'intégration sur PostgreSQL : repository catégorie (5), produit (16, dont les 10 combinaisons de filtres en SQL natif) et utilisateur (9).
+- Le fichier `src/Story/AppStory.php` posé par la recipe de Foundry est retiré : il aurait cassé le conteneur de production, Foundry n'y étant pas installé.
+- Vérifications : `composer check` vert, PHPUnit « OK (297 tests) » ; conteneur de production valide ; trois régressions introduites exprès (filtre de prix, filtre de taille, mise à jour du nom) sont bien détectées par les nouveaux tests.
 
 ### 2026-11-16 — Sortie des tests nettoyée, partie de P0-10 (branche `chore/P0-10-clean-test-output`, en relecture)
 - `composer check` se terminait par « OK, but there were issues! » avec 64 avertissements PHPUnit, et affichait une ligne `[error] Uncaught exception` au milieu des tests. Rien n'échouait, mais la sortie ressemblait à des erreurs.
