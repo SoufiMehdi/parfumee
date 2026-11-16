@@ -28,8 +28,10 @@ body:json {
 }
 
 tests {
-  test("200", function () {
+  test("200 et le produit modifié", function () {
     expect(res.getStatus()).to.equal(200);
-    expect(res.getBody().data).to.equal(bru.getVar("productId"));
+    expect(res.getBody().id).to.equal(bru.getVar("productId"));
+    expect(res.getBody().price).to.equal(26.5);
+    expect(res.getBody().attributes.size).to.equal("L");
   });
 }

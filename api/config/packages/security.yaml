@@ -32,6 +32,7 @@ security:
             jwt: ~
             refresh_jwt:
                 check_path: api_token_refresh
+                failure_handler: App\Ecommerce\Infrastructure\Security\RefreshTokenFailureHandler
             # Two authenticators: a request without credentials is answered by the JWT one (401).
             entry_point: jwt
 
@@ -42,6 +43,9 @@ security:
     # Anything outside these two spaces falls into the last rule and is admin-only:
     # a new route is closed until it is explicitly opened.
     access_control:
+        # The OpenAPI contract and its Swagger UI are public: they describe the API, they do not open it
+        - { path: ^/api/v1/doc(\.json)?$, methods: [GET], roles: PUBLIC_ACCESS }
+
         # Token renewal, shared by both fronts: the refresh token is the credential
         - { path: ^/api/v1/token/refresh$, methods: [POST], roles: PUBLIC_ACCESS }
 

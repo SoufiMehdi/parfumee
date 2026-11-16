@@ -22,7 +22,7 @@ body:multipart-form {
 tests {
   test("201 et l'identifiant de l'image", function () {
     expect(res.getStatus()).to.equal(201);
-    expect(res.getBody().data).to.be.a("string");
+    expect(res.getBody().id).to.be.a("string");
   });
 }
 

@@ -211,6 +211,26 @@ Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau
 
 « Éditeur » inclut les administrateurs. Tout le reste de `/api/v1/admin` est réservé aux administrateurs, et tout le reste de `/api/v1/shop` aux clients connectés.
 
+## Contrat de l'API (OpenAPI)
+
+L'API se décrit elle-même : routes, corps attendus, réponses et erreurs.
+
+| Adresse | Contenu |
+|---|---|
+| `http://127.0.0.1:8000/api/v1/doc` | Swagger UI : la documentation navigable, où l'on peut essayer chaque route |
+| `http://127.0.0.1:8000/api/v1/doc.json` | Le contrat OpenAPI au format JSON |
+| `api/openapi.json` | Le même contrat, versionné dans le dépôt |
+
+Dans Swagger UI, le bouton **Authorize** attend le `token` renvoyé par une connexion.
+
+Les fronts généreront leur client TypeScript à partir de ce contrat. Il est produit à partir du code (contrôleurs, DTO d'entrée, vues de sortie) : après un changement de l'API, le régénérer puis le commiter.
+
+```bash
+composer openapi:dump
+```
+
+Un test échoue tant que `api/openapi.json` n'est pas à jour.
+
 ## Vérifier son travail
 
 Depuis `api/`, bases de données démarrées :

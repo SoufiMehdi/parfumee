@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Ecommerce\Infrastructure\Presenter\Catalog;
+namespace App\Tests\Unit\Ecommerce\Infrastructure\Presenter\Catalog;
 
-use App\Ecommerce\Application\Mapper\AttributesMapper;
+use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
+use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
-use Doctrine\Common\Collections\ArrayCollection;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\AttributesView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\CategorySummaryView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\PictureView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductView;
 use PHPUnit\Framework\TestCase;
 
-class ProductPresenterTest extends TestCase
+final class ProductPresenterTest extends TestCase
 {
     private ProductPresenter $presenter;
 
@@ -20,90 +24,58 @@ class ProductPresenterTest extends TestCase
         $this->presenter = new ProductPresenter();
     }
 
-    public function testPresentReturnsFormattedArray(): void
+    public function testPresentCopiesEveryFieldOfTheProduct(): void
     {
-        $categoryMock = $this->createStub(Category::class);
-        $categoryMock->method('getId')->willReturn('cat-123');
-        $categoryMock->method('getName')->willReturn('Electronics');
-
-        $attributes = new AttributesMapper();
-        $attributesMock = $attributes->fromArray(
-            [
-                'weight' => 12.5,
-                'fragrance' => 'floral',
-                'size' => 'medium',
-                'description' => 'A nice product',
-                'presentation' => 'box',
-            ]
+        $product = new Product(
+            'product-id',
+            'Bougie Ambre',
+            'bougie-ambre',
+            24.9,
+            new Category('category-id', 'Bougies', 'bougies'),
+            new Attribute(180.0, 'ambre', 'M', 'Cire de soja.', 'Verre ambré'),
+            [new Picture('picture-id', 'products/a.jpg', 'Une bougie', 2)],
         );
 
-        $productMock = $this->createStub(Product::class);
-        $productMock->method('getId')->willReturn('prod-123');
-        $productMock->method('getName')->willReturn('Laptop');
-        $productMock->method('getSlug')->willReturn('laptop');
-        $productMock->method('getPrice')->willReturn(999.99);
-        $productMock->method('getCategory')->willReturn($categoryMock);
-        $productMock->method('getAttributes')->willReturn($attributesMock);
+        $view = $this->presenter->present($product);
 
-        $result = $this->presenter->present($productMock);
-
-        $this->assertEquals([
-            'id' => 'prod-123',
-            'name' => 'Laptop',
-            'slug' => 'laptop',
-            'price' => 999.99,
-            'category' => [
-                'id' => 'cat-123',
-                'name' => 'Electronics',
-            ],
-            'attributes' => [
-                'weight' => 12.5,
-                'fragrance' => 'floral',
-                'size' => 'medium',
-                'description' => 'A nice product',
-                'presentation' => 'box',
-            ],
-            'pictures' => [],
-        ], $result);
+        self::assertEquals(new ProductView(
+            'product-id',
+            'Bougie Ambre',
+            'bougie-ambre',
+            24.9,
+            new CategorySummaryView('category-id', 'Bougies'),
+            new AttributesView(180.0, 'ambre', 'M', 'Cire de soja.', 'Verre ambré'),
+            [new PictureView('picture-id', 'products/a.jpg', 'Une bougie', 2)],
+        ), $view);
     }
 
-    public function testPresentCollectionReturnsArrayOfFormattedProducts(): void
+    public function testAProductWithoutAttributesNorPicturesIsPresentedWithEmptyOnes(): void
     {
-        $productMock = $this->createStub(Product::class);
-        $categoryMock = $this->createStub(Category::class);
-        $attributesMock = $this->createStub(ArrayCollection::class);
+        $product = new Product('product-id', 'Bougie', 'bougie', 10.0, new Category('category-id', 'Bougies', 'bougies'));
 
-        $productMock->method('getId')->willReturn('p1');
-        $productMock->method('getName')->willReturn('Item');
-        $productMock->method('getSlug')->willReturn('item');
-        $productMock->method('getPrice')->willReturn(10.0);
-        $productMock->method('getCategory')->willReturn($categoryMock);
-        $attributes = new AttributesMapper();
-        $attributesMock = $attributes->fromArray(
-            [
-                'weight' => 12.5,
-                'fragrance' => 'floral',
-                'size' => 'medium',
-                'description' => 'A nice product',
-                'presentation' => 'box',
-            ]
-        );
-        $productMock->method('getAttributes')->willReturn($attributesMock);
+        $view = $this->presenter->present($product);
 
-        $result = $this->presenter->presentCollection([$productMock, $productMock]);
-
-        $this->assertCount(2, $result);
-        $this->assertEquals('p1', $result[0]['id']);
-        $this->assertEquals('p1', $result[1]['id']);
+        self::assertEquals(new AttributesView(null, null, null, null, null), $view->attributes);
+        self::assertSame([], $view->pictures);
     }
 
-    public function testPresentThrowsExceptionWhenCategoryIsNull(): void
+    public function testPresentCollectionKeepsTheOrderAndReturnsAList(): void
     {
-        $productMock = $this->createStub(Product::class);
-        $productMock->method('getCategory')->willThrowException(new \Error('Call to a member function getId() on null'));
+        $category = new Category('category-id', 'Bougies', 'bougies');
+        $products = [
+            5 => new Product('first', 'A', 'a', 1.0, $category),
+            9 => new Product('second', 'B', 'b', 2.0, $category),
+        ];
 
-        $this->expectException(\Error::class);
+        $views = $this->presenter->presentCollection($products);
 
-        $this->presenter->present($productMock);
+        // A list, whatever the keys of the input: it must be encoded as a JSON array.
+        self::assertSame([0, 1], array_keys($views));
+        self::assertSame(['first', 'second'], [$views[0]->id, $views[1]->id]);
+    }
+
+    public function testPresentCollectionOfNothingIsAnEmptyList(): void
+    {
+        self::assertSame([], $this->presenter->presentCollection([]));
     }
 }

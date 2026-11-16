@@ -13,6 +13,8 @@
         "gesdinet/jwt-refresh-token-bundle": "^3.1",
         "lexik/jwt-authentication-bundle": "^3.2",
         "liip/imagine-bundle": "^2.18.2",
+        "nelmio/api-doc-bundle": "^5.13",
+        "symfony/asset": "8.1.*",
         "symfony/console": "8.1.*",
         "symfony/debug-bundle": "8.1.*",
         "symfony/dotenv": "8.1.*",
@@ -22,6 +24,7 @@
         "symfony/runtime": "8.1.*",
         "symfony/security-bundle": "8.1.*",
         "symfony/serializer": "8.1.*",
+        "symfony/twig-bundle": "8.1.*",
         "symfony/uid": "8.1.*",
         "symfony/validator": "8.1.*",
         "symfony/yaml": "8.1.*"
@@ -87,6 +90,7 @@
             "@lint:container"
         ],
         "fix-cs": "php-cs-fixer fix",
+        "openapi:dump": "SHELL_VERBOSITY=0 php bin/console nelmio:apidoc:dump --format=json --env=test --no-ansi > openapi.json",
         "test": "phpunit",
         "check": [
             "@lint",
@@ -103,6 +107,7 @@
         "lint:schema": "Check the Doctrine mapping (fails until B15 is fixed)",
         "lint": "Run every linter",
         "fix-cs": "Fix the coding style",
+        "openapi:dump": "Regenerate openapi.json, the committed OpenAPI contract",
         "test": "Run the test suite (needs the test database: docker compose up -d)",
         "check": "Run the linters, then the tests: what the CI will run"
     },

@@ -25,6 +25,6 @@ body:json {
 tests {
   test("200 et le nouveau téléphone", function () {
     expect(res.getStatus()).to.equal(200);
-    expect(res.getBody().phoneNumber).to.equal("+33612345679");
+    expect(res.getBody().phone_number).to.equal("+33612345679");
   });
 }
