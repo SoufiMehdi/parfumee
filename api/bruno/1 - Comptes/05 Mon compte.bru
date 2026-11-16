@@ -1,0 +1,23 @@
+meta {
+  name: 05 Mon compte
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/users/{{userId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("200, avec le téléphone et l'adresse de l'inscription", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().email).to.equal(bru.getEnvVar("adminEmail"));
+    expect(res.getBody().addresses).to.be.an("array");
+  });
+}

@@ -1,0 +1,31 @@
+meta {
+  name: 06 Envoyer une image
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/upload-picture/{{productId}}
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  file: @file(fixtures/bougie.png)
+  alt: Bougie à l'ambre
+}
+
+tests {
+  test("200 et l'identifiant de l'image", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.a("string");
+  });
+}
+
+docs {
+  JPEG, PNG ou WebP, 5 Mo au plus. Le fichier envoyé est `fixtures/bougie.png`, dans le dossier de la collection.
+}

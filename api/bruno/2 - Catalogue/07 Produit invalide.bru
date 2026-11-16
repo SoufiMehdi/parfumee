@@ -1,0 +1,34 @@
+meta {
+  name: 07 Produit invalide
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/create-product
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "",
+    "price": -1,
+    "category_id": "{{categoryId}}",
+    "attributes": {
+      "weight": "180g"
+    }
+  }
+}
+
+tests {
+  test("422 : nom vide, prix négatif, poids qui n'est pas un nombre", function () {
+    expect(res.getStatus()).to.equal(422);
+    const fields = res.getBody().violations.map((violation) => violation.field);
+    expect(fields).to.include.members(["name", "price", "attributes[weight]"]);
+  });
+}

@@ -1,0 +1,18 @@
+meta {
+  name: 01 Lister les produits
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/products
+  body: none
+  auth: none
+}
+
+tests {
+  test("200 et une liste, sans être connecté", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.be.an("array");
+  });
+}
