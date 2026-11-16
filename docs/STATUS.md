@@ -18,7 +18,7 @@
 - **Fait :** `P0-11` (CI GitHub Actions), mergée dans `main` (PR #16).
 - **Fait :** `P0-12` (README d'installation), mergée dans `main` (PR #17).
 - **Fait :** le nettoyage de la sortie des tests (PR #18) et la collection Bruno (PR #19), mergés dans `main`.
-- **En relecture :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), sur la branche `test/P0-10-foundry-integration-tests`. C'est la dernière tâche de la phase 0.
+- **Fait :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), mergée dans `main` (PR #20). **La phase 0 est terminée.**
 - **Prochaine tâche conseillée :** `P1-01`, première tâche de la phase 1 (socle API pour deux fronts). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
@@ -68,6 +68,10 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-16 — Suppression des tests unitaires de repositories (branche `chore/P0-10-remove-mocked-repository-tests`, en relecture)
+- Les quatre tests unitaires de `tests/Unit/.../Persistence/Doctrine/` simulaient l'EntityManager : ils vérifiaient les appels faits à Doctrine, pas le résultat en base, et avaient laissé passer le bug B1. Supprimés à la demande, les tests d'intégration les remplacent.
+- Vérification : `composer check` vert, PHPUnit « OK (272 tests) ».
 
 ### 2026-11-16 — Fin de P0-10 : Foundry et tests d'intégration des repositories (branche `test/P0-10-foundry-integration-tests`, en relecture)
 - `zenstruck/foundry` installé (dev). Cinq factories dans `tests/Factory/` : catégorie, produit, image, utilisateur, adresse.

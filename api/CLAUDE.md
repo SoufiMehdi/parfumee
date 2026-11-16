@@ -43,7 +43,7 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 
 ## Tests
 
-- Les tests **unitaires** (`tests/Unit/`) couvrent le domaine, les use cases (repositories mockés), les mappers et les presenters.
+- Les tests **unitaires** (`tests/Unit/`) couvrent le domaine, les use cases (repositories mockés), les mappers et les presenters. **Pas de test unitaire d'un repository Doctrine** : un EntityManager simulé ne prouve rien.
 - Les tests **d'intégration** (`tests/Integration/`) couvrent les repositories Doctrine **contre une vraie base de test**. Les mocks d'EntityManager ont masqué le bug B1.
   - Ils étendent `App\Tests\Support\DatabaseTestCase`, qui joue les migrations une fois par lancement et annule les données de chaque test (transaction + rollback).
   - Les données se créent avec les factories Foundry de `tests/Factory/` (`DoctrineProductFactory::createOne([...])`). Ne pas utiliser le trait `ResetDatabase` de Foundry.
