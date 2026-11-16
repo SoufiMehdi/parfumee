@@ -148,7 +148,7 @@ Un corps JSON doit toujours être envoyé avec `Content-Type: application/json`,
 
 ## Tester avec Bruno
 
-Le dossier `api/bruno/` est une collection [Bruno](https://www.usebruno.com/) : 18 requêtes qui couvrent toutes les routes, avec le jeton géré automatiquement.
+Le dossier `api/bruno/` est une collection [Bruno](https://www.usebruno.com/) : 20 requêtes qui couvrent toutes les routes, avec le jeton géré automatiquement.
 
 1. Dans Bruno : **Open Collection**, choisir le dossier `api/bruno`.
 2. En haut à droite, sélectionner l'environnement **local** (API sur `http://127.0.0.1:8000`).
@@ -175,6 +175,16 @@ Chaque exécution crée un produit et une image dans la base de développement.
 
 Deux espaces, un par front. Ils partagent les mêmes cas d'usage ; seuls les contrôleurs et les droits diffèrent.
 
+**Sessions**
+
+Une connexion renvoie deux valeurs : un `token` (JWT, valable 15 minutes, à envoyer dans `Authorization: Bearer`) et un `refresh_token` (valable 30 jours).
+
+| Méthode | Route | Accès |
+|---|---|---|
+| `POST` | `/api/v1/token/refresh` | Public. Corps : `{"refresh_token": "..."}`. Renvoie un nouveau `token` et un nouveau `refresh_token` |
+
+Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau, et l'ancien est refusé.
+
 **Boutique — `/api/v1/shop`**
 
 | Méthode | Route | Accès |
@@ -183,13 +193,14 @@ Deux espaces, un par front. Ils partagent les mêmes cas d'usage ; seuls les con
 | `POST` | `/api/v1/shop/login` | Public |
 | `GET` | `/api/v1/shop/products` | Public. Filtres optionnels : `category_id`, `min_price`, `max_price`, `scent`, `size` |
 | `GET` | `/api/v1/shop/products/{id}` | Public |
-| `GET` `PUT` `DELETE` | `/api/v1/shop/users/{id}` | Le titulaire du compte |
+| `GET` `PUT` `DELETE` | `/api/v1/shop/me` | Client connecté : son propre compte |
 
 **Back-office — `/api/v1/admin`**
 
 | Méthode | Route | Accès |
 |---|---|---|
 | `POST` | `/api/v1/admin/login` | Public |
+| `GET` | `/api/v1/admin/me` | Éditeur : son identité et ses rôles |
 | `GET` | `/api/v1/admin/products` | Éditeur. Mêmes filtres que la boutique |
 | `GET` | `/api/v1/admin/products/{id}` | Éditeur |
 | `POST` | `/api/v1/admin/products` | Éditeur |

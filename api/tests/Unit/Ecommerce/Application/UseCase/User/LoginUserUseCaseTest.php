@@ -10,6 +10,7 @@ use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordVerifierInterface;
+use App\Ecommerce\Domain\Service\User\RefreshTokenIssuerInterface;
 use App\Ecommerce\Domain\Service\User\TokenGeneratorInterface;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -21,6 +22,7 @@ class LoginUserUseCaseTest extends TestCase
     private UserRepositoryInterface&MockObject $userRepository;
     private PasswordVerifierInterface&MockObject $passwordVerifier;
     private TokenGeneratorInterface&MockObject $tokenGenerator;
+    private RefreshTokenIssuerInterface&MockObject $refreshTokenIssuer;
     private LoginUserUseCase $useCase;
 
     protected function setUp(): void
@@ -28,11 +30,13 @@ class LoginUserUseCaseTest extends TestCase
         $this->userRepository = $this->createMock(UserRepositoryInterface::class);
         $this->passwordVerifier = $this->createMock(PasswordVerifierInterface::class);
         $this->tokenGenerator = $this->createMock(TokenGeneratorInterface::class);
+        $this->refreshTokenIssuer = $this->createMock(RefreshTokenIssuerInterface::class);
 
         $this->useCase = new LoginUserUseCase(
             $this->userRepository,
             $this->passwordVerifier,
             $this->tokenGenerator,
+            $this->refreshTokenIssuer,
         );
     }
 
@@ -65,9 +69,15 @@ class LoginUserUseCaseTest extends TestCase
             ->with('user@example.com', ['ROLE_USER'])
             ->willReturn('jwt-token-abc');
 
+        $this->refreshTokenIssuer
+            ->expects($this->once())
+            ->method('issue')
+            ->with('user@example.com')
+            ->willReturn('refresh-token-xyz');
+
         $result = $this->useCase->execute($dto);
 
-        $this->assertSame(['token' => 'jwt-token-abc'], $result);
+        $this->assertSame(['token' => 'jwt-token-abc', 'refresh_token' => 'refresh-token-xyz'], $result);
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -81,6 +91,7 @@ class LoginUserUseCaseTest extends TestCase
 
         $this->passwordVerifier->expects($this->never())->method('verify');
         $this->tokenGenerator->expects($this->never())->method('generate');
+        $this->refreshTokenIssuer->expects($this->never())->method('issue');
 
         $this->expectException(InvalidCredentialsException::class);
         $this->expectExceptionMessage('Invalid credentials');
@@ -110,6 +121,7 @@ class LoginUserUseCaseTest extends TestCase
             ->willReturn(false);
 
         $this->tokenGenerator->expects($this->never())->method('generate');
+        $this->refreshTokenIssuer->expects($this->never())->method('issue');
 
         $this->expectException(InvalidCredentialsException::class);
         $this->expectExceptionMessage('Invalid credentials');

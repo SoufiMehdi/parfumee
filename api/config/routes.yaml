@@ -9,6 +9,11 @@
 
 # Every route of the application lives under a versioned prefix. A breaking
 # change of the contract would be published under /api/v2 next to this one.
+# Handled by the refresh_jwt authenticator of the "main" firewall: there is no controller.
+api_token_refresh:
+    path: /api/v1/token/refresh
+    methods: [POST]
+
 controllers:
     resource: routing.controllers
     prefix: /api/v1

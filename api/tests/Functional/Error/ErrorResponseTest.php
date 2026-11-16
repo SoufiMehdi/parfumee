@@ -55,7 +55,7 @@ final class ErrorResponseTest extends WebTestCase
         yield 'update product with unknown category' => [UpdateProductUseCase::class, new CategoryNotFoundException(self::ID), 'PUT', '/api/v1/admin/products/'.self::ID, 404];
         yield 'create product with unknown category' => [CreateProductUseCase::class, new CategoryNotFoundException(self::ID), 'POST', '/api/v1/admin/products', 404];
         yield 'create product with negative price' => [CreateProductUseCase::class, new InvalidPriceException(-1.0), 'POST', '/api/v1/admin/products', 422];
-        yield 'read unknown user' => [GetUserUseCase::class, new UserNotFoundException(self::ID), 'GET', '/api/v1/shop/users/'.self::ID, 404];
+        yield 'read unknown user' => [GetUserUseCase::class, new UserNotFoundException(self::ID), 'GET', '/api/v1/shop/me', 404];
         yield 'register with a taken email' => [RegisterUserUseCase::class, new DuplicateEmailException('a@example.test'), 'POST', '/api/v1/shop/register', 409];
         yield 'register with an invalid email' => [RegisterUserUseCase::class, new InvalidEmailException('nope'), 'POST', '/api/v1/shop/register', 422];
         yield 'login with wrong credentials' => [LoginUserUseCase::class, new InvalidCredentialsException(), 'POST', '/api/v1/shop/login', 401];

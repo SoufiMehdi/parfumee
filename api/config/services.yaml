@@ -33,6 +33,10 @@ services:
     App\Ecommerce\Domain\Storage\FileStorageInterface: '@App\Ecommerce\Infrastructure\Storage\LocalFileStorage'
     App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface: '@App\Ecommerce\Infrastructure\Service\Catalog\SymfonySlugGenerator'
     App\Ecommerce\Domain\Service\User\TokenGeneratorInterface: '@App\Ecommerce\Infrastructure\Service\User\JwtTokenGenerator'
+    App\Ecommerce\Domain\Service\User\RefreshTokenIssuerInterface: '@App\Ecommerce\Infrastructure\Service\User\GesdinetRefreshTokenIssuer'
+    App\Ecommerce\Infrastructure\Service\User\GesdinetRefreshTokenIssuer:
+        arguments:
+            $ttl: '%gesdinet_jwt_refresh_token.ttl%'
     App\Ecommerce\Domain\Service\User\PasswordVerifierInterface: '@App\Ecommerce\Infrastructure\Service\User\SymfonyPasswordVerifier'
     # please note that last definitions always *replace* previous ones
 

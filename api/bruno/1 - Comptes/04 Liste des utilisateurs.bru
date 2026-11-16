@@ -14,15 +14,6 @@ auth:bearer {
   token: {{token}}
 }
 
-script:post-response {
-  if (res.getStatus() === 200) {
-    const me = res.getBody().find((user) => user.email === bru.getEnvVar("adminEmail"));
-    if (me) {
-      bru.setVar("userId", me.id);
-    }
-  }
-}
-
 tests {
   test("200 et une liste (403 : le compte n'est pas encore administrateur)", function () {
     expect(res.getStatus()).to.equal(200);
@@ -31,5 +22,5 @@ tests {
 }
 
 docs {
-  Réservée aux administrateurs. Enregistre l'identifiant du compte connecté dans `userId` : la connexion ne le renvoie pas.
+  Réservée aux administrateurs.
 }

@@ -10,6 +10,7 @@
         "doctrine/doctrine-bundle": "^3.4.1",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.7.6",
+        "gesdinet/jwt-refresh-token-bundle": "^3.1",
         "lexik/jwt-authentication-bundle": "^3.2",
         "liip/imagine-bundle": "^2.18.2",
         "symfony/console": "8.1.*",

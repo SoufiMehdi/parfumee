@@ -8,6 +8,7 @@ use App\Ecommerce\Application\DTO\User\LoginUserRequestDto;
 use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\Service\User\PasswordVerifierInterface;
+use App\Ecommerce\Domain\Service\User\RefreshTokenIssuerInterface;
 use App\Ecommerce\Domain\Service\User\TokenGeneratorInterface;
 
 readonly class LoginUserUseCase
@@ -16,11 +17,12 @@ readonly class LoginUserUseCase
         private UserRepositoryInterface $userRepository,
         private PasswordVerifierInterface $passwordVerifier,
         private TokenGeneratorInterface $tokenGenerator,
+        private RefreshTokenIssuerInterface $refreshTokenIssuer,
     ) {
     }
 
     /**
-     * @return array{token: string}
+     * @return array{token: string, refresh_token: string}
      */
     public function execute(LoginUserRequestDto $dto): array
     {
@@ -39,6 +41,9 @@ readonly class LoginUserUseCase
             $user->getRoles()
         );
 
-        return ['token' => $token];
+        return [
+            'token' => $token,
+            'refresh_token' => $this->refreshTokenIssuer->issue($user->getEmail()->getValue()),
+        ];
     }
 }

@@ -38,6 +38,7 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 - **Identifiants :** UUID v4 en `string` (RFC 4122), générés dans le use case.
 - **Montants :** en **centimes (`int`)** pour tout nouveau code (panier, commandes). `Product::price` est encore un `float` : dette à migrer avant la phase 4.
 - **Slugs :** générés par le port `SlugGeneratorInterface` (`SluggerInterface` de Symfony derrière), jamais avec `str_replace`. Pour un produit, passer par `ProductSlugResolver`, qui garantit l'unicité.
+- **Compte connecté :** une route qui agit sur le compte de l'appelant ne prend pas d'id : elle lit le compte du jeton avec `#[CurrentUser] DoctrineUser $user` (voir `Shop/AccountController`). Ne jamais comparer un id de route à celui du jeton.
 - **Rôles :** utiliser les constantes de `Domain/Model/User/Role`, jamais la chaîne `'ROLE_ADMIN'`. Un rôle ne se donne que par `User::grantRole()`, et seule la commande `app:user:create-admin` l'appelle : aucune route ne doit permettre de changer un rôle.
 - **Commandes console :** dans `Infrastructure/Console/`, fines comme un contrôleur (elles appellent un use case).
 - **Nommage :** suffixe `Dto` (et non `DTO`), messages d'exception en anglais.
@@ -66,4 +67,5 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 - `.env` ne contient aucun secret : `APP_SECRET` et `JWT_PASSPHRASE` y sont vides exprès. Les valeurs de dev sont dans `.env.dev`, celles de test dans `.env.test` ; `tests/Unit/Config/EnvFilesTest` le vérifie. `.env.local` n'est pas lu en test.
 - Avant de pousser : `composer check` (style, PHPStan niveau 6, conteneur, tests). PHPStan est à 0 erreur : ne pas ajouter de baseline ni de `@phpstan-ignore`. `composer fix-cs` corrige le style.
 - Un docblock `@var` de propriété se place **au-dessus** des attributs `#[ORM\…]`, sinon PHPStan ne le lit pas.
+- La migration `Version20261116102013` (table `refresh_tokens`) est à jouer sur chaque base de dev.
 - La migration `Version20260612051158` ajoute des colonnes `NOT NULL` sans défaut : elle échoue si des utilisateurs existent déjà.
