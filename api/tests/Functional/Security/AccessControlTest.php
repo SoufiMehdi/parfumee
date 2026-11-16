@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Security;
 
-use App\Ecommerce\Application\UseCase\Catalog\GetProductsUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
@@ -44,13 +44,10 @@ final class AccessControlTest extends WebTestCase
      */
     public static function protectedRoutes(): iterable
     {
-        yield 'list users' => ['GET', '/users/list'];
-        yield 'read account' => ['GET', '/users/'.self::OWNER_ID];
-        yield 'update account' => ['PUT', '/users/'.self::OWNER_ID];
-        yield 'delete account' => ['DELETE', '/users/'.self::OWNER_ID];
-        yield 'create product' => ['POST', '/create-product'];
-        yield 'update product' => ['PUT', '/edit-product/'.self::OTHER_ID];
-        yield 'upload picture' => ['POST', '/upload-picture/'.self::OTHER_ID];
+        yield 'shop: read account' => ['GET', '/api/shop/users/'.self::OWNER_ID];
+        yield 'shop: update account' => ['PUT', '/api/shop/users/'.self::OWNER_ID];
+        yield 'shop: delete account' => ['DELETE', '/api/shop/users/'.self::OWNER_ID];
+        yield from self::adminOnlyRoutes();
     }
 
     #[DataProvider('protectedRoutes')]
@@ -67,7 +64,7 @@ final class AccessControlTest extends WebTestCase
     {
         $this->forbidUseCases();
 
-        $this->client->request('GET', '/users/list', server: ['HTTP_AUTHORIZATION' => 'Bearer not-a-jwt']);
+        $this->client->request('GET', '/api/admin/users', server: ['HTTP_AUTHORIZATION' => 'Bearer not-a-jwt']);
 
         self::assertResponseStatusCodeSame(401);
     }
@@ -77,10 +74,15 @@ final class AccessControlTest extends WebTestCase
      */
     public static function adminOnlyRoutes(): iterable
     {
-        yield 'list users' => ['GET', '/users/list'];
-        yield 'create product' => ['POST', '/create-product'];
-        yield 'update product' => ['PUT', '/edit-product/'.self::OTHER_ID];
-        yield 'upload picture' => ['POST', '/upload-picture/'.self::OTHER_ID];
+        yield 'admin: list users' => ['GET', '/api/admin/users'];
+        yield 'admin: read user' => ['GET', '/api/admin/users/'.self::OWNER_ID];
+        yield 'admin: update user' => ['PUT', '/api/admin/users/'.self::OWNER_ID];
+        yield 'admin: delete user' => ['DELETE', '/api/admin/users/'.self::OWNER_ID];
+        yield 'admin: list products' => ['GET', '/api/admin/products'];
+        yield 'admin: read product' => ['GET', '/api/admin/products/'.self::OTHER_ID];
+        yield 'admin: create product' => ['POST', '/api/admin/products'];
+        yield 'admin: update product' => ['PUT', '/api/admin/products/'.self::OTHER_ID];
+        yield 'admin: upload picture' => ['POST', '/api/admin/products/'.self::OTHER_ID.'/pictures'];
     }
 
     #[DataProvider('adminOnlyRoutes')]
@@ -110,7 +112,7 @@ final class AccessControlTest extends WebTestCase
         $this->forbidUseCases();
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/users/'.self::OTHER_ID, content: '{}');
+        $this->client->request($method, '/api/shop/users/'.self::OTHER_ID, content: '{}');
 
         self::assertResponseStatusCodeSame(403);
         self::assertSame('{"error":"Access denied."}', $this->client->getResponse()->getContent());
@@ -122,9 +124,23 @@ final class AccessControlTest extends WebTestCase
         $this->stubAccountUseCases(self::OWNER_ID);
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
+        $this->client->request($method, '/api/shop/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
+    }
+
+    /**
+     * The customer is refused on their own account too when they ask for it through the back-office.
+     */
+    #[DataProvider('accountMethods')]
+    public function testCustomerIsForbiddenOnTheirOwnAccountThroughTheBackOffice(string $method): void
+    {
+        $this->forbidUseCases();
+        $this->authenticateAs($this->client, self::OWNER_ID);
+
+        $this->client->request($method, '/api/admin/users/'.self::OWNER_ID, content: '{}');
+
+        self::assertResponseStatusCodeSame(403);
     }
 
     #[DataProvider('accountMethods')]
@@ -133,7 +149,7 @@ final class AccessControlTest extends WebTestCase
         $this->stubAccountUseCases(self::OWNER_ID);
         $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
 
-        $this->client->request($method, '/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
+        $this->client->request($method, '/api/admin/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
     }
@@ -145,20 +161,49 @@ final class AccessControlTest extends WebTestCase
         static::getContainer()->set(GetUsersUseCase::class, $useCase);
         $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
 
-        $this->client->request('GET', '/users/list');
+        $this->client->request('GET', '/api/admin/users');
 
         self::assertResponseIsSuccessful();
     }
 
     public function testCatalogueReadingIsPublic(): void
     {
-        $useCase = $this->createStub(GetProductsUseCase::class);
+        $useCase = $this->createStub(GetFilteredProductsUseCase::class);
         $useCase->method('execute')->willReturn([]);
-        static::getContainer()->set(GetProductsUseCase::class, $useCase);
+        static::getContainer()->set(GetFilteredProductsUseCase::class, $useCase);
 
-        $this->client->request('GET', '/products');
+        $this->client->request('GET', '/api/shop/products');
 
         self::assertResponseIsSuccessful();
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function formerRoutes(): iterable
+    {
+        yield 'login' => ['POST', '/users/login'];
+        yield 'registration' => ['POST', '/users/create'];
+        yield 'list users' => ['GET', '/users/list'];
+        yield 'list products' => ['GET', '/products'];
+        yield 'filter products' => ['GET', '/products/filter'];
+        yield 'read product' => ['GET', '/product/'.self::OTHER_ID];
+        yield 'create product' => ['POST', '/create-product'];
+        yield 'update product' => ['PUT', '/edit-product/'.self::OTHER_ID];
+        yield 'upload picture' => ['POST', '/upload-picture/'.self::OTHER_ID];
+    }
+
+    /**
+     * The routes of before P1-01 are gone, even for an administrator.
+     */
+    #[DataProvider('formerRoutes')]
+    public function testFormerRoutesNoLongerExist(string $method, string $uri): void
+    {
+        $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
+
+        $this->client->request($method, $uri);
+
+        self::assertResponseStatusCodeSame(404);
     }
 
     /**
@@ -166,8 +211,9 @@ final class AccessControlTest extends WebTestCase
      */
     public static function publicAuthenticationRoutes(): iterable
     {
-        yield 'login' => ['/users/login'];
-        yield 'registration' => ['/users/create'];
+        yield 'shop login' => ['/api/shop/login'];
+        yield 'shop registration' => ['/api/shop/register'];
+        yield 'back-office login' => ['/api/admin/login'];
     }
 
     /**

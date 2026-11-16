@@ -39,7 +39,11 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 - **Montants :** en **centimes (`int`)** pour tout nouveau code (panier, commandes). `Product::price` est encore un `float` : dette à migrer avant la phase 4.
 - **Slugs :** générés par le port `SlugGeneratorInterface` (`SluggerInterface` de Symfony derrière), jamais avec `str_replace`. Pour un produit, passer par `ProductSlugResolver`, qui garantit l'unicité.
 - **Nommage :** suffixe `Dto` (et non `DTO`), messages d'exception en anglais.
-- **Routes :** REST (`GET /api/shop/products`, `POST /api/admin/products`, `PUT /api/admin/products/{id}`…). Les routes actuelles (`/create-product`, `/edit-product/{id}`…) sont à migrer en P1-01.
+- **Routes :** REST, dans deux espaces (`GET /api/shop/products`, `POST /api/admin/products`, `PUT /api/admin/products/{id}`…).
+  - Les contrôleurs sont rangés par espace : `Infrastructure/Controller/Shop/` et `Infrastructure/Controller/Admin/`. Le préfixe et le nom des routes sont portés par l'attribut `#[Route]` de la classe (`/api/shop/...` + `shop_...`).
+  - Une même ressource peut avoir un contrôleur dans chaque espace : ils appellent **les mêmes use cases**. Ne jamais dupliquer un use case pour un espace.
+  - `access_control` protège chaque espace en bloc : une nouvelle route sous `/api/admin` est d'office réservée à `ROLE_ADMIN`, sous `/api/shop` à `ROLE_USER`. Seule une route **publique** doit être ajoutée à `security.yaml`.
+  - Pas de préfixe de version (`/api/v1`) : le contrat sera versionné si un besoin apparaît.
 
 ## Tests
 

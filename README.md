@@ -99,7 +99,7 @@ php -S 127.0.0.1:8000 -t public
 Vérifier dans un autre terminal :
 
 ```bash
-curl http://127.0.0.1:8000/products
+curl http://127.0.0.1:8000/api/shop/products
 # []
 ```
 
@@ -109,7 +109,7 @@ Presque toutes les routes d'écriture sont réservées aux administrateurs, et a
 
 ```bash
 # 1. Créer un compte (mot de passe : 8 caractères minimum)
-curl -X POST http://127.0.0.1:8000/users/create \
+curl -X POST http://127.0.0.1:8000/api/shop/register \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@example.test","password":"change-me-123","first_name":"Ada","last_name":"Admin"}'
 
@@ -117,7 +117,7 @@ curl -X POST http://127.0.0.1:8000/users/create \
 php bin/console dbal:run-sql "UPDATE users SET roles = '[\"ROLE_ADMIN\"]' WHERE email = 'admin@example.test'"
 
 # 3. Se connecter : la réponse contient le jeton
-curl -X POST http://127.0.0.1:8000/users/login \
+curl -X POST http://127.0.0.1:8000/api/admin/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@example.test","password":"change-me-123"}'
 ```
@@ -125,7 +125,7 @@ curl -X POST http://127.0.0.1:8000/users/login \
 Le jeton s'envoie ensuite dans l'en-tête `Authorization: Bearer <jeton>`. Exemple, avec l'identifiant fixe de la catégorie « Bougies Parfumées » des fixtures :
 
 ```bash
-curl -X POST http://127.0.0.1:8000/create-product \
+curl -X POST http://127.0.0.1:8000/api/admin/products \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <jeton>' \
   -d '{"name":"Bougie Ambre","price":24.9,"category_id":"018f5370-1234-7000-8000-000000000001","attributes":{"weight":180,"fragrance":"ambre"}}'
@@ -160,20 +160,32 @@ Chaque exécution crée un produit et une image dans la base de développement.
 
 ## Routes actuelles
 
+Deux espaces, un par front. Ils partagent les mêmes cas d'usage ; seuls les contrôleurs et les droits diffèrent.
+
+**Boutique — `/api/shop`**
+
 | Méthode | Route | Accès |
 |---|---|---|
-| `POST` | `/users/create` | Public |
-| `POST` | `/users/login` | Public |
-| `GET` | `/products` | Public |
-| `GET` | `/products/filter` | Public |
-| `GET` | `/product/{id}` | Public |
-| `GET` `PUT` `DELETE` | `/users/{id}` | Le titulaire du compte, ou un administrateur |
-| `GET` | `/users/list` | Administrateur |
-| `POST` | `/create-product` | Administrateur |
-| `PUT` | `/edit-product/{id}` | Administrateur |
-| `POST` | `/upload-picture/{productId}` | Administrateur |
+| `POST` | `/api/shop/register` | Public |
+| `POST` | `/api/shop/login` | Public |
+| `GET` | `/api/shop/products` | Public. Filtres optionnels : `category_id`, `min_price`, `max_price`, `scent`, `size` |
+| `GET` | `/api/shop/products/{id}` | Public |
+| `GET` `PUT` `DELETE` | `/api/shop/users/{id}` | Le titulaire du compte |
 
-Toute route absente de cette liste est réservée aux administrateurs par défaut. Ces routes seront renommées en `/api/shop/*` et `/api/admin/*` (tâche `P1-01`).
+**Back-office — `/api/admin`**
+
+| Méthode | Route | Accès |
+|---|---|---|
+| `POST` | `/api/admin/login` | Public |
+| `GET` | `/api/admin/products` | Administrateur. Mêmes filtres que la boutique |
+| `GET` | `/api/admin/products/{id}` | Administrateur |
+| `POST` | `/api/admin/products` | Administrateur |
+| `PUT` | `/api/admin/products/{id}` | Administrateur |
+| `POST` | `/api/admin/products/{id}/pictures` | Administrateur |
+| `GET` | `/api/admin/users` | Administrateur |
+| `GET` `PUT` `DELETE` | `/api/admin/users/{id}` | Administrateur |
+
+Tout le reste de `/api/admin` est réservé aux administrateurs, et tout le reste de `/api/shop` aux clients connectés.
 
 ## Vérifier son travail
 
