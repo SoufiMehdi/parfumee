@@ -16,7 +16,8 @@ security:
             pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
         login:
-            pattern: ^/users/login$
+            # No token is expected on the sign-in routes: an expired one must not block them.
+            pattern: ^/api/(shop|admin)/login$
             stateless: true
             security: false
         main:
@@ -25,22 +26,24 @@ security:
             stateless: true
             jwt: ~
 
+    # Two spaces, one rule each (CLAUDE.md, "Architecture cible"):
+    #   /api/shop/*   the shop: public for the catalogue and authentication, ROLE_USER otherwise
+    #   /api/admin/*  the back-office: ROLE_ADMIN
     # Only the *first* matching rule is applied, so the order matters.
-    # Any route that is not listed here falls into the last rule and is
-    # admin-only: a new route is closed until it is explicitly opened.
+    # Anything outside these two spaces falls into the last rule and is admin-only:
+    # a new route is closed until it is explicitly opened.
     access_control:
-        # Public: authentication and catalogue reading
-        - { path: ^/users/(login|create)$, methods: [POST], roles: PUBLIC_ACCESS }
-        - { path: ^/products(/filter)?$, methods: [GET], roles: PUBLIC_ACCESS }
-        - { path: ^/product/[^/]+$, methods: [GET], roles: PUBLIC_ACCESS }
+        # Shop, public: authentication and catalogue reading
+        - { path: ^/api/shop/(login|register)$, methods: [POST], roles: PUBLIC_ACCESS }
+        - { path: ^/api/shop/products(/[^/]+)?$, methods: [GET], roles: PUBLIC_ACCESS }
 
-        # Back-office: must stay above the customer account rule, which would match /users/list
-        - { path: ^/users/list$, roles: ROLE_ADMIN }
+        # Shop, signed-in customer. Ownership of an account is then enforced by UserAccountVoter.
+        - { path: ^/api/shop/, roles: ROLE_USER }
 
-        # Customer account: ownership is then enforced by UserAccountVoter
-        - { path: ^/users/[^/]+$, methods: [GET, PUT, DELETE], roles: ROLE_USER }
+        # Back-office. Its sign-in route is public (see the "login" firewall).
+        - { path: ^/api/admin/, roles: ROLE_ADMIN }
 
-        # Everything else (catalogue writes, uploads, future routes)
+        # Everything else
         - { path: ^/, roles: ROLE_ADMIN }
 
 when@test:
