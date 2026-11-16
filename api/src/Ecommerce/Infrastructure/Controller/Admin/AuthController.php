@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * Sign-in of the back-office. It issues the same token as the shop sign-in:
  * what an account may do is decided on every admin route, from its roles.
  */
-#[Route('/api/admin', name: 'admin_')]
+#[Route('/admin', name: 'admin_')]
 class AuthController extends AbstractController
 {
     #[Route('/login', name: 'login', methods: [Request::METHOD_POST])]

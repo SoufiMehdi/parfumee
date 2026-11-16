@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Requirement\Requirement;
  * Customer accounts as the back-office sees them: any account, not only one's own.
  * The whole /api/admin space requires ROLE_ADMIN.
  */
-#[Route('/api/admin/users', name: 'admin_users_')]
+#[Route('/admin/users', name: 'admin_users_')]
 class UserController extends AbstractController
 {
     #[Route('', name: 'list', methods: [Request::METHOD_GET])]

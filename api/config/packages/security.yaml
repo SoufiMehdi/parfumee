@@ -17,7 +17,7 @@ security:
             security: false
         login:
             # No token is expected on the sign-in routes: an expired one must not block them.
-            pattern: ^/api/(shop|admin)/login$
+            pattern: ^/api/v1/(shop|admin)/login$
             stateless: true
             security: false
         main:
@@ -27,21 +27,21 @@ security:
             jwt: ~
 
     # Two spaces, one rule each (CLAUDE.md, "Architecture cible"):
-    #   /api/shop/*   the shop: public for the catalogue and authentication, ROLE_USER otherwise
-    #   /api/admin/*  the back-office: ROLE_ADMIN
+    #   /api/v1/shop/*   the shop: public for the catalogue and authentication, ROLE_USER otherwise
+    #   /api/v1/admin/*  the back-office: ROLE_ADMIN
     # Only the *first* matching rule is applied, so the order matters.
     # Anything outside these two spaces falls into the last rule and is admin-only:
     # a new route is closed until it is explicitly opened.
     access_control:
         # Shop, public: authentication and catalogue reading
-        - { path: ^/api/shop/(login|register)$, methods: [POST], roles: PUBLIC_ACCESS }
-        - { path: ^/api/shop/products(/[^/]+)?$, methods: [GET], roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/shop/(login|register)$, methods: [POST], roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/shop/products(/[^/]+)?$, methods: [GET], roles: PUBLIC_ACCESS }
 
         # Shop, signed-in customer. Ownership of an account is then enforced by UserAccountVoter.
-        - { path: ^/api/shop/, roles: ROLE_USER }
+        - { path: ^/api/v1/shop/, roles: ROLE_USER }
 
         # Back-office. Its sign-in route is public (see the "login" firewall).
-        - { path: ^/api/admin/, roles: ROLE_ADMIN }
+        - { path: ^/api/v1/admin/, roles: ROLE_ADMIN }
 
         # Everything else
         - { path: ^/, roles: ROLE_ADMIN }

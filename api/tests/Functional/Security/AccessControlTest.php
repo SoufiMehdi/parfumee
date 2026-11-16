@@ -44,9 +44,9 @@ final class AccessControlTest extends WebTestCase
      */
     public static function protectedRoutes(): iterable
     {
-        yield 'shop: read account' => ['GET', '/api/shop/users/'.self::OWNER_ID];
-        yield 'shop: update account' => ['PUT', '/api/shop/users/'.self::OWNER_ID];
-        yield 'shop: delete account' => ['DELETE', '/api/shop/users/'.self::OWNER_ID];
+        yield 'shop: read account' => ['GET', '/api/v1/shop/users/'.self::OWNER_ID];
+        yield 'shop: update account' => ['PUT', '/api/v1/shop/users/'.self::OWNER_ID];
+        yield 'shop: delete account' => ['DELETE', '/api/v1/shop/users/'.self::OWNER_ID];
         yield from self::adminOnlyRoutes();
     }
 
@@ -64,7 +64,7 @@ final class AccessControlTest extends WebTestCase
     {
         $this->forbidUseCases();
 
-        $this->client->request('GET', '/api/admin/users', server: ['HTTP_AUTHORIZATION' => 'Bearer not-a-jwt']);
+        $this->client->request('GET', '/api/v1/admin/users', server: ['HTTP_AUTHORIZATION' => 'Bearer not-a-jwt']);
 
         self::assertResponseStatusCodeSame(401);
     }
@@ -74,15 +74,15 @@ final class AccessControlTest extends WebTestCase
      */
     public static function adminOnlyRoutes(): iterable
     {
-        yield 'admin: list users' => ['GET', '/api/admin/users'];
-        yield 'admin: read user' => ['GET', '/api/admin/users/'.self::OWNER_ID];
-        yield 'admin: update user' => ['PUT', '/api/admin/users/'.self::OWNER_ID];
-        yield 'admin: delete user' => ['DELETE', '/api/admin/users/'.self::OWNER_ID];
-        yield 'admin: list products' => ['GET', '/api/admin/products'];
-        yield 'admin: read product' => ['GET', '/api/admin/products/'.self::OTHER_ID];
-        yield 'admin: create product' => ['POST', '/api/admin/products'];
-        yield 'admin: update product' => ['PUT', '/api/admin/products/'.self::OTHER_ID];
-        yield 'admin: upload picture' => ['POST', '/api/admin/products/'.self::OTHER_ID.'/pictures'];
+        yield 'admin: list users' => ['GET', '/api/v1/admin/users'];
+        yield 'admin: read user' => ['GET', '/api/v1/admin/users/'.self::OWNER_ID];
+        yield 'admin: update user' => ['PUT', '/api/v1/admin/users/'.self::OWNER_ID];
+        yield 'admin: delete user' => ['DELETE', '/api/v1/admin/users/'.self::OWNER_ID];
+        yield 'admin: list products' => ['GET', '/api/v1/admin/products'];
+        yield 'admin: read product' => ['GET', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'admin: create product' => ['POST', '/api/v1/admin/products'];
+        yield 'admin: update product' => ['PUT', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'admin: upload picture' => ['POST', '/api/v1/admin/products/'.self::OTHER_ID.'/pictures'];
     }
 
     #[DataProvider('adminOnlyRoutes')]
@@ -112,7 +112,7 @@ final class AccessControlTest extends WebTestCase
         $this->forbidUseCases();
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/api/shop/users/'.self::OTHER_ID, content: '{}');
+        $this->client->request($method, '/api/v1/shop/users/'.self::OTHER_ID, content: '{}');
 
         self::assertResponseStatusCodeSame(403);
         self::assertSame('{"error":"Access denied."}', $this->client->getResponse()->getContent());
@@ -124,7 +124,7 @@ final class AccessControlTest extends WebTestCase
         $this->stubAccountUseCases(self::OWNER_ID);
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/api/shop/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
+        $this->client->request($method, '/api/v1/shop/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
     }
@@ -138,7 +138,7 @@ final class AccessControlTest extends WebTestCase
         $this->forbidUseCases();
         $this->authenticateAs($this->client, self::OWNER_ID);
 
-        $this->client->request($method, '/api/admin/users/'.self::OWNER_ID, content: '{}');
+        $this->client->request($method, '/api/v1/admin/users/'.self::OWNER_ID, content: '{}');
 
         self::assertResponseStatusCodeSame(403);
     }
@@ -149,7 +149,7 @@ final class AccessControlTest extends WebTestCase
         $this->stubAccountUseCases(self::OWNER_ID);
         $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
 
-        $this->client->request($method, '/api/admin/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
+        $this->client->request($method, '/api/v1/admin/users/'.self::OWNER_ID, server: ['CONTENT_TYPE' => 'application/json'], content: self::ACCOUNT_BODY);
 
         self::assertResponseIsSuccessful();
     }
@@ -161,7 +161,7 @@ final class AccessControlTest extends WebTestCase
         static::getContainer()->set(GetUsersUseCase::class, $useCase);
         $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
 
-        $this->client->request('GET', '/api/admin/users');
+        $this->client->request('GET', '/api/v1/admin/users');
 
         self::assertResponseIsSuccessful();
     }
@@ -172,7 +172,7 @@ final class AccessControlTest extends WebTestCase
         $useCase->method('execute')->willReturn([]);
         static::getContainer()->set(GetFilteredProductsUseCase::class, $useCase);
 
-        $this->client->request('GET', '/api/shop/products');
+        $this->client->request('GET', '/api/v1/shop/products');
 
         self::assertResponseIsSuccessful();
     }
@@ -211,9 +211,9 @@ final class AccessControlTest extends WebTestCase
      */
     public static function publicAuthenticationRoutes(): iterable
     {
-        yield 'shop login' => ['/api/shop/login'];
-        yield 'shop registration' => ['/api/shop/register'];
-        yield 'back-office login' => ['/api/admin/login'];
+        yield 'shop login' => ['/api/v1/shop/login'];
+        yield 'shop registration' => ['/api/v1/shop/register'];
+        yield 'back-office login' => ['/api/v1/admin/login'];
     }
 
     /**

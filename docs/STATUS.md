@@ -20,8 +20,8 @@
 - **Fait :** le nettoyage de la sortie des tests (PR #18) et la collection Bruno (PR #19), mergés dans `main`.
 - **Fait :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), mergée dans `main` (PR #20). **La phase 0 est terminée.**
 - **Phase en cours : phase 1** — socle API pour deux fronts.
-- **En relecture :** `P1-01` (routes `/api/shop` et `/api/admin`), sur la branche `feat/P1-01-shop-admin-routes`. Elle part de la branche de la PR #21 : merger la #21 d'abord.
-- **Prochaine tâche conseillée :** `P1-06` (commande de création d'admin) ou `P1-05` (`GET /api/shop/me` et refresh token), puis `P1-03` (OpenAPI). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **En relecture :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), sur la branche `feat/P1-01-shop-admin-routes`. La PR #22 a été mergée par erreur dans une branche de travail et non dans `main` : une nouvelle PR la remplace.
+- **Prochaine tâche conseillée :** `P1-06` (commande de création d'admin) ou `P1-05` (`GET /api/v1/shop/me` et refresh token), puis `P1-03` (OpenAPI). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -36,10 +36,10 @@
 
 ## Pièges connus en cours
 
-- Droits par espace (`config/packages/security.yaml`) : tout `/api/admin` exige `ROLE_ADMIN`, tout `/api/shop` exige `ROLE_USER`, sauf les routes publiques listées. Une nouvelle route **publique** doit donc y être ajoutée explicitement, sinon elle répond 401.
+- Droits par espace (`config/packages/security.yaml`) : tout `/api/v1/admin` exige `ROLE_ADMIN`, tout `/api/v1/shop` exige `ROLE_USER`, sauf les routes publiques listées. Une nouvelle route **publique** doit donc y être ajoutée explicitement, sinon elle répond 401.
 - Les anciennes routes (`/create-product`, `/users/login`…) n'existent plus depuis `P1-01` : elles répondent 404. Il n'y a pas de redirection, aucun client n'existant encore.
-- Les deux connexions (`/api/shop/login` et `/api/admin/login`) délivrent le même jeton : un client peut se connecter par celle du back-office, son jeton y sera simplement refusé partout (403).
-- `/api/shop/users/{id}` oblige encore le client à connaître son identifiant, que la connexion ne renvoie pas : à remplacer par `/api/shop/me` (`P1-05`).
+- Les deux connexions (`/api/v1/shop/login` et `/api/v1/admin/login`) délivrent le même jeton : un client peut se connecter par celle du back-office, son jeton y sera simplement refusé partout (403).
+- `/api/v1/shop/users/{id}` oblige encore le client à connaître son identifiant, que la connexion ne renvoie pas : à remplacer par `/api/v1/shop/me` (`P1-05`).
 - Il n'existe aucun moyen de créer un administrateur avant `P1-06`. En attendant, promouvoir un compte en SQL : `UPDATE users SET roles = '["ROLE_ADMIN"]' WHERE email = '…';`. Les rôles sont relus en base à chaque requête, donc pas besoin de se reconnecter.
 - Les tests fonctionnels signent de vrais JWT : sans `config/jwt/*.pem` (`php bin/console lexik:jwt:generate-keypair`), ils échouent. La CI génère sa propre paire à chaque exécution.
 - CI (`.github/workflows/api.yml`) : elle ne se lance que si `api/` ou le workflow change. La branche `main` n'est pas protégée : rien n'empêche encore de merger une PR rouge. Si on rend les checks obligatoires dans GitHub, une PR qui ne touche pas `api/` resterait bloquée en attente, à cause de ce filtre par chemin : il faudra alors le retirer.
@@ -65,6 +65,7 @@
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
 - Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
 - `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
+- Une PR se crée toujours vers `main`, même si sa branche part d'une autre branche de travail : la PR #22, créée vers la branche de la #21, a été mergée dans cette branche et n'est jamais arrivée dans `main`.
 - Tests d'intégration (`tests/Integration/`) : ils exigent la base de test, c'est-à-dire le service `database_test` lancé par `docker compose up -d` depuis `api/` (`127.0.0.1:54320`). Sans elle ils **échouent**, avec un message qui dit quoi lancer. `vendor/bin/phpunit tests/Unit` reste utilisable sans base.
 - La base de test vit en mémoire : elle est vide après chaque redémarrage du conteneur, et le premier test d'intégration rejoue les migrations. Rien à faire à la main.
 - **Le dépôt GitHub est public.** L'ancien `.env.test` contenait le mot de passe du compte `postgres` d'une base sur `192.168.1.28:5433`. Il est retiré du fichier mais **reste lisible par tous dans l'historique git** : le changer sur ce serveur, et partout où il serait réutilisé. Réécrire l'historique ne suffirait pas, le mot de passe ayant déjà été publié.
@@ -74,13 +75,13 @@
 
 ## Journal
 
-### 2026-11-16 — P1-01 : routes `/api/shop` et `/api/admin` (branche `feat/P1-01-shop-admin-routes`, en relecture)
+### 2026-11-16 — P1-01 : routes `/api/v1/shop` et `/api/v1/admin` (branche `feat/P1-01-shop-admin-routes`, en relecture)
 - Les contrôleurs sont répartis en deux espaces : `Controller/Shop/` (catalogue en lecture, inscription, connexion, compte du client) et `Controller/Admin/` (connexion, produits, utilisateurs). Les mêmes use cases servent aux deux.
-- Routes REST : `POST /api/admin/products` remplace `/create-product`, `PUT /api/admin/products/{id}` remplace `/edit-product/{id}`, `POST /api/admin/products/{id}/pictures` remplace `/upload-picture/{id}`, etc. Le tableau complet est dans le `README.md`.
-- `GET /products` et `GET /products/filter` fusionnent en `GET /api/shop/products`, dont les filtres sont optionnels. `GetProductsUseCase`, devenu inutile, est supprimé.
+- Routes REST : `POST /api/v1/admin/products` remplace `/create-product`, `PUT /api/v1/admin/products/{id}` remplace `/edit-product/{id}`, `POST /api/v1/admin/products/{id}/pictures` remplace `/upload-picture/{id}`, etc. Le tableau complet est dans le `README.md`.
+- `GET /products` et `GET /products/filter` fusionnent en `GET /api/v1/shop/products`, dont les filtres sont optionnels. `GetProductsUseCase`, devenu inutile, est supprimé.
 - Le back-office gagne quatre routes : liste et détail des produits, détail, modification et suppression d'un utilisateur.
 - `access_control` protège chaque espace en bloc. L'envoi d'image répond maintenant 201 au lieu de 200.
-- Pas de préfixe de version `/api/v1` (la roadmap le donnait comme possible).
+- Toutes les routes sont sous le préfixe de version `/api/v1`, décidé en review et défini une seule fois dans `config/routes.yaml`.
 - Vérifications : `composer check` vert, PHPUnit « OK (293 tests) » ; collection Bruno mise à jour et lancée contre un serveur de test, 18 requêtes sur 18.
 
 ### 2026-11-16 — Suppression des tests unitaires de repositories (branche `chore/P0-10-remove-mocked-repository-tests`, en relecture)

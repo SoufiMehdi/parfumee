@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * Public entry points of a customer: creating an account and signing in.
  */
-#[Route('/api/shop', name: 'shop_')]
+#[Route('/shop', name: 'shop_')]
 class AuthController extends AbstractController
 {
     #[Route('/register', name: 'register', methods: [Request::METHOD_POST])]

@@ -50,15 +50,15 @@ final class ErrorResponseTest extends WebTestCase
      */
     public static function businessFailures(): iterable
     {
-        yield 'read unknown product' => [GetProductUseCase::class, new ProductNotFoundException(self::ID), 'GET', '/api/shop/products/'.self::ID, 404];
-        yield 'update unknown product' => [UpdateProductUseCase::class, new ProductNotFoundException(self::ID), 'PUT', '/api/admin/products/'.self::ID, 404];
-        yield 'update product with unknown category' => [UpdateProductUseCase::class, new CategoryNotFoundException(self::ID), 'PUT', '/api/admin/products/'.self::ID, 404];
-        yield 'create product with unknown category' => [CreateProductUseCase::class, new CategoryNotFoundException(self::ID), 'POST', '/api/admin/products', 404];
-        yield 'create product with negative price' => [CreateProductUseCase::class, new InvalidPriceException(-1.0), 'POST', '/api/admin/products', 422];
-        yield 'read unknown user' => [GetUserUseCase::class, new UserNotFoundException(self::ID), 'GET', '/api/shop/users/'.self::ID, 404];
-        yield 'register with a taken email' => [RegisterUserUseCase::class, new DuplicateEmailException('a@example.test'), 'POST', '/api/shop/register', 409];
-        yield 'register with an invalid email' => [RegisterUserUseCase::class, new InvalidEmailException('nope'), 'POST', '/api/shop/register', 422];
-        yield 'login with wrong credentials' => [LoginUserUseCase::class, new InvalidCredentialsException(), 'POST', '/api/shop/login', 401];
+        yield 'read unknown product' => [GetProductUseCase::class, new ProductNotFoundException(self::ID), 'GET', '/api/v1/shop/products/'.self::ID, 404];
+        yield 'update unknown product' => [UpdateProductUseCase::class, new ProductNotFoundException(self::ID), 'PUT', '/api/v1/admin/products/'.self::ID, 404];
+        yield 'update product with unknown category' => [UpdateProductUseCase::class, new CategoryNotFoundException(self::ID), 'PUT', '/api/v1/admin/products/'.self::ID, 404];
+        yield 'create product with unknown category' => [CreateProductUseCase::class, new CategoryNotFoundException(self::ID), 'POST', '/api/v1/admin/products', 404];
+        yield 'create product with negative price' => [CreateProductUseCase::class, new InvalidPriceException(-1.0), 'POST', '/api/v1/admin/products', 422];
+        yield 'read unknown user' => [GetUserUseCase::class, new UserNotFoundException(self::ID), 'GET', '/api/v1/shop/users/'.self::ID, 404];
+        yield 'register with a taken email' => [RegisterUserUseCase::class, new DuplicateEmailException('a@example.test'), 'POST', '/api/v1/shop/register', 409];
+        yield 'register with an invalid email' => [RegisterUserUseCase::class, new InvalidEmailException('nope'), 'POST', '/api/v1/shop/register', 422];
+        yield 'login with wrong credentials' => [LoginUserUseCase::class, new InvalidCredentialsException(), 'POST', '/api/v1/shop/login', 401];
     }
 
     /**
@@ -82,7 +82,7 @@ final class ErrorResponseTest extends WebTestCase
         imagejpeg(imagecreatetruecolor(8, 8), $path);
 
         try {
-            $this->client->request('POST', '/api/admin/products/'.self::ID.'/pictures', files: [
+            $this->client->request('POST', '/api/v1/admin/products/'.self::ID.'/pictures', files: [
                 'file' => new UploadedFile($path, 'candle.jpg', 'image/jpeg', test: true),
             ]);
         } finally {
@@ -95,7 +95,7 @@ final class ErrorResponseTest extends WebTestCase
 
     public function testInvalidJsonBodyIsABadRequest(): void
     {
-        $this->client->request('POST', '/api/shop/login', server: ['CONTENT_TYPE' => 'application/json'], content: '{not json');
+        $this->client->request('POST', '/api/v1/shop/login', server: ['CONTENT_TYPE' => 'application/json'], content: '{not json');
 
         self::assertResponseStatusCodeSame(400);
         self::assertArrayHasKey('error', $this->decodedResponse());
@@ -113,7 +113,7 @@ final class ErrorResponseTest extends WebTestCase
     {
         $this->useCaseThrows(GetProductUseCase::class, new \RuntimeException('SQLSTATE[08006] secret detail'));
 
-        $this->client->request('GET', '/api/shop/products/'.self::ID);
+        $this->client->request('GET', '/api/v1/shop/products/'.self::ID);
 
         self::assertResponseStatusCodeSame(500);
         // The test kernel runs in debug mode, which adds a "debug" key: the
@@ -134,8 +134,8 @@ final class ErrorResponseTest extends WebTestCase
     private static function validBodyFor(string $uri): string
     {
         return (string) json_encode(match (true) {
-            str_starts_with($uri, '/api/shop/register') => ['email' => 'a@example.test', 'password' => 'long-enough', 'first_name' => 'A', 'last_name' => 'B'],
-            str_starts_with($uri, '/api/shop/login') => ['email' => 'a@example.test', 'password' => 'secret'],
+            str_starts_with($uri, '/api/v1/shop/register') => ['email' => 'a@example.test', 'password' => 'long-enough', 'first_name' => 'A', 'last_name' => 'B'],
+            str_starts_with($uri, '/api/v1/shop/login') => ['email' => 'a@example.test', 'password' => 'secret'],
             default => ['name' => 'Candle', 'price' => 10, 'category_id' => self::ID],
         });
     }

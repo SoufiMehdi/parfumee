@@ -29,7 +29,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 /**
  * Catalogue management of the back-office. The whole /api/admin space requires ROLE_ADMIN.
  */
-#[Route('/api/admin/products', name: 'admin_products_')]
+#[Route('/admin/products', name: 'admin_products_')]
 class ProductController extends AbstractController
 {
     private const string PICTURE_MAX_SIZE = '5M';

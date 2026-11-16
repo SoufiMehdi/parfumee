@@ -48,7 +48,7 @@ class ProductControllerTest extends WebTestCase
         static::getContainer()->set(ProductPresenter::class, $presenterMock);
 
         // 2. Act
-        $this->client->request('GET', '/api/shop/products');
+        $this->client->request('GET', '/api/v1/shop/products');
 
         // 3. Assert
         $response = $this->client->getResponse();
@@ -68,7 +68,7 @@ class ProductControllerTest extends WebTestCase
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
         static::getContainer()->set(ProductPresenter::class, $presenterMock);
 
-        $this->client->request('GET', '/api/shop/products/11111111-1111-4111-8111-111111111111');
+        $this->client->request('GET', '/api/v1/shop/products/11111111-1111-4111-8111-111111111111');
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
@@ -83,7 +83,7 @@ class ProductControllerTest extends WebTestCase
 
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
 
-        $this->client->request('GET', '/api/shop/products/33333333-3333-4333-8333-333333333333');
+        $this->client->request('GET', '/api/v1/shop/products/33333333-3333-4333-8333-333333333333');
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_NOT_FOUND, $response->getStatusCode());
@@ -112,7 +112,7 @@ class ProductControllerTest extends WebTestCase
             'attributes' => ['capacity' => '100ml'],
         ];
 
-        $this->client->request('POST', '/api/admin/products', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
+        $this->client->request('POST', '/api/v1/admin/products', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_CREATED, $response->getStatusCode());
@@ -134,7 +134,7 @@ class ProductControllerTest extends WebTestCase
 
         $payload = ['name' => 'Nouveau Nom', 'price' => 95.00, 'category_id' => '22222222-2222-4222-8222-222222222222'];
 
-        $this->client->request('PUT', '/api/admin/products/11111111-1111-4111-8111-111111111111', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
+        $this->client->request('PUT', '/api/v1/admin/products/11111111-1111-4111-8111-111111111111', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode($payload));
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
@@ -166,7 +166,7 @@ class ProductControllerTest extends WebTestCase
         // Envoi en format Multipart Form (les fichiers vont dans le 5ème argument de request())
         $this->client->request(
             'POST',
-            '/api/admin/products/11111111-1111-4111-8111-111111111111/pictures',
+            '/api/v1/admin/products/11111111-1111-4111-8111-111111111111/pictures',
             ['alt' => 'Belle image'], // $_POST
             ['file' => $uploadedFile] // $_FILES
         );
@@ -182,7 +182,7 @@ class ProductControllerTest extends WebTestCase
     public function testUploadPictureBadRequest(): void
     {
         // On teste le cas d'erreur de validation du contrôleur (pas de fichier fourni)
-        $this->client->request('POST', '/api/admin/products/11111111-1111-4111-8111-111111111111/pictures');
+        $this->client->request('POST', '/api/v1/admin/products/11111111-1111-4111-8111-111111111111/pictures');
 
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_BAD_REQUEST, $response->getStatusCode());

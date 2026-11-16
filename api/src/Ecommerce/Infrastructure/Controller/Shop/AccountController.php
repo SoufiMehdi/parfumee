@@ -21,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * The account of the signed-in customer. UserAccountVoter refuses any id but their own.
  */
-#[Route('/api/shop/users/{id}', name: 'shop_account_', requirements: ['id' => Requirement::UUID])]
+#[Route('/shop/users/{id}', name: 'shop_account_', requirements: ['id' => Requirement::UUID])]
 #[IsGranted(UserAccountVoter::ACCESS, subject: 'id', message: 'Access denied.')]
 class AccountController extends AbstractController
 {

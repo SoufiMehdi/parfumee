@@ -19,7 +19,7 @@ use Symfony\Component\Routing\Requirement\Requirement;
 /**
  * Catalogue as the shop sees it: read-only and public.
  */
-#[Route('/api/shop/products', name: 'shop_products_')]
+#[Route('/shop/products', name: 'shop_products_')]
 class ProductController extends AbstractController
 {
     #[Route('', name: 'list', methods: [Request::METHOD_GET])]
