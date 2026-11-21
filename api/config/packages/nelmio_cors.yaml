@@ -1,0 +1,25 @@
+# Cross-origin requests (CORS). The shop and the back-office are served from their
+# own origins and call the API from the browser: only these two origins may read
+# its answers. The shop's server-side calls send no Origin and are not concerned.
+#
+# Origins are compared exactly, not as patterns: with patterns, an empty value would
+# allow every origin, and a missing anchor a look-alike domain. Here an empty value
+# allows nothing. Values: scheme, host and port, without a trailing slash.
+#
+# Everything sits under the /api/ path on purpose: the bundle applies its "defaults"
+# to every path that matches no entry, so options set there would apply everywhere.
+# Left empty, they allow no origin outside the API.
+nelmio_cors:
+    paths:
+        '^/api/':
+            origin_regex: false
+            allow_origin: ['%env(CORS_SHOP_ORIGIN)%', '%env(CORS_ADMIN_ORIGIN)%']
+            allow_methods: ['GET', 'POST', 'PUT', 'DELETE']
+            # A JSON body needs Content-Type; the token travels in Authorization.
+            allow_headers: ['Authorization', 'Content-Type']
+            # The token is sent in a header, never in a cookie: no credentials.
+            allow_credentials: false
+            # Without it, the browser hides the total of a list from the front (P1-04).
+            expose_headers: ['X-Total-Count']
+            # The browser may reuse a preflight answer for an hour.
+            max_age: 3600

@@ -90,5 +90,7 @@ Toute liste renvoyée par l'API est paginée. La chaîne complète, à reproduir
 - `.env` ne contient aucun secret : `APP_SECRET` et `JWT_PASSPHRASE` y sont vides exprès. Les valeurs de dev sont dans `.env.dev`, celles de test dans `.env.test` ; `tests/Unit/Config/EnvFilesTest` le vérifie. `.env.local` n'est pas lu en test.
 - Avant de pousser : `composer check` (style, PHPStan niveau 6, conteneur, tests). PHPStan est à 0 erreur : ne pas ajouter de baseline ni de `@phpstan-ignore`. `composer fix-cs` corrige le style.
 - Un docblock `@var` de propriété se place **au-dessus** des attributs `#[ORM\…]`, sinon PHPStan ne le lit pas.
+- CORS (`config/packages/nelmio_cors.yaml`) : deux origines exactes, `CORS_SHOP_ORIGIN` et `CORS_ADMIN_ORIGIN`. Ne pas passer en mode expression régulière (`origin_regex`) : une valeur vide y autorise toutes les origines. Tout se règle sous le chemin `'^/api/'`, jamais dans `defaults`, que le bundle applique à tous les chemins.
+- Un nouvel en-tête de réponse que les fronts doivent lire (comme `X-Total-Count`) s'ajoute à `expose_headers`, sinon le navigateur le leur cache. `CorsTest` couvre ces règles.
 - La migration `Version20261116102013` (table `refresh_tokens`) est à jouer sur chaque base de dev.
 - La migration `Version20260612051158` ajoute des colonnes `NOT NULL` sans défaut : elle échoue si des utilisateurs existent déjà.

@@ -41,6 +41,39 @@ final class EnvFilesTest extends TestCase
         self::assertNotSame('', $this->parse('.env.test')[$name] ?? '');
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function corsOrigins(): iterable
+    {
+        yield 'shop' => ['CORS_SHOP_ORIGIN'];
+        yield 'back-office' => ['CORS_ADMIN_ORIGIN'];
+    }
+
+    /**
+     * Without a value set for production, no front is allowed: the API fails closed.
+     */
+    #[DataProvider('corsOrigins')]
+    public function testTheBaseEnvFileAllowsNoFront(string $name): void
+    {
+        $values = $this->parse('.env');
+
+        self::assertArrayHasKey($name, $values);
+        self::assertSame('', $values[$name]);
+    }
+
+    /**
+     * An origin is compared exactly with the Origin header the browser sends: a
+     * trailing slash or a path would never match, and the front would be refused.
+     */
+    #[DataProvider('corsOrigins')]
+    public function testDevAndTestAllowTheirFrontsByTheirExactOrigin(string $name): void
+    {
+        foreach (['.env.dev', '.env.test'] as $file) {
+            self::assertMatchesRegularExpression('#^https?://[a-z0-9.-]+(:[0-9]+)?$#', $this->parse($file)[$name] ?? '', \sprintf('%s in %s is not an origin.', $name, $file));
+        }
+    }
+
     public function testTheBaseDatabaseUrlOnlyHoldsThePlaceholderPassword(): void
     {
         self::assertStringContainsString(':!ChangeMe!@127.0.0.1', $this->parse('.env')['DATABASE_URL']);
