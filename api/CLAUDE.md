@@ -11,7 +11,7 @@ Infrastructure/  Contrôleurs, entités Doctrine, repositories, mappers, present
 ```
 
 1. **Le Domain n'importe rien de `Symfony\`, `Doctrine\` ni d'`Application\`.**
-   - Dette connue, à corriger quand on touche ces fichiers : `ProductRepositoryInterface` importe `GetProductsFilterDto`, `FileStorageInterface` importe `UploadedFile`, et `UserRepositoryInterface` utilise `Symfony\Component\Uid\Uuid`.
+   - Dette connue, à corriger quand on touche ce fichier : `FileStorageInterface` importe `UploadedFile`.
 2. **Les entités Doctrine (`Infrastructure/Persistence/Entity/Doctrine*`) sont séparées des modèles du domaine.**
    - La conversion passe toujours par un mapper (`toDomain`, `toInfrastructure`, `mapDomainToEntity`).
    - Un repository renvoie **toujours des objets du domaine**, jamais des entités Doctrine.
@@ -42,6 +42,18 @@ Le contrat est généré à partir du code ; les fronts en tirent leur client. I
 - **Route publique :** `#[Security(name: null)]`, en plus de la règle dans `security.yaml`. Un test vérifie que les deux disent la même chose.
 - **Après tout changement** de route, de DTO ou de vue : `composer openapi:dump`, et commiter `openapi.json`.
 
+## Listes
+
+Toute liste renvoyée par l'API est paginée. La chaîne complète, à reproduire pour une nouvelle liste (exemple : les produits) :
+
+- **DTO de query string** (`ListProductsQueryDto`) : les filtres, puis `page` (`Range(1, Pagination::MAX_PAGE)`), `perPage` (`Range(1, Pagination::MAX_PER_PAGE)`), `sort` (`Choice` sur les valeurs de l'enum de tri) et `order` (`Choice` sur `SortDirection`). Un filtre porte le nom du champ qu'il filtre.
+- **Domaine** : des critères (`ProductCriteria` : filtres + `ProductSortField` + `SortDirection`) et une `Pagination` ; le repository expose `findPage(Criteria, Pagination): Page`. Ne jamais renvoyer `findAll()` à un client.
+- **Use case** `List<Objet>UseCase` : convertit le DTO en critères et renvoie `Page<T>`.
+- **Repository Doctrine** : les ids de la page en SQL (`COUNT`, puis `ORDER BY … LIMIT … OFFSET`), puis les objets en une requête DQL avec leurs relations (`JOIN … WHERE id IN (:ids)`). Une page coûte 3 requêtes, quel que soit son nombre d'éléments : le vérifier avec `queriesRunBy()`.
+- **Tri** : toujours par `SqlOrderBy::clause()`, qui départage par l'id ; une colonne de texte passe par `SqlOrderBy::frenchText()` (collation ICU française), sinon PostgreSQL trie octet par octet.
+- **Presenter** : `presentPage()` renvoie une vue `XListView` (`items` + `PaginationView`), et le contrôleur répond `$this->json($list, headers: $list->pagination->headers())` pour l'en-tête `X-Total-Count`. Documenter la réponse avec `headers: [new OA\Header(header: PaginationView::TOTAL_COUNT_HEADER, ref: '#/components/headers/TotalCount')]`.
+- `OpenApiContractTest` refuse toute réponse en tableau nu et toute liste sans pagination, en-tête ni paramètres de page et de tri.
+
 ## Conventions
 
 - `declare(strict_types=1);` dans **tous** les fichiers.
@@ -65,6 +77,7 @@ Le contrat est généré à partir du code ; les fronts en tirent leur client. I
   - Ils étendent `App\Tests\Support\DatabaseTestCase`, qui joue les migrations une fois par lancement et annule les données de chaque test (transaction + rollback).
   - Les données se créent avec les factories Foundry de `tests/Factory/` (`DoctrineProductFactory::createOne([...])`). Ne pas utiliser le trait `ResetDatabase` de Foundry.
   - Après avoir créé des données, appeler `$this->entityManager->clear()` avant de lire : sinon Doctrine rend l'objet en mémoire sans interroger la base.
+  - `queriesRunBy(fn () => ...)` renvoie les requêtes SQL exécutées : de quoi vérifier qu'une liste ne fait pas une requête par élément.
   - La base est le service `database_test` de `compose.override.yaml` (`docker compose up -d`). Sans elle, ces tests **échouent** : ne jamais les remplacer par un `markTestSkipped`.
 - Les tests **fonctionnels** (`tests/Functional/`, `WebTestCase`) couvrent les contrôleurs et la sécurité (401/403 attendus).
 - Le namespace d'un test suit son dossier : `App\Tests\Unit\...`, `App\Tests\Integration\...`.

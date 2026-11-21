@@ -6,6 +6,7 @@ namespace App\Tests\Support;
 
 use Doctrine\DBAL\Exception\ConnectionException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -48,6 +49,23 @@ abstract class DatabaseTestCase extends KernelTestCase
         }
 
         $this->entityManager->getConnection()->beginTransaction();
+    }
+
+    /**
+     * Runs $action and returns the SQL of the queries it sent, in order: what a
+     * test needs to prove that a list does not run one query per item.
+     *
+     * @return list<string>
+     */
+    protected function queriesRunBy(callable $action): array
+    {
+        $recorder = self::getContainer()->get('doctrine.debug_data_holder');
+        \assert($recorder instanceof DebugDataHolder);
+
+        $recorder->reset();
+        $action();
+
+        return array_map(static fn (array $query): string => (string) $query['sql'], $recorder->getData()['default'] ?? []);
     }
 
     protected function tearDown(): void

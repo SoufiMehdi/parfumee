@@ -8,11 +8,14 @@ use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\AttributesView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\CategorySummaryView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\PictureView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductView;
+use App\Ecommerce\Infrastructure\Presenter\Common\PaginationView;
 use PHPUnit\Framework\TestCase;
 
 final class ProductPresenterTest extends TestCase
@@ -59,23 +62,27 @@ final class ProductPresenterTest extends TestCase
         self::assertSame([], $view->pictures);
     }
 
-    public function testPresentCollectionKeepsTheOrderAndReturnsAList(): void
+    public function testPresentPageKeepsTheOrderOfTheItemsAndDescribesThePage(): void
     {
         $category = new Category('category-id', 'Bougies', 'bougies');
-        $products = [
-            5 => new Product('first', 'A', 'a', 1.0, $category),
-            9 => new Product('second', 'B', 'b', 2.0, $category),
-        ];
+        $page = new Page(
+            [new Product('first', 'A', 'a', 1.0, $category), new Product('second', 'B', 'b', 2.0, $category)],
+            total: 45,
+            pagination: new Pagination(page: 2, perPage: 20),
+        );
 
-        $views = $this->presenter->presentCollection($products);
+        $list = $this->presenter->presentPage($page);
 
-        // A list, whatever the keys of the input: it must be encoded as a JSON array.
-        self::assertSame([0, 1], array_keys($views));
-        self::assertSame(['first', 'second'], [$views[0]->id, $views[1]->id]);
+        self::assertSame(['first', 'second'], [$list->items[0]->id, $list->items[1]->id]);
+        self::assertEquals(new PaginationView(page: 2, perPage: 20, total: 45, totalPages: 3), $list->pagination);
+        self::assertSame(['X-Total-Count' => '45'], $list->pagination->headers());
     }
 
-    public function testPresentCollectionOfNothingIsAnEmptyList(): void
+    public function testAnEmptyPageIsPresentedWithNoItemsAndNoPage(): void
     {
-        self::assertSame([], $this->presenter->presentCollection([]));
+        $list = $this->presenter->presentPage(new Page([], 0, new Pagination()));
+
+        self::assertSame([], $list->items);
+        self::assertEquals(new PaginationView(page: 1, perPage: Pagination::DEFAULT_PER_PAGE, total: 0, totalPages: 0), $list->pagination);
     }
 }

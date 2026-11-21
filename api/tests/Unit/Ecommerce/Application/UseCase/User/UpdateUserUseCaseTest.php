@@ -27,9 +27,9 @@ class UpdateUserUseCaseTest extends TestCase
 
     public function testExecuteUpdatesProfile(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
         $user = $this->createMock(User::class);
-        $user->method('getId')->willReturn($id->toRfc4122());
+        $user->method('getId')->willReturn($id);
 
         $dto = new UpdateUserRequestDto(
             firstName: 'Jane',
@@ -51,7 +51,7 @@ class UpdateUserUseCaseTest extends TestCase
             ->method('save')
             ->with($user);
 
-        $result = $this->useCase->execute($id->toRfc4122(), $dto);
+        $result = $this->useCase->execute($id, $dto);
 
         $this->assertSame($user, $result);
     }
@@ -59,9 +59,9 @@ class UpdateUserUseCaseTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteUpdatesPhoneNumber(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
         $user = $this->createMock(User::class);
-        $user->method('getId')->willReturn($id->toRfc4122());
+        $user->method('getId')->willReturn($id);
 
         $dto = new UpdateUserRequestDto(
             firstName: 'Jane',
@@ -78,21 +78,21 @@ class UpdateUserUseCaseTest extends TestCase
 
         $this->userRepository->method('save');
 
-        $this->useCase->execute($id->toRfc4122(), $dto);
+        $this->useCase->execute($id, $dto);
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
         $dto = new UpdateUserRequestDto(firstName: 'Jane', lastName: 'Smith');
 
         $this->userRepository
             ->method('findById')
-            ->willThrowException(new UserNotFoundException($id->toRfc4122()));
+            ->willThrowException(new UserNotFoundException($id));
 
         $this->expectException(UserNotFoundException::class);
 
-        $this->useCase->execute($id->toRfc4122(), $dto);
+        $this->useCase->execute($id, $dto);
     }
 }

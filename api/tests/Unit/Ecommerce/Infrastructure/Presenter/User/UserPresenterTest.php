@@ -7,8 +7,11 @@ namespace App\Tests\Unit\Ecommerce\Infrastructure\Presenter\User;
 use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\Role;
 use App\Ecommerce\Domain\Model\User\User;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
+use App\Ecommerce\Infrastructure\Presenter\Common\PaginationView;
 use App\Ecommerce\Infrastructure\Presenter\User\UserPresenter;
 use App\Ecommerce\Infrastructure\Presenter\User\View\AddressView;
 use App\Ecommerce\Infrastructure\Presenter\User\View\UserView;
@@ -69,16 +72,20 @@ final class UserPresenterTest extends TestCase
         self::assertSame([Role::USER], $view->roles);
     }
 
-    public function testPresentCollectionKeepsTheOrderAndReturnsAList(): void
+    public function testPresentPageKeepsTheOrderOfTheItemsAndDescribesThePage(): void
     {
-        $users = [
-            3 => new User('first', new Email('a@example.test'), 'hash', 'A', 'A'),
-            7 => new User('second', new Email('b@example.test'), 'hash', 'B', 'B'),
-        ];
+        $page = new Page(
+            [
+                new User('first', new Email('a@example.test'), 'hash', 'A', 'A'),
+                new User('second', new Email('b@example.test'), 'hash', 'B', 'B'),
+            ],
+            total: 2,
+            pagination: new Pagination(),
+        );
 
-        $views = $this->presenter->presentCollection($users);
+        $list = $this->presenter->presentPage($page);
 
-        self::assertSame([0, 1], array_keys($views));
-        self::assertSame(['first', 'second'], [$views[0]->id, $views[1]->id]);
+        self::assertSame(['first', 'second'], [$list->items[0]->id, $list->items[1]->id]);
+        self::assertEquals(new PaginationView(page: 1, perPage: Pagination::DEFAULT_PER_PAGE, total: 2, totalPages: 1), $list->pagination);
     }
 }

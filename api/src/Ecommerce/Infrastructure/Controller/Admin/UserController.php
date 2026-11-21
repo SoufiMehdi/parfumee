@@ -4,19 +4,24 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Controller\Admin;
 
+use App\Ecommerce\Application\DTO\User\ListUsersQueryDto;
 use App\Ecommerce\Application\DTO\User\UpdateUserRequestDto;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
-use App\Ecommerce\Application\UseCase\User\GetUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
+use App\Ecommerce\Application\UseCase\User\ListUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
 use App\Ecommerce\Infrastructure\Presenter\Common\MessageView;
+use App\Ecommerce\Infrastructure\Presenter\Common\PaginationView;
 use App\Ecommerce\Infrastructure\Presenter\User\UserPresenter;
+use App\Ecommerce\Infrastructure\Presenter\User\View\UserListView;
 use App\Ecommerce\Infrastructure\Presenter\User\View\UserView;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryString;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
@@ -32,11 +37,19 @@ use Symfony\Component\Routing\Requirement\Requirement;
 class UserController extends AbstractController
 {
     #[Route('', name: 'list', methods: [Request::METHOD_GET])]
-    #[OA\Get(summary: 'List the accounts', description: 'Requires the administrator role.')]
-    #[OA\Response(response: 200, description: 'Every account', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: UserView::class))))]
-    public function list(GetUsersUseCase $useCase, UserPresenter $presenter): JsonResponse
-    {
-        return $this->json($presenter->presentCollection($useCase->execute()));
+    #[OA\Get(summary: 'List the accounts', description: 'Requires the administrator role. One page of the accounts, sorted by email unless told otherwise.')]
+    #[OA\Response(response: 200, description: 'One page of the matching accounts', headers: [new OA\Header(header: PaginationView::TOTAL_COUNT_HEADER, ref: '#/components/headers/TotalCount')], content: new Model(type: UserListView::class))]
+    #[OA\Response(response: 422, ref: '#/components/responses/ValidationFailed')]
+    public function list(
+        ListUsersUseCase $useCase,
+        UserPresenter $presenter,
+        // 422 like any other invalid input: the attribute answers 404 by default.
+        #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
+        ListUsersQueryDto $query = new ListUsersQueryDto(),
+    ): JsonResponse {
+        $list = $presenter->presentPage($useCase->execute($query));
+
+        return $this->json($list, headers: $list->pagination->headers());
     }
 
     #[Route('/{id}', name: 'get', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_GET])]

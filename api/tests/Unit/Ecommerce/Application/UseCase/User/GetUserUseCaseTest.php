@@ -26,7 +26,7 @@ class GetUserUseCaseTest extends TestCase
 
     public function testExecuteReturnsUser(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
         $user = $this->createStub(User::class);
 
         $this->userRepository
@@ -35,7 +35,7 @@ class GetUserUseCaseTest extends TestCase
             ->with($id)
             ->willReturn($user);
 
-        $result = $this->useCase->execute($id->toRfc4122());
+        $result = $this->useCase->execute($id);
 
         $this->assertSame($user, $result);
     }
@@ -43,14 +43,14 @@ class GetUserUseCaseTest extends TestCase
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
 
         $this->userRepository
             ->method('findById')
-            ->willThrowException(new UserNotFoundException($id->toRfc4122()));
+            ->willThrowException(new UserNotFoundException($id));
 
         $this->expectException(UserNotFoundException::class);
 
-        $this->useCase->execute($id->toRfc4122());
+        $this->useCase->execute($id);
     }
 }

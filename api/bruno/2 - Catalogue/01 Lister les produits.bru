@@ -5,14 +5,31 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/v1/shop/products
+  url: {{baseUrl}}/api/v1/shop/products?per_page=5
   body: none
   auth: none
 }
 
+params:query {
+  per_page: 5
+}
+
 tests {
-  test("200 et une liste, sans être connecté", function () {
+  test("200 et une page de 5 produits au plus, sans être connecté", function () {
     expect(res.getStatus()).to.equal(200);
-    expect(res.getBody()).to.be.an("array");
+    expect(res.getBody().items).to.be.an("array");
+    expect(res.getBody().items.length).to.be.at.most(5);
+    expect(res.getBody().pagination.page).to.equal(1);
+    expect(res.getBody().pagination.per_page).to.equal(5);
   });
+
+  test("le total est aussi dans l'en-tête X-Total-Count", function () {
+    expect(Number(res.getHeader("x-total-count"))).to.equal(res.getBody().pagination.total);
+  });
+}
+
+docs {
+  Une liste renvoie toujours une page : `items`, et `pagination` (`page`, `per_page`, `total`, `total_pages`).
+
+  Sans paramètre : la page 1, 20 produits, triés par nom.
 }

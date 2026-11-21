@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Ecommerce\Infrastructure\Controller\Admin;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
-use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
+use App\Ecommerce\Application\DTO\Catalog\ListProductsQueryDto;
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
-use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductListView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductView;
 use App\Ecommerce\Infrastructure\Presenter\Common\IdView;
+use App\Ecommerce\Infrastructure\Presenter\Common\PaginationView;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,17 +45,19 @@ class ProductController extends AbstractController
     private const array PICTURE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
     #[Route('', name: 'list', methods: [Request::METHOD_GET])]
-    #[OA\Get(summary: 'List the products', description: 'Requires the editor role. Every filter is optional.')]
-    #[OA\Response(response: 200, description: 'The matching products', content: new OA\JsonContent(type: 'array', items: new OA\Items(ref: new Model(type: ProductView::class))))]
+    #[OA\Get(summary: 'List the products', description: 'Requires the editor role. One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.')]
+    #[OA\Response(response: 200, description: 'One page of the matching products', headers: [new OA\Header(header: PaginationView::TOTAL_COUNT_HEADER, ref: '#/components/headers/TotalCount')], content: new Model(type: ProductListView::class))]
     #[OA\Response(response: 422, ref: '#/components/responses/ValidationFailed')]
     public function list(
-        GetFilteredProductsUseCase $useCase,
+        ListProductsUseCase $useCase,
         ProductPresenter $presenter,
         // 422 like any other invalid input: the attribute answers 404 by default.
         #[MapQueryString(validationFailedStatusCode: Response::HTTP_UNPROCESSABLE_ENTITY)]
-        GetProductsFilterDto $filter = new GetProductsFilterDto(),
+        ListProductsQueryDto $query = new ListProductsQueryDto(),
     ): JsonResponse {
-        return $this->json($presenter->presentCollection($useCase->execute($filter)));
+        $list = $presenter->presentPage($useCase->execute($query));
+
+        return $this->json($list, headers: $list->pagination->headers());
     }
 
     #[Route('/{id}', name: 'get', requirements: ['id' => Requirement::UUID], methods: [Request::METHOD_GET])]

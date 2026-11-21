@@ -7,14 +7,16 @@ namespace App\Tests\Integration\Ecommerce\Infrastructure\Controller\Catalog;
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
 use App\Ecommerce\Application\DTO\Catalog\UpdateProductDto;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
-use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\AttributesView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\CategorySummaryView;
@@ -41,24 +43,23 @@ class ProductControllerTest extends WebTestCase
 
     public function testGetProducts(): void
     {
-        // 1. Mocks
-        $useCaseMock = $this->createMock(GetFilteredProductsUseCase::class);
-        $presenterMock = $this->createMock(ProductPresenter::class);
+        $category = new Category('22222222-2222-4222-8222-222222222222', 'Bougies', 'bougies');
+        $useCaseMock = $this->createMock(ListProductsUseCase::class);
+        $useCaseMock->expects($this->once())->method('execute')->willReturn(new Page(
+            [new Product('11111111-1111-4111-8111-111111111111', 'Ambre', 'ambre', 12.5, $category)],
+            total: 21,
+            pagination: new Pagination(page: 1, perPage: 1),
+        ));
+        static::getContainer()->set(ListProductsUseCase::class, $useCaseMock);
 
-        $useCaseMock->expects($this->once())->method('execute')->willReturn([]);
-        $presenterMock->expects($this->once())->method('presentCollection')->with([])->willReturn(['products' => []]);
+        $this->client->request('GET', '/api/v1/shop/products?per_page=1');
 
-        // Injection des mocks dans le conteneur de Symfony
-        static::getContainer()->set(GetFilteredProductsUseCase::class, $useCaseMock);
-        static::getContainer()->set(ProductPresenter::class, $presenterMock);
-
-        // 2. Act
-        $this->client->request('GET', '/api/v1/shop/products');
-
-        // 3. Assert
         $response = $this->client->getResponse();
         $this->assertSame(JsonResponse::HTTP_OK, $response->getStatusCode());
-        $this->assertJsonStringEqualsJsonString(json_encode(['products' => []]), $response->getContent());
+        $data = json_decode((string) $response->getContent(), true);
+        $this->assertSame(['11111111-1111-4111-8111-111111111111'], array_column($data['items'], 'id'));
+        $this->assertSame(['page' => 1, 'per_page' => 1, 'total' => 21, 'total_pages' => 21], $data['pagination']);
+        $this->assertSame('21', $response->headers->get('X-Total-Count'));
     }
 
     public function testGetProductByIdSuccess(): void

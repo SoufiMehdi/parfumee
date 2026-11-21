@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
-use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
 use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Catalog\ProductCriteria;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use App\Ecommerce\Domain\Repository\Catalog\ProductSortField;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
+use App\Ecommerce\Domain\Repository\SortDirection;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Tests\Factory\Catalog\DoctrineCategoryFactory;
 use App\Tests\Factory\Catalog\DoctrinePictureFactory;
@@ -18,8 +22,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Runs the repository against a real PostgreSQL database: the JSON filters of
- * findByFilter() are native SQL, which a mocked EntityManager cannot check.
+ * Runs the repository against a real PostgreSQL database: the JSON filters and the
+ * French sort of findPage() are native SQL, which a mocked EntityManager cannot check.
  */
 final class DoctrineProductRepositoryTest extends DatabaseTestCase
 {
@@ -138,27 +142,31 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
     }
 
     /**
-     * @return iterable<string, array{GetProductsFilterDto, list<string>}>
+     * The categories are named, not given by id: a data provider runs before the
+     * test creates them. CANDLES and MELTS are replaced by their ids.
+     *
+     * @return iterable<string, array{array<string, mixed>, list<string>}>
      */
     public static function filters(): iterable
     {
-        yield 'no filter returns everything' => [new GetProductsFilterDto(), ['amber-m', 'amber-l', 'vanilla-m', 'melt']];
-        yield 'category' => [new GetProductsFilterDto(categoryId: 'MELTS'), ['melt']];
-        yield 'minimum price is inclusive' => [new GetProductsFilterDto(minPrice: 30.0), ['amber-l', 'vanilla-m']];
-        yield 'maximum price is inclusive' => [new GetProductsFilterDto(maxPrice: 20.0), ['amber-m', 'melt']];
-        yield 'price range' => [new GetProductsFilterDto(minPrice: 15.0, maxPrice: 30.0), ['amber-m', 'amber-l']];
-        yield 'scent' => [new GetProductsFilterDto(scent: 'amber'), ['amber-m', 'amber-l', 'melt']];
-        yield 'size' => [new GetProductsFilterDto(size: 'M'), ['amber-m', 'vanilla-m']];
-        yield 'every filter at once' => [new GetProductsFilterDto('CANDLES', 10.0, 25.0, 'amber', 'M'), ['amber-m']];
-        yield 'nothing matches' => [new GetProductsFilterDto(scent: 'rose'), []];
-        yield 'the scent is matched exactly, not as a pattern' => [new GetProductsFilterDto(scent: 'amb%'), []];
+        yield 'no filter returns everything' => [[], ['amber-m', 'amber-l', 'vanilla-m', 'melt']];
+        yield 'category' => [['categoryId' => 'MELTS'], ['melt']];
+        yield 'minimum price is inclusive' => [['minPrice' => 30.0], ['amber-l', 'vanilla-m']];
+        yield 'maximum price is inclusive' => [['maxPrice' => 20.0], ['amber-m', 'melt']];
+        yield 'price range' => [['minPrice' => 15.0, 'maxPrice' => 30.0], ['amber-m', 'amber-l']];
+        yield 'fragrance' => [['fragrance' => 'amber'], ['amber-m', 'amber-l', 'melt']];
+        yield 'size' => [['size' => 'M'], ['amber-m', 'vanilla-m']];
+        yield 'every filter at once' => [['categoryId' => 'CANDLES', 'minPrice' => 10.0, 'maxPrice' => 25.0, 'fragrance' => 'amber', 'size' => 'M'], ['amber-m']];
+        yield 'nothing matches' => [['fragrance' => 'rose'], []];
+        yield 'the fragrance is matched exactly, not as a pattern' => [['fragrance' => 'amb%'], []];
     }
 
     /**
-     * @param list<string> $expectedSlugs
+     * @param array<string, mixed> $filters
+     * @param list<string>         $expectedSlugs
      */
     #[DataProvider('filters')]
-    public function testFindByFilter(GetProductsFilterDto $filter, array $expectedSlugs): void
+    public function testFindPageFilters(array $filters, array $expectedSlugs): void
     {
         $candles = DoctrineCategoryFactory::createOne();
         $melts = DoctrineCategoryFactory::createOne();
@@ -168,19 +176,140 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
         $this->givenAProduct('melt', 8.0, $melts, ['fragrance' => 'amber']);
         $this->entityManager->clear();
 
-        // The provider is static and cannot know the generated ids: it names the category instead.
-        $filter->categoryId = match ($filter->categoryId) {
-            'CANDLES' => $candles->getId(),
-            'MELTS' => $melts->getId(),
-            default => $filter->categoryId,
-        };
+        if (isset($filters['categoryId'])) {
+            $filters['categoryId'] = 'CANDLES' === $filters['categoryId'] ? $candles->getId() : $melts->getId();
+        }
 
-        $products = $this->repository->findByFilter($filter);
+        $page = $this->repository->findPage(new ProductCriteria(...$filters), new Pagination());
 
-        $slugs = array_map(static fn (Product $product): string => $product->getSlug(), $products);
+        $slugs = $this->slugsOf($page);
         sort($slugs);
         sort($expectedSlugs);
         self::assertSame($expectedSlugs, $slugs);
+        self::assertSame(\count($expectedSlugs), $page->total);
+    }
+
+    public function testFindPageReturnsOneSliceAndTheTotalOfTheWholeList(): void
+    {
+        $category = DoctrineCategoryFactory::createOne();
+        foreach (['a', 'b', 'c', 'd', 'e'] as $name) {
+            DoctrineProductFactory::createOne(['name' => $name, 'slug' => $name, 'category' => $category]);
+        }
+        $this->entityManager->clear();
+
+        $pages = [];
+        foreach ([1, 2, 3, 4] as $number) {
+            $pages[$number] = $this->repository->findPage(new ProductCriteria(), new Pagination(page: $number, perPage: 2));
+        }
+
+        self::assertSame(['a', 'b'], $this->slugsOf($pages[1]));
+        self::assertSame(['c', 'd'], $this->slugsOf($pages[2]));
+        self::assertSame(['e'], $this->slugsOf($pages[3]));
+        // After the last page: empty, not an error, and the total is still right.
+        self::assertSame([], $this->slugsOf($pages[4]));
+        foreach ($pages as $page) {
+            self::assertSame(5, $page->total);
+            self::assertSame(3, $page->totalPages());
+        }
+    }
+
+    public function testProductsWithTheSameSortValueNeverShowOnTwoPages(): void
+    {
+        $category = DoctrineCategoryFactory::createOne();
+        $ids = [];
+        foreach (range(1, 7) as $i) {
+            $ids[] = DoctrineProductFactory::createOne(['price' => 10.0, 'category' => $category])->getId();
+        }
+        $this->entityManager->clear();
+
+        $seen = [];
+        foreach ([1, 2, 3] as $number) {
+            $page = $this->repository->findPage(new ProductCriteria(sortBy: ProductSortField::PRICE), new Pagination(page: $number, perPage: 3));
+            foreach ($page->items as $product) {
+                $seen[] = $product->getId();
+            }
+        }
+
+        // Every product exactly once, in the order of the ids, which break the tie.
+        sort($ids);
+        self::assertSame($ids, $seen);
+    }
+
+    public function testNamesAreSortedAsAFrenchReaderExpects(): void
+    {
+        $category = DoctrineCategoryFactory::createOne();
+        // The default collation of the database compares bytes: it would put the
+        // capitals first and the accented letters last.
+        foreach (['Zèbre', 'ambre', 'Été indien', 'eau', 'Œillet', 'Bougie'] as $name) {
+            DoctrineProductFactory::createOne(['name' => $name, 'category' => $category]);
+        }
+        $this->entityManager->clear();
+
+        $ascending = $this->repository->findPage(new ProductCriteria(), new Pagination());
+        $descending = $this->repository->findPage(new ProductCriteria(direction: SortDirection::DESC), new Pagination());
+
+        $expected = ['ambre', 'Bougie', 'eau', 'Été indien', 'Œillet', 'Zèbre'];
+        self::assertSame($expected, $this->namesOf($ascending));
+        self::assertSame(array_reverse($expected), $this->namesOf($descending));
+    }
+
+    public function testProductsCanBeSortedByPrice(): void
+    {
+        $category = DoctrineCategoryFactory::createOne();
+        foreach (['cheap' => 8.0, 'dear' => 45.0, 'mid' => 20.0, 'upper' => 30.0] as $slug => $price) {
+            DoctrineProductFactory::createOne(['slug' => $slug, 'price' => $price, 'category' => $category]);
+        }
+        $this->entityManager->clear();
+
+        $ascending = $this->repository->findPage(new ProductCriteria(sortBy: ProductSortField::PRICE), new Pagination());
+        $descending = $this->repository->findPage(new ProductCriteria(sortBy: ProductSortField::PRICE, direction: SortDirection::DESC), new Pagination());
+
+        self::assertSame(['cheap', 'mid', 'upper', 'dear'], $this->slugsOf($ascending));
+        self::assertSame(['dear', 'upper', 'mid', 'cheap'], $this->slugsOf($descending));
+    }
+
+    public function testAPageIsLoadedWithCategoriesAndPicturesInThreeQueries(): void
+    {
+        foreach (range(1, 5) as $i) {
+            $product = DoctrineProductFactory::createOne(['category' => DoctrineCategoryFactory::createOne(['name' => 'Category '.$i])]);
+            DoctrinePictureFactory::createMany(2, ['product' => $product]);
+        }
+        $this->entityManager->clear();
+
+        $page = null;
+        $queries = $this->queriesRunBy(function () use (&$page): void {
+            $page = $this->repository->findPage(new ProductCriteria(), new Pagination());
+        });
+
+        // The total, the ids of the page, then the products with their relations:
+        // not one more query per product, however many there are.
+        self::assertCount(3, $queries, implode("\n", $queries));
+        self::assertInstanceOf(Page::class, $page);
+        self::assertCount(5, $page->items);
+        foreach ($page->items as $product) {
+            self::assertStringStartsWith('Category ', $product->getCategory()->getName());
+            self::assertCount(2, $product->getPictures());
+        }
+    }
+
+    /**
+     * @param Page<Product> $page
+     *
+     * @return list<string>
+     */
+    private function slugsOf(Page $page): array
+    {
+        return array_map(static fn (Product $product): string => $product->getSlug(), $page->items);
+    }
+
+    /**
+     * @param Page<Product> $page
+     *
+     * @return list<string>
+     */
+    private function namesOf(Page $page): array
+    {
+        return array_map(static fn (Product $product): string => $product->getName(), $page->items);
     }
 
     /**

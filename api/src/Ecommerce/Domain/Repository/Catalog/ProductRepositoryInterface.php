@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Domain\Repository\Catalog;
 
-use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
 
 interface ProductRepositoryInterface
 {
@@ -24,7 +25,7 @@ interface ProductRepositoryInterface
     public function slugExists(string $slug, ?string $exceptProductId = null): bool;
 
     /**
-     * @return Product[]
+     * @return Page<Product>
      */
-    public function findByFilter(GetProductsFilterDto $filter): array;
+    public function findPage(ProductCriteria $criteria, Pagination $pagination): Page;
 }

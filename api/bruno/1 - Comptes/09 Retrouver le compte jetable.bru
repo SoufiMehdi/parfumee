@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/v1/admin/users
+  url: {{baseUrl}}/api/v1/admin/users?q={{throwawayEmail}}
   body: none
   auth: bearer
+}
+
+params:query {
+  q: {{throwawayEmail}}
 }
 
 auth:bearer {
@@ -15,18 +19,19 @@ auth:bearer {
 }
 
 script:post-response {
-  if (res.getStatus() === 200) {
-    const throwaway = res.getBody().find((user) => user.email === bru.getVar("throwawayEmail"));
-    if (throwaway) {
-      bru.setVar("throwawayId", throwaway.id);
-    }
+  if (res.getStatus() === 200 && res.getBody().items.length === 1) {
+    bru.setVar("throwawayId", res.getBody().items[0].id);
   }
 }
 
 tests {
-  test("le compte jetable est dans la liste", function () {
+  test("la recherche trouve le compte jetable, et lui seul", function () {
     expect(res.getStatus()).to.equal(200);
-    const emails = res.getBody().map((user) => user.email);
-    expect(emails).to.include(bru.getVar("throwawayEmail"));
+    expect(res.getBody().pagination.total).to.equal(1);
+    expect(res.getBody().items[0].email).to.equal(bru.getVar("throwawayEmail"));
   });
+}
+
+docs {
+  Retrouve le compte jetable par une recherche sur son email : il est trouvé quel que soit le nombre de comptes, sans dépendre de la page.
 }

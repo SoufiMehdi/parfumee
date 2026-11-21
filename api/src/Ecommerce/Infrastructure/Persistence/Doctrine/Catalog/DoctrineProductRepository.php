@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Persistence\Doctrine\Catalog;
 
-use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Catalog\ProductCriteria;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
+use App\Ecommerce\Domain\Repository\Catalog\ProductSortField;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
+use App\Ecommerce\Infrastructure\Persistence\Doctrine\SqlOrderBy;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\ProductMapper;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 
 class DoctrineProductRepository implements ProductRepositoryInterface
@@ -68,50 +73,88 @@ class DoctrineProductRepository implements ProductRepositoryInterface
     }
 
     /**
-     * @return Product[]
+     * @return Page<Product>
      */
-    public function findByFilter(GetProductsFilterDto $filterDto): array
+    public function findPage(ProductCriteria $criteria, Pagination $pagination): Page
     {
-        $rsm = new \Doctrine\ORM\Query\ResultSetMappingBuilder($this->entityManager);
-        $rsm->addRootEntityFromClassMetadata(DoctrineProduct::class, 'p');
+        // The filters on the JSON attributes and the French sort need PostgreSQL features
+        // that DQL does not have: the ids of the page are found in SQL, then loaded in DQL.
+        $conditions = [];
+        $parameters = [];
+        if (null !== $criteria->categoryId) {
+            $conditions[] = 'p.category_id = :categoryId';
+            $parameters['categoryId'] = $criteria->categoryId;
+        }
+        if (null !== $criteria->minPrice) {
+            $conditions[] = 'p.price >= :minPrice';
+            $parameters['minPrice'] = $criteria->minPrice;
+        }
+        if (null !== $criteria->maxPrice) {
+            $conditions[] = 'p.price <= :maxPrice';
+            $parameters['maxPrice'] = $criteria->maxPrice;
+        }
+        if (null !== $criteria->fragrance) {
+            $conditions[] = "p.attributes->>'fragrance' = :fragrance";
+            $parameters['fragrance'] = $criteria->fragrance;
+        }
+        if (null !== $criteria->size) {
+            $conditions[] = "p.attributes->>'size' = :size";
+            $parameters['size'] = $criteria->size;
+        }
+        $where = [] === $conditions ? '' : ' WHERE '.implode(' AND ', $conditions);
 
-        $sql = 'SELECT p.* FROM products p WHERE 1=1';
-        $params = [];
-        // 1. Filtre par catégorie
-        if ($filterDto->categoryId) {
-            $sql .= ' AND p.category_id = :categoryId';
-            $params['categoryId'] = $filterDto->categoryId;
+        $sortColumn = match ($criteria->sortBy) {
+            ProductSortField::NAME => SqlOrderBy::frenchText('p.name'),
+            ProductSortField::PRICE => 'p.price',
+        };
+
+        $connection = $this->entityManager->getConnection();
+        $total = (int) $connection->fetchOne('SELECT COUNT(*) FROM products p'.$where, $parameters);
+        $ids = array_map(strval(...), $connection->fetchFirstColumn(
+            'SELECT p.id FROM products p'.$where
+                .' ORDER BY '.SqlOrderBy::clause($sortColumn, $criteria->direction, 'p.id')
+                .' LIMIT :limit OFFSET :offset',
+            $parameters + ['limit' => $pagination->perPage, 'offset' => $pagination->offset()],
+            ['limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
+        ));
+
+        return new Page($this->loadInOrder($ids), $total, $pagination);
+    }
+
+    /**
+     * Loads the products of a page, with their category and pictures, in one query,
+     * and keeps the order of the ids.
+     *
+     * @param list<string> $ids
+     *
+     * @return list<Product>
+     */
+    private function loadInOrder(array $ids): array
+    {
+        if ([] === $ids) {
+            return [];
         }
 
-        // 2. Filtres par prix
-        if (null !== $filterDto->minPrice) {
-            $sql .= ' AND p.price >= :minPrice';
-            $params['minPrice'] = $filterDto->minPrice;
-        }
-        if (null !== $filterDto->maxPrice) {
-            $sql .= ' AND p.price <= :maxPrice';
-            $params['maxPrice'] = $filterDto->maxPrice;
+        $entities = $this->entityManager
+            ->createQuery('SELECT p, c, pic FROM '.DoctrineProduct::class.' p JOIN p.category c LEFT JOIN p.pictures pic WHERE p.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getResult();
+
+        $byId = [];
+        foreach ($entities as $entity) {
+            if ($entity instanceof DoctrineProduct) {
+                $byId[$entity->getId()] = $entity;
+            }
         }
 
-        // 3. Filtres sur le JSON d'attributs (taille et parfum)
-        // Si tes attributs sont stockés dans un champ JSON sous Doctrine :
-        if ($filterDto->scent) {
-            $sql .= " AND p.attributes->>'fragrance' = :scent";
-            $params['scent'] = $filterDto->scent;
-        }
-        if ($filterDto->size) {
-            $sql .= " AND p.attributes->>'size' = :size";
-            $params['size'] = $filterDto->size;
+        $products = [];
+        foreach ($ids as $id) {
+            // A product deleted between the two queries is left out of the page.
+            if (isset($byId[$id])) {
+                $products[] = $this->mapper->toDomain($byId[$id]);
+            }
         }
 
-        $query = $this->entityManager->createNativeQuery($sql, $rsm);
-        foreach ($params as $key => $value) {
-            $query->setParameter($key, $value);
-        }
-
-        $entities = $query->getResult();
-
-        // On transforme les entités Doctrine en modèles de Domaine via ton mapper
-        return $entities ? array_map([$this->mapper, 'toDomain'], $entities) : [];
+        return $products;
     }
 }

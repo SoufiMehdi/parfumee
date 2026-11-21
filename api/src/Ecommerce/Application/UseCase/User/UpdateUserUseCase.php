@@ -8,7 +8,6 @@ use App\Ecommerce\Application\DTO\User\UpdateUserRequestDto;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
-use Symfony\Component\Uid\Uuid;
 
 readonly class UpdateUserUseCase
 {
@@ -19,7 +18,7 @@ readonly class UpdateUserUseCase
 
     public function execute(string $id, UpdateUserRequestDto $dto): User
     {
-        $user = $this->userRepository->findById(Uuid::fromString($id));
+        $user = $this->userRepository->findById($id);
 
         $user->updateProfile($dto->firstName, $dto->lastName);
 

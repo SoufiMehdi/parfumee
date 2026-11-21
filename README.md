@@ -191,7 +191,7 @@ Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau
 |---|---|---|
 | `POST` | `/api/v1/shop/register` | Public |
 | `POST` | `/api/v1/shop/login` | Public |
-| `GET` | `/api/v1/shop/products` | Public. Filtres optionnels : `category_id`, `min_price`, `max_price`, `scent`, `size` |
+| `GET` | `/api/v1/shop/products` | Public. Une page de produits (voir « Format des listes ») |
 | `GET` | `/api/v1/shop/products/{id}` | Public |
 | `GET` `PUT` `DELETE` | `/api/v1/shop/me` | Client connecté : son propre compte |
 
@@ -201,15 +201,43 @@ Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau
 |---|---|---|
 | `POST` | `/api/v1/admin/login` | Public |
 | `GET` | `/api/v1/admin/me` | Éditeur : son identité et ses rôles |
-| `GET` | `/api/v1/admin/products` | Éditeur. Mêmes filtres que la boutique |
+| `GET` | `/api/v1/admin/products` | Éditeur. Une page de produits, mêmes paramètres que la boutique |
 | `GET` | `/api/v1/admin/products/{id}` | Éditeur |
 | `POST` | `/api/v1/admin/products` | Éditeur |
 | `PUT` | `/api/v1/admin/products/{id}` | Éditeur |
 | `POST` | `/api/v1/admin/products/{id}/pictures` | Éditeur |
-| `GET` | `/api/v1/admin/users` | Administrateur |
+| `GET` | `/api/v1/admin/users` | Administrateur. Une page de comptes |
 | `GET` `PUT` `DELETE` | `/api/v1/admin/users/{id}` | Administrateur |
 
 « Éditeur » inclut les administrateurs. Tout le reste de `/api/v1/admin` est réservé aux administrateurs, et tout le reste de `/api/v1/shop` aux clients connectés.
+
+### Format des listes
+
+Une liste ne renvoie jamais un tableau nu, mais une page :
+
+```json
+{
+  "items": [ ... ],
+  "pagination": { "page": 2, "per_page": 20, "total": 45, "total_pages": 3 }
+}
+```
+
+Le total est aussi envoyé dans l'en-tête `X-Total-Count`, la convention de React-admin. Une page après la dernière n'est pas une erreur : elle est vide, avec le bon total.
+
+Paramètres, tous facultatifs :
+
+| Paramètre | Valeurs | Par défaut |
+|---|---|---|
+| `page` | de 1 à 1 000 000 | `1` |
+| `per_page` | de 1 à 100 | `20` |
+| `sort` | produits : `name`, `price` ; comptes : `email`, `first_name`, `last_name` | `name` pour les produits, `email` pour les comptes |
+| `order` | `asc`, `desc` | `asc` |
+
+Filtres des produits : `category_id`, `min_price` et `max_price` (inclus), `fragrance` et `size` (valeur exacte). Filtre des comptes : `q`, un morceau de l'email, du prénom ou du nom, sans tenir compte des majuscules.
+
+Les noms se trient dans l'ordre alphabétique français (« ambre » avant « Bougie », « Été » avec les « e »). À valeur égale, les éléments sont départagés par leur identifiant : un élément ne peut pas apparaître sur deux pages.
+
+Exemple : `GET /api/v1/shop/products?fragrance=ambre&sort=price&order=desc&per_page=10`
 
 ## Contrat de l'API (OpenAPI)
 
