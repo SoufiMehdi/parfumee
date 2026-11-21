@@ -20,6 +20,10 @@ final readonly class ProductView
         public AttributesView $attributes,
         /** @var list<PictureView> */
         public array $pictures,
+        /** When the product was created, in UTC. */
+        public \DateTimeImmutable $createdAt,
+        /** When the product last changed, in UTC. Adding a picture does not change it. */
+        public \DateTimeImmutable $updatedAt,
     ) {
     }
 }

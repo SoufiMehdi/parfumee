@@ -87,7 +87,10 @@ class UserMapper
             $entity->getLastName(),
             $phoneNumber,
             $entity->getRoles(),
-            $addresses
+            $addresses,
+            // Read only: the dates go from the entity to the model, never back (see Timestamps).
+            createdAt: $entity->getCreatedAt(),
+            updatedAt: $entity->getUpdatedAt(),
         );
     }
 }

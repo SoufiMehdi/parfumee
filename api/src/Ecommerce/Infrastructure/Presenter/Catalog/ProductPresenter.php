@@ -41,6 +41,8 @@ class ProductPresenter
                 static fn (Picture $picture): PictureView => new PictureView($picture->getId(), $picture->url(), $picture->getAlt(), $picture->getSortOrder()),
                 $product->getPictures(),
             )),
+            self::savedDate($product->getCreatedAt()),
+            self::savedDate($product->getUpdatedAt()),
         );
     }
 
@@ -50,5 +52,14 @@ class ProductPresenter
     public function presentPage(Page $page): ProductListView
     {
         return new ProductListView(array_map($this->present(...), $page->items), PaginationView::of($page));
+    }
+
+    /**
+     * The use cases only hand saved products to the presenter, so the dates are
+     * always there. A missing one is a bug, not a client error: it answers 500.
+     */
+    private static function savedDate(?\DateTimeImmutable $date): \DateTimeImmutable
+    {
+        return $date ?? throw new \LogicException('A product is presented before it is saved: it has no dates yet.');
     }
 }

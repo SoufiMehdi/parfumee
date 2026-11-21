@@ -50,6 +50,8 @@ class UpdateProductUseCase
 
         $this->productRepository->save($product);
 
-        return $product;
+        // The dates are recorded when the product is saved: return it as stored,
+        // or the caller would get the updated_at it had before this change.
+        return $this->productRepository->findById($id) ?? throw new ProductNotFoundException($id);
     }
 }

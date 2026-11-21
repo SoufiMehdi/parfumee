@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Persistence\Entity\User;
 
+use App\Ecommerce\Infrastructure\Persistence\Entity\Timestamps;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -14,8 +16,12 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Table(name: 'users')]
 class DoctrineUser implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    use Timestamps;
+
+    // guid, not uuid: the uuid type would hand Doctrine a Uuid object while the property
+    // holds a string, and every flush would then rewrite the row (and move updated_at).
     #[ORM\Id]
-    #[ORM\Column(type: 'uuid', unique: true)]
+    #[ORM\Column(type: Types::GUID, unique: true)]
     private string $id;
 
     #[ORM\Column(type: 'string', length: 180, unique: true)]

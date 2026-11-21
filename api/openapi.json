@@ -228,7 +228,8 @@
                             "default": "name",
                             "enum": [
                                 "name",
-                                "price"
+                                "price",
+                                "created_at"
                             ]
                         }
                     },
@@ -557,7 +558,8 @@
                             "enum": [
                                 "email",
                                 "first_name",
-                                "last_name"
+                                "last_name",
+                                "created_at"
                             ]
                         }
                     },
@@ -1024,7 +1026,8 @@
                             "default": "name",
                             "enum": [
                                 "name",
-                                "price"
+                                "price",
+                                "created_at"
                             ]
                         }
                     },
@@ -1232,7 +1235,8 @@
                         "default": "name",
                         "enum": [
                             "name",
-                            "price"
+                            "price",
+                            "created_at"
                         ]
                     },
                     "order": {
@@ -1334,7 +1338,8 @@
                         "enum": [
                             "email",
                             "first_name",
-                            "last_name"
+                            "last_name",
+                            "created_at"
                         ]
                     },
                     "order": {
@@ -1515,7 +1520,9 @@
                     "first_name",
                     "last_name",
                     "roles",
-                    "addresses"
+                    "addresses",
+                    "created_at",
+                    "updated_at"
                 ],
                 "properties": {
                     "id": {
@@ -1545,6 +1552,16 @@
                         "items": {
                             "$ref": "#/components/schemas/AddressView"
                         }
+                    },
+                    "created_at": {
+                        "title": "When the account was created, in UTC.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "title": "When the account last changed, in UTC. A change of its addresses does not count.",
+                        "type": "string",
+                        "format": "date-time"
                     }
                 },
                 "type": "object"
@@ -1623,7 +1640,9 @@
                     "price",
                     "category",
                     "attributes",
-                    "pictures"
+                    "pictures",
+                    "created_at",
+                    "updated_at"
                 ],
                 "properties": {
                     "id": {
@@ -1652,6 +1671,16 @@
                         "items": {
                             "$ref": "#/components/schemas/PictureView"
                         }
+                    },
+                    "created_at": {
+                        "title": "When the product was created, in UTC.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "title": "When the product last changed, in UTC. Adding a picture does not change it.",
+                        "type": "string",
+                        "format": "date-time"
                     }
                 },
                 "type": "object"

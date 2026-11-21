@@ -28,6 +28,8 @@ readonly class UpdateUserUseCase
 
         $this->userRepository->save($user);
 
-        return $user;
+        // The dates are recorded when the account is saved: return it as stored,
+        // or the caller would get the updated_at it had before this change.
+        return $this->userRepository->findById($id);
     }
 }

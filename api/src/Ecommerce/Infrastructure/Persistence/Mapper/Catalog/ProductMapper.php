@@ -58,7 +58,10 @@ class ProductMapper
             $doctrineProduct->getPrice(),
             $this->categoryMapper->toDomain($doctrineProduct->getCategory()),
             $this->attributesMapper->fromArray($doctrineProduct->getAttributes()),
-            array_map(fn ($doctrinePicture) => $this->pictureMapper->toDomain($doctrinePicture), $doctrineProduct->getPictures()->toArray())
+            array_map(fn ($doctrinePicture) => $this->pictureMapper->toDomain($doctrinePicture), $doctrineProduct->getPictures()->toArray()),
+            // Read only: the dates go from the entity to the model, never back (see Timestamps).
+            createdAt: $doctrineProduct->getCreatedAt(),
+            updatedAt: $doctrineProduct->getUpdatedAt(),
         );
     }
 }

@@ -39,6 +39,8 @@ class UserPresenter
                 ),
                 $user->getAddresses(),
             )),
+            self::savedDate($user->getCreatedAt()),
+            self::savedDate($user->getUpdatedAt()),
         );
     }
 
@@ -48,5 +50,14 @@ class UserPresenter
     public function presentPage(Page $page): UserListView
     {
         return new UserListView(array_map($this->present(...), $page->items), PaginationView::of($page));
+    }
+
+    /**
+     * The use cases only hand saved accounts to the presenter, so the dates are
+     * always there. A missing one is a bug, not a client error: it answers 500.
+     */
+    private static function savedDate(?\DateTimeImmutable $date): \DateTimeImmutable
+    {
+        return $date ?? throw new \LogicException('An account is presented before it is saved: it has no dates yet.');
     }
 }

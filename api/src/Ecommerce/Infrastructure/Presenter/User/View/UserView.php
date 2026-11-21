@@ -19,6 +19,10 @@ final readonly class UserView
         public array $roles,
         /** @var list<AddressView> */
         public array $addresses,
+        /** When the account was created, in UTC. */
+        public \DateTimeImmutable $createdAt,
+        /** When the account last changed, in UTC. A change of its addresses does not count. */
+        public \DateTimeImmutable $updatedAt,
     ) {
     }
 }

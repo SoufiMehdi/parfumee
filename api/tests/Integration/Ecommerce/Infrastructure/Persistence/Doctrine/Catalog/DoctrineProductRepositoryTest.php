@@ -19,6 +19,7 @@ use App\Tests\Factory\Catalog\DoctrinePictureFactory;
 use App\Tests\Factory\Catalog\DoctrineProductFactory;
 use App\Tests\Support\DatabaseTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -27,6 +28,8 @@ use Symfony\Component\Uid\Uuid;
  */
 final class DoctrineProductRepositoryTest extends DatabaseTestCase
 {
+    use ClockSensitiveTrait;
+
     private ProductRepositoryInterface $repository;
 
     protected function setUp(): void
@@ -106,6 +109,44 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
         self::assertSame($otherCategory->getId(), $reloaded->getCategory()->getId());
         self::assertSame(50.0, $reloaded->getAttributes()?->getWeight());
         self::assertCount(1, $this->repository->findAll());
+    }
+
+    public function testAProductIsReadBackWithTheDatesOfItsSaves(): void
+    {
+        self::mockTime(new \DateTimeImmutable('2026-11-01T09:30:00+00:00'));
+        $category = DoctrineCategoryFactory::createOne();
+        $id = Uuid::v4()->toRfc4122();
+        $this->repository->save(new Product($id, 'Ambre', 'ambre', 20.0, new Category($category->getId(), $category->getName(), $category->getSlug())));
+        $this->entityManager->clear();
+
+        self::mockTime(new \DateTimeImmutable('2026-11-21T10:00:00+00:00'));
+        $product = $this->repository->findById($id);
+        \assert($product instanceof Product);
+        $product->updateDetails('Ambre doux', 'ambre-doux', 20.0, $product->getCategory(), $product->getAttributes());
+        $this->repository->save($product);
+
+        // Read again right after the save, in the same request: what UpdateProductUseCase returns.
+        $stored = $this->repository->findById($id);
+        \assert($stored instanceof Product);
+        self::assertEquals(new \DateTimeImmutable('2026-11-01T09:30:00+00:00'), $stored->getCreatedAt());
+        self::assertEquals(new \DateTimeImmutable('2026-11-21T10:00:00+00:00'), $stored->getUpdatedAt());
+        // The object that was saved keeps the dates it was loaded with.
+        self::assertEquals(new \DateTimeImmutable('2026-11-01T09:30:00+00:00'), $product->getUpdatedAt());
+    }
+
+    public function testSavingAProductWithoutAnyChangeWritesNothing(): void
+    {
+        // A round price on purpose: PostgreSQL returns "20.00", and the save sets the
+        // price again from the model (20.0): both must read the same to Doctrine.
+        $id = DoctrineProductFactory::createOne(['price' => 20.0])->getId();
+        $this->entityManager->clear();
+        $product = $this->repository->findById($id);
+        \assert($product instanceof Product);
+
+        $queries = $this->queriesRunBy(fn () => $this->repository->save($product));
+
+        // An UPDATE would move updated_at: of the product, and of its category.
+        self::assertSame([], $queries, implode("\n", $queries));
     }
 
     public function testFindByIdReturnsNullWhenTheProductDoesNotExist(): void
@@ -266,6 +307,22 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
 
         self::assertSame(['cheap', 'mid', 'upper', 'dear'], $this->slugsOf($ascending));
         self::assertSame(['dear', 'upper', 'mid', 'cheap'], $this->slugsOf($descending));
+    }
+
+    public function testProductsCanBeSortedByCreationDate(): void
+    {
+        $category = DoctrineCategoryFactory::createOne();
+        foreach (['first' => '2026-11-01', 'third' => '2026-11-03', 'second' => '2026-11-02'] as $slug => $day) {
+            self::mockTime(new \DateTimeImmutable($day.'T09:30:00+00:00'));
+            DoctrineProductFactory::createOne(['slug' => $slug, 'category' => $category]);
+        }
+        $this->entityManager->clear();
+
+        $oldestFirst = $this->repository->findPage(new ProductCriteria(sortBy: ProductSortField::CREATED_AT), new Pagination());
+        $newestFirst = $this->repository->findPage(new ProductCriteria(sortBy: ProductSortField::CREATED_AT, direction: SortDirection::DESC), new Pagination());
+
+        self::assertSame(['first', 'second', 'third'], $this->slugsOf($oldestFirst));
+        self::assertSame(['third', 'second', 'first'], $this->slugsOf($newestFirst));
     }
 
     public function testAPageIsLoadedWithCategoriesAndPicturesInThreeQueries(): void

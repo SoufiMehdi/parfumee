@@ -17,8 +17,10 @@ class User
     private array $addresses;
 
     /**
-     * @param string[]  $roles
-     * @param Address[] $addresses
+     * @param string[]                $roles
+     * @param Address[]               $addresses
+     * @param \DateTimeImmutable|null $createdAt set when the account is first saved: null for an account never saved
+     * @param \DateTimeImmutable|null $updatedAt set when a change of the account is saved
      */
     public function __construct(
         private readonly string $id,
@@ -29,6 +31,8 @@ class User
         private ?PhoneNumber $phoneNumber = null,
         array $roles = [Role::USER],
         array $addresses = [],
+        private readonly ?\DateTimeImmutable $createdAt = null,
+        private readonly ?\DateTimeImmutable $updatedAt = null,
     ) {
         $this->roles = $roles;
         $this->addresses = $addresses;
@@ -77,6 +81,20 @@ class User
     public function getAddresses(): array
     {
         return $this->addresses;
+    }
+
+    /**
+     * The dates are recorded by the persistence when the account is saved, not by
+     * the model: an account changed in memory keeps the dates it was loaded with.
+     */
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 
     // Logique métier
