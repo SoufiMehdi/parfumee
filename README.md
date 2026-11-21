@@ -230,7 +230,7 @@ Paramètres, tous facultatifs :
 |---|---|---|
 | `page` | de 1 à 1 000 000 | `1` |
 | `per_page` | de 1 à 100 | `20` |
-| `sort` | produits : `name`, `price` ; comptes : `email`, `first_name`, `last_name` | `name` pour les produits, `email` pour les comptes |
+| `sort` | produits : `name`, `price`, `created_at` ; comptes : `email`, `first_name`, `last_name`, `created_at` | `name` pour les produits, `email` pour les comptes |
 | `order` | `asc`, `desc` | `asc` |
 
 Filtres des produits : `category_id`, `min_price` et `max_price` (inclus), `fragrance` et `size` (valeur exacte). Filtre des comptes : `q`, un morceau de l'email, du prénom ou du nom, sans tenir compte des majuscules.
@@ -238,6 +238,15 @@ Filtres des produits : `category_id`, `min_price` et `max_price` (inclus), `frag
 Les noms se trient dans l'ordre alphabétique français (« ambre » avant « Bougie », « Été » avec les « e »). À valeur égale, les éléments sont départagés par leur identifiant : un élément ne peut pas apparaître sur deux pages.
 
 Exemple : `GET /api/v1/shop/products?fragrance=ambre&sort=price&order=desc&per_page=10`
+
+### Dates
+
+Chaque produit et chaque compte porte deux dates, en UTC et au format RFC 3339 (`2026-11-21T19:52:47+00:00`) :
+
+- `created_at` : sa création ;
+- `updated_at` : sa dernière modification. Ajouter une image à un produit ne la change pas, ni modifier une adresse pour un compte : ce sont d'autres enregistrements.
+
+L'API les pose elle-même à l'enregistrement, à la seconde près ; un client ne peut pas les envoyer. Les plus récents d'abord : `sort=created_at&order=desc`.
 
 ## Appeler l'API depuis un navigateur (CORS)
 
@@ -312,6 +321,7 @@ Ne jamais mettre de vrai secret dans un fichier versionné. `.env.local` n'est p
 | Les tests d'intégration échouent tous | La base de test est arrêtée : `docker compose up -d`. |
 | Erreur à la connexion ou tests de sécurité en échec, mention de `private.pem` | Les clés JWT manquent : refaire l'étape 4. |
 | Une migration échoue sur une colonne `NOT NULL` | La base contient d'anciennes données : repartir d'une base vide. |
+| Erreur 500 « column … created_at does not exist » | La base de développement n'a pas la dernière migration : `php bin/console doctrine:migrations:migrate`. |
 | Le front reçoit une erreur CORS (« blocked by CORS policy ») | Son origine ne correspond pas exactement à `CORS_SHOP_ORIGIN` ou `CORS_ADMIN_ORIGIN` : vérifier le port, `localhost` contre `127.0.0.1`, et l'absence de barre finale. |
 | Upload d'image refusé au-delà de 2 Mo | Limite `upload_max_filesize` de PHP, à relever dans son `php.ini` (l'API accepte jusqu'à 5 Mo). |
 
