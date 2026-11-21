@@ -103,7 +103,7 @@
 - Le mode « expression régulière » proposé par la recette est écarté : une valeur vide y autorise toutes les origines, et une expression mal ancrée un domaine voisin.
 - Méthodes `GET`, `POST`, `PUT`, `DELETE` ; en-têtes `Authorization` et `Content-Type` ; `X-Total-Count` exposé ; pas de cookies (`allow_credentials: false`) ; réponse préliminaire mise en cache une heure.
 - Les requêtes préliminaires sont traitées avant le pare-feu : elles n'ont pas besoin de jeton. Les réponses d'erreur (401, 404, 422) portent les en-têtes CORS, pour que les fronts puissent les lire.
-- Vérifications : `CorsTest` (16 tests) et `EnvFilesTest` étendu ; cinq erreurs de configuration introduites exprès (mode expression régulière, total non exposé, cookies autorisés, chemin erroné, CORS sur tous les chemins) sont toutes détectées ; essai réel avec `curl`.
+- Vérifications : `CorsTest` (18 tests, qui passent aussi sur une base de test vide, comme en CI) et `EnvFilesTest` étendu ; cinq erreurs de configuration introduites exprès (mode expression régulière, total non exposé, cookies autorisés, chemin erroné, CORS sur tous les chemins) sont toutes détectées ; essai réel avec `curl`.
 
 ### 2026-11-21 — P1-04 : format standard des listes (branche `feat/P1-04-list-format`, en relecture)
 - Les trois listes (produits de la boutique, produits et comptes du back-office) renvoient une page : `{"items": [...], "pagination": {"page", "per_page", "total", "total_pages"}}`, et le total dans l'en-tête `X-Total-Count`.

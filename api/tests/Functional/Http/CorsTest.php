@@ -103,22 +103,35 @@ final class CorsTest extends WebTestCase
 
     /**
      * An error the browser cannot read is an error the front cannot show: the
-     * CORS headers come with the 401, 404 and 422 too.
+     * CORS headers come with the errors too. One request per test: the client
+     * rebuilds the container between two requests, and would drop the stubs.
      */
-    public function testErrorsAreReadableByTheFronts(): void
+    public function testAnAuthenticationErrorIsReadable(): void
     {
         $this->client->request('GET', '/api/v1/admin/users', server: ['HTTP_ORIGIN' => $this->adminOrigin]);
+
         self::assertResponseStatusCodeSame(401);
         self::assertSame($this->adminOrigin, $this->client->getResponse()->headers->get('Access-Control-Allow-Origin'));
+    }
+
+    public function testAValidationErrorIsReadable(): void
+    {
+        $this->forbid(ListProductsUseCase::class);
 
         $this->client->request('GET', '/api/v1/shop/products?per_page=0', server: ['HTTP_ORIGIN' => $this->shopOrigin]);
+
         self::assertResponseStatusCodeSame(422);
         self::assertSame($this->shopOrigin, $this->client->getResponse()->headers->get('Access-Control-Allow-Origin'));
+    }
 
+    public function testANotFoundErrorIsReadable(): void
+    {
         $useCase = $this->createStub(GetProductUseCase::class);
         $useCase->method('execute')->willThrowException(new ProductNotFoundException(self::PRODUCT_ID));
         static::getContainer()->set(GetProductUseCase::class, $useCase);
+
         $this->client->request('GET', '/api/v1/shop/products/'.self::PRODUCT_ID, server: ['HTTP_ORIGIN' => $this->shopOrigin]);
+
         self::assertResponseStatusCodeSame(404);
         self::assertSame($this->shopOrigin, $this->client->getResponse()->headers->get('Access-Control-Allow-Origin'));
     }
@@ -149,6 +162,7 @@ final class CorsTest extends WebTestCase
         self::assertFalse($this->client->getResponse()->headers->has('Access-Control-Allow-Origin'));
         self::assertFalse($this->client->getResponse()->headers->has('Access-Control-Expose-Headers'));
 
+        // A preflight is answered before any controller: the rebuilt container does not matter here.
         $this->preflight($origin, 'GET', '/api/v1/admin/users', 'authorization');
         self::assertFalse($this->client->getResponse()->headers->has('Access-Control-Allow-Origin'));
     }
