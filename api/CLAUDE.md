@@ -80,6 +80,9 @@ Toute liste renvoyée par l'API est paginée. La chaîne complète, à reproduir
   - `queriesRunBy(fn () => ...)` renvoie les requêtes SQL exécutées : de quoi vérifier qu'une liste ne fait pas une requête par élément.
   - La base est le service `database_test` de `compose.override.yaml` (`docker compose up -d`). Sans elle, ces tests **échouent** : ne jamais les remplacer par un `markTestSkipped`.
 - Les tests **fonctionnels** (`tests/Functional/`, `WebTestCase`) couvrent les contrôleurs et la sécurité (401/403 attendus).
+  - Ils ne doivent **jamais** atteindre la base : les use cases qui pourraient s'exécuter sont remplacés par des doubles (`static::getContainer()->set()`).
+  - Le client reconstruit le conteneur entre deux requêtes d'un même test : un double ne vaut que pour la **première** requête. Une requête par test, sauf si les suivantes ne touchent aucun use case (requête préliminaire CORS, refus du pare-feu).
+  - Ce défaut passe inaperçu en local, où la base de test a ses tables, et casse la CI, où elle est vide. Pour le voir avant de pousser : `docker compose restart database_test`, puis `vendor/bin/phpunit tests/Functional`.
 - Le namespace d'un test suit son dossier : `App\Tests\Unit\...`, `App\Tests\Integration\...`.
 - PHPUnit est configuré avec `failOnWarning`, `failOnNotice` et `failOnDeprecation` : un warning PHP fait échouer la suite.
 - Un double sans attente se crée avec `createStub()`, pas `createMock()`. `createMock()` est réservé aux doubles sur lesquels on appelle `expects()` ; sinon PHPUnit affiche un avertissement. La sortie de la suite doit rester « OK » sans réserve.
