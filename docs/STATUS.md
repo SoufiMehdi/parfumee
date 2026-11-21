@@ -4,7 +4,7 @@
 
 ## Où on en est
 
-- **Phase en cours :** Phase 0 — Stabiliser l'existant.
+- **Phase en cours :** Phase 1 — Socle API pour deux fronts. La phase 0 est terminée.
 - **Fait :** `P0-01` (contrôle d'accès), mergée dans `main` (PR #6).
 - **Fait :** `P0-02` (validation des uploads), mergée dans `main` (PR #7).
 - **Fait :** `P0-03` (repository des images), mergée dans `main` (PR #8).
@@ -19,12 +19,12 @@
 - **Fait :** `P0-12` (README d'installation), mergée dans `main` (PR #17).
 - **Fait :** le nettoyage de la sortie des tests (PR #18) et la collection Bruno (PR #19), mergés dans `main`.
 - **Fait :** la fin de `P0-10` (Foundry, factories, tests d'intégration des repositories), mergée dans `main` (PR #20). **La phase 0 est terminée.**
-- **Phase en cours : phase 1** — socle API pour deux fronts.
 - **Fait :** `P1-01` (routes `/api/v1/shop` et `/api/v1/admin`), mergée dans `main` (PR #23, qui remplace la #22).
 - **Fait :** `P1-06` (rôles et commande de création d'admin), mergée dans `main` (PR #24).
 - **Fait :** `P1-05` (`/me` et refresh token), mergée dans `main` (PR #25).
-- **En relecture :** `P1-03` (contrat OpenAPI et Swagger UI), sur la branche `feat/P1-03-openapi`.
-- **Prochaine tâche conseillée :** `P1-04` (format de liste : pagination, tri), puis `P1-02` (CORS). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **Fait :** `P1-03` (contrat OpenAPI et Swagger UI), mergée dans `main` (PR #26).
+- **En relecture :** `P1-04` (format de liste : pagination, tri, filtres), sur la branche `feat/P1-04-list-format`.
+- **Prochaine tâche conseillée :** `P1-02` (CORS), qui devra exposer l'en-tête `X-Total-Count`, puis `P1-08` (dates de création et de modification) et `P1-07` (limitation des tentatives de connexion). Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -57,6 +57,13 @@
 - CI (`.github/workflows/api.yml`) : elle ne se lance que si `api/` ou le workflow change. La branche `main` n'est pas protégée : rien n'empêche encore de merger une PR rouge. Si on rend les checks obligatoires dans GitHub, une PR qui ne touche pas `api/` resterait bloquée en attente, à cause de ce filtre par chemin : il faudra alors le retirer.
 - CI : les actions sont épinglées par SHA de commit. Pour les mettre à jour, changer le SHA et le commentaire de version ensemble.
 - Upload d'images : la limite applicative est de 5 Mo, mais PHP refuse avant elle tout fichier au-delà de `upload_max_filesize` (2 Mo par défaut) et ignore le corps entier au-delà de `post_max_size` (8 Mo par défaut). À régler dans l'image Docker (`P7-01`) : `upload_max_filesize = 5M` au minimum.
+- Listes : toutes paginées (`items` + `pagination`, total aussi dans `X-Total-Count`). Le format et la marche à suivre pour une nouvelle liste sont dans `api/CLAUDE.md`, section « Listes ».
+- Listes : le CORS (`P1-02`) devra lister `X-Total-Count` dans `expose_headers`, sinon le navigateur cache cet en-tête au front. Le total reste lisible dans le corps.
+- Listes : React-admin trie par `id` tant qu'on ne lui dit rien ; l'API refuse `sort=id` (422). Le data provider (`P1-10`) doit envoyer un vrai champ de tri, ou aucun.
+- Listes : le filtre `scent` s'appelle maintenant `fragrance`, comme l'attribut qu'il filtre. Un paramètre inconnu étant ignoré, `scent=ambre` renvoie désormais la liste sans filtre, sans erreur.
+- Listes : le tri des noms utilise la collation ICU `fr-x-icu` de PostgreSQL. L'image `postgres:16-alpine` l'a ; une image sans ICU ferait échouer ce tri (les tests d'intégration le verraient).
+- Recherche de comptes (`q`) : insensible à la casse, mais pas aux accents (« elodie » ne trouve pas « Élodie »). Il faudrait l'extension `unaccent`.
+- `page=1.5` répond bien 422, mais Symfony passe d'abord la valeur brute au constructeur du DTO et PHP émet un avertissement de conversion. Sans effet pour le client ; le test de ce cas tolère l'avertissement (`#[IgnoreDeprecations]`).
 - `#[MapUploadedFile]`, `#[MapRequestPayload]` et `#[MapQueryString]` **ignorent silencieusement leurs contraintes** si `symfony/validator` est absent. Il est installé depuis `P0-02` : ne pas le retirer.
 - Un body JSON doit être envoyé avec `Content-Type: application/json`. Sans cet en-tête, il est lu comme un formulaire et la réponse est un 400.
 - Quand un champ obligatoire manque ou a le mauvais type, la réponse ne liste que ces erreurs-là ; les autres règles (format d'email, longueur…) ne sont vérifiées qu'une fois tous les champs présents et bien typés. Un formulaire peut donc demander deux allers-retours.
@@ -87,6 +94,15 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-21 — P1-04 : format standard des listes (branche `feat/P1-04-list-format`, en relecture)
+- Les trois listes (produits de la boutique, produits et comptes du back-office) renvoient une page : `{"items": [...], "pagination": {"page", "per_page", "total", "total_pages"}}`, et le total dans l'en-tête `X-Total-Count`.
+- Paramètres communs : `page` (1 à 1 000 000), `per_page` (1 à 100, 20 par défaut), `sort`, `order` (`asc`/`desc`). Tri des produits par `name` ou `price`, des comptes par `email`, `first_name` ou `last_name`. Nouveau filtre des comptes : `q`.
+- Le filtre `scent` devient `fragrance`. `GetFilteredProductsUseCase` et `GetUsersUseCase` deviennent `ListProductsUseCase` et `ListUsersUseCase`.
+- Domaine : `Pagination`, `Page`, `SortDirection`, critères et champs de tri par ressource. Dette corrigée au passage : `ProductRepositoryInterface` n'importe plus de DTO, `UserRepositoryInterface` n'utilise plus `Symfony\Uid` (identifiants en `string`).
+- Tri des noms dans l'ordre alphabétique français (la base triait octet par octet : « Zèbre » avant « ambre »), départagé par l'id pour qu'aucun élément n'apparaisse sur deux pages.
+- Une page se charge en 3 requêtes quel que soit son nombre d'éléments ; auparavant, une requête de plus par produit pour ses images.
+- Vérifications : `composer check` vert, PHPUnit « OK (392 tests) » ; cinq régressions introduites exprès (collation, chargement groupé, échappement de `%` et `_`, départage par l'id, en-tête du total) sont toutes détectées ; collection Bruno, 20 requêtes sur 20.
 
 ### 2026-11-16 — P1-03 : contrat OpenAPI et Swagger UI (branche `feat/P1-03-openapi`, en relecture)
 - `nelmio/api-doc-bundle` génère le contrat des 19 opérations : Swagger UI sur `/api/v1/doc`, JSON sur `/api/v1/doc.json`, copie versionnée dans `api/openapi.json` (`composer openapi:dump`).

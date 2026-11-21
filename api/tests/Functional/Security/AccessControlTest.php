@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Security;
 
-use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
-use App\Ecommerce\Application\UseCase\User\GetUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
+use App\Ecommerce\Application\UseCase\User\ListUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Tests\Support\AuthenticatesRequests;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -235,9 +237,9 @@ final class AccessControlTest extends WebTestCase
 
     public function testAdminListsUsers(): void
     {
-        $useCase = $this->createStub(GetUsersUseCase::class);
-        $useCase->method('execute')->willReturn([]);
-        static::getContainer()->set(GetUsersUseCase::class, $useCase);
+        $useCase = $this->createStub(ListUsersUseCase::class);
+        $useCase->method('execute')->willReturn(new Page([], 0, new Pagination()));
+        static::getContainer()->set(ListUsersUseCase::class, $useCase);
         $this->authenticateAs($this->client, self::ADMIN_ID, ['ROLE_ADMIN']);
 
         $this->client->request('GET', '/api/v1/admin/users');
@@ -247,9 +249,9 @@ final class AccessControlTest extends WebTestCase
 
     public function testCatalogueReadingIsPublic(): void
     {
-        $useCase = $this->createStub(GetFilteredProductsUseCase::class);
-        $useCase->method('execute')->willReturn([]);
-        static::getContainer()->set(GetFilteredProductsUseCase::class, $useCase);
+        $useCase = $this->createStub(ListProductsUseCase::class);
+        $useCase->method('execute')->willReturn(new Page([], 0, new Pagination()));
+        static::getContainer()->set(ListProductsUseCase::class, $useCase);
 
         $this->client->request('GET', '/api/v1/shop/products');
 
@@ -314,7 +316,7 @@ final class AccessControlTest extends WebTestCase
      */
     private function forbidUseCases(): void
     {
-        foreach ([GetUsersUseCase::class, GetUserUseCase::class, UpdateUserUseCase::class, DeleteUserUseCase::class] as $class) {
+        foreach ([ListUsersUseCase::class, GetUserUseCase::class, UpdateUserUseCase::class, DeleteUserUseCase::class] as $class) {
             $useCase = $this->createMock($class);
             $useCase->expects(self::never())->method('execute');
             static::getContainer()->set($class, $useCase);
@@ -323,9 +325,9 @@ final class AccessControlTest extends WebTestCase
 
     private function stubCatalogueReadUseCases(): void
     {
-        $list = $this->createStub(GetFilteredProductsUseCase::class);
-        $list->method('execute')->willReturn([]);
-        static::getContainer()->set(GetFilteredProductsUseCase::class, $list);
+        $list = $this->createStub(ListProductsUseCase::class);
+        $list->method('execute')->willReturn(new Page([], 0, new Pagination()));
+        static::getContainer()->set(ListProductsUseCase::class, $list);
 
         $get = $this->createStub(GetProductUseCase::class);
         $get->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));

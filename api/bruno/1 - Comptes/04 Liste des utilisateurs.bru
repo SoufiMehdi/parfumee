@@ -5,9 +5,14 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/v1/admin/users
+  url: {{baseUrl}}/api/v1/admin/users?sort=last_name&per_page=10
   body: none
   auth: bearer
+}
+
+params:query {
+  sort: last_name
+  per_page: 10
 }
 
 auth:bearer {
@@ -15,12 +20,25 @@ auth:bearer {
 }
 
 tests {
-  test("200 et une liste (403 : le compte n'est pas encore administrateur)", function () {
+  test("200 et une page de 10 comptes au plus (403 : le compte n'est pas encore administrateur)", function () {
     expect(res.getStatus()).to.equal(200);
-    expect(res.getBody()).to.be.an("array");
+    expect(res.getBody().items).to.be.an("array");
+    expect(res.getBody().items.length).to.be.at.most(10);
+    expect(res.getBody().pagination.page).to.equal(1);
+    expect(res.getBody().pagination.per_page).to.equal(10);
+  });
+
+  test("le total est aussi dans l'en-tête X-Total-Count", function () {
+    expect(Number(res.getHeader("x-total-count"))).to.equal(res.getBody().pagination.total);
   });
 }
 
 docs {
-  Réservée aux administrateurs.
+  Réservée aux administrateurs. Une page de comptes, triés par nom de famille.
+
+  Paramètres, tous facultatifs :
+  - `q` : un morceau de l'email, du prénom ou du nom, sans tenir compte des majuscules ;
+  - `page` (à partir de 1) et `per_page` (20 par défaut, 100 au plus) ;
+  - `sort` : `email` (par défaut), `first_name` ou `last_name` ;
+  - `order` : `asc` (par défaut) ou `desc`.
 }

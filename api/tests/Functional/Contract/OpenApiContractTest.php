@@ -129,6 +129,39 @@ final class OpenApiContractTest extends WebTestCase
         }
     }
 
+    /**
+     * A list is always one page with its pagination, never a bare array: a bare array
+     * cannot tell how many items there are in all, nor grow a field later.
+     */
+    public function testEveryListIsOnePageWithItsPagination(): void
+    {
+        $spec = $this->fetchSpec();
+        $schemas = $spec['components']['schemas'];
+
+        $lists = 0;
+        foreach ($this->operations() as $name => $operation) {
+            $success = $operation['responses']['200'] ?? $operation['responses']['201'] ?? [];
+            $schema = $success['content']['application/json']['schema'] ?? [];
+            self::assertNotSame('array', $schema['type'] ?? null, $name.' returns a bare array: return a page with its pagination.');
+
+            $referenced = isset($schema['$ref']) ? $schemas[basename((string) $schema['$ref'])] : [];
+            if ('array' !== ($referenced['properties']['items']['type'] ?? null)) {
+                continue;
+            }
+
+            ++$lists;
+            self::assertSame('#/components/schemas/PaginationView', $referenced['properties']['pagination']['$ref'] ?? null, $name.' returns items without their pagination.');
+            self::assertSame(['$ref' => '#/components/headers/TotalCount'], $success['headers']['X-Total-Count'] ?? null, $name.' does not document the X-Total-Count header.');
+            $parameters = array_column($operation['parameters'] ?? [], 'name');
+            foreach (['page', 'per_page', 'sort', 'order'] as $parameter) {
+                self::assertContains($parameter, $parameters, $name.' is a list without the "'.$parameter.'" parameter.');
+            }
+        }
+
+        // The shop products, the back-office products and the accounts.
+        self::assertSame(3, $lists);
+    }
+
     public function testEveryReferenceOfTheContractResolves(): void
     {
         $spec = $this->fetchSpec();

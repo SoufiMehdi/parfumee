@@ -7,13 +7,19 @@ namespace App\Tests\Integration\Ecommerce\Infrastructure\Persistence\Doctrine\Us
 use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\User;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
+use App\Ecommerce\Domain\Repository\SortDirection;
+use App\Ecommerce\Domain\Repository\User\UserCriteria;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
+use App\Ecommerce\Domain\Repository\User\UserSortField;
 use App\Ecommerce\Domain\ValueObject\User\Email;
 use App\Ecommerce\Domain\ValueObject\User\PhoneNumber;
 use App\Tests\Factory\User\DoctrineAddressFactory;
 use App\Tests\Factory\User\DoctrineUserFactory;
 use App\Tests\Support\DatabaseTestCase;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Uid\Uuid;
 
 final class DoctrineUserRepositoryTest extends DatabaseTestCase
@@ -162,5 +168,101 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
         $this->expectException(UniqueConstraintViolationException::class);
 
         $this->repository->save(new User(Uuid::v4()->toRfc4122(), new Email('ada@example.test'), 'hash', 'Other', 'Ada'));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
+    public static function searches(): iterable
+    {
+        yield 'part of an email' => ['grace@', ['grace@example.test']];
+        yield 'part of a first name, whatever the case' => ['ALA', ['alan@example.test']];
+        yield 'part of a last name, whatever the case' => ['lovel', ['ada@example.test']];
+        yield 'common to every account' => ['example', ['ada@example.test', 'alan@example.test', 'grace@example.test', 'under_score@example.test', 'underxscore@example.test']];
+        // What is typed is searched as such: % and _ are not wildcards.
+        yield 'an underscore is an underscore' => ['under_', ['under_score@example.test']];
+        yield 'a percent sign is a percent sign' => ['%', []];
+        yield 'nothing matches' => ['nobody', []];
+    }
+
+    /**
+     * @param list<string> $expectedEmails
+     */
+    #[DataProvider('searches')]
+    public function testFindPageSearchesTheEmailAndTheNames(string $search, array $expectedEmails): void
+    {
+        DoctrineUserFactory::createOne(['email' => 'ada@example.test', 'firstName' => 'Ada', 'lastName' => 'Lovelace']);
+        DoctrineUserFactory::createOne(['email' => 'alan@example.test', 'firstName' => 'Alan', 'lastName' => 'Turing']);
+        DoctrineUserFactory::createOne(['email' => 'grace@example.test', 'firstName' => 'Grace', 'lastName' => 'Hopper']);
+        DoctrineUserFactory::createOne(['email' => 'under_score@example.test', 'firstName' => 'U', 'lastName' => 'S']);
+        DoctrineUserFactory::createOne(['email' => 'underxscore@example.test', 'firstName' => 'U', 'lastName' => 'X']);
+        $this->entityManager->clear();
+
+        $page = $this->repository->findPage(new UserCriteria(search: $search), new Pagination());
+
+        self::assertSame($expectedEmails, $this->emailsOf($page));
+        self::assertSame(\count($expectedEmails), $page->total);
+    }
+
+    public function testLastNamesAreSortedAsAFrenchReaderExpects(): void
+    {
+        foreach (['Zola', 'Ébène', 'dupont', 'Durand'] as $lastName) {
+            DoctrineUserFactory::createOne(['lastName' => $lastName]);
+        }
+        $this->entityManager->clear();
+
+        $ascending = $this->repository->findPage(new UserCriteria(sortBy: UserSortField::LAST_NAME), new Pagination());
+        $descending = $this->repository->findPage(new UserCriteria(sortBy: UserSortField::LAST_NAME, direction: SortDirection::DESC), new Pagination());
+
+        $lastNames = static fn (Page $page): array => array_map(static fn (User $user): string => $user->getLastName(), $page->items);
+        self::assertSame(['dupont', 'Durand', 'Ébène', 'Zola'], $lastNames($ascending));
+        self::assertSame(['Zola', 'Ébène', 'Durand', 'dupont'], $lastNames($descending));
+    }
+
+    public function testFindPageReturnsOneSliceSortedByEmailAndTheTotal(): void
+    {
+        foreach (['e', 'c', 'a', 'd', 'b'] as $letter) {
+            DoctrineUserFactory::createOne(['email' => $letter.'@example.test']);
+        }
+        $this->entityManager->clear();
+
+        $second = $this->repository->findPage(new UserCriteria(), new Pagination(page: 2, perPage: 2));
+        $afterTheLast = $this->repository->findPage(new UserCriteria(), new Pagination(page: 4, perPage: 2));
+
+        self::assertSame(['c@example.test', 'd@example.test'], $this->emailsOf($second));
+        self::assertSame([], $afterTheLast->items);
+        self::assertSame(5, $second->total);
+        self::assertSame(5, $afterTheLast->total);
+        self::assertSame(3, $second->totalPages());
+    }
+
+    public function testAPageIsLoadedWithTheAddressesInThreeQueries(): void
+    {
+        foreach (range(1, 4) as $i) {
+            DoctrineAddressFactory::createMany(2, ['user' => DoctrineUserFactory::createOne()]);
+        }
+        $this->entityManager->clear();
+
+        $page = null;
+        $queries = $this->queriesRunBy(function () use (&$page): void {
+            $page = $this->repository->findPage(new UserCriteria(), new Pagination());
+        });
+
+        self::assertCount(3, $queries, implode("\n", $queries));
+        self::assertInstanceOf(Page::class, $page);
+        self::assertCount(4, $page->items);
+        foreach ($page->items as $user) {
+            self::assertCount(2, $user->getAddresses());
+        }
+    }
+
+    /**
+     * @param Page<User> $page
+     *
+     * @return list<string>
+     */
+    private function emailsOf(Page $page): array
+    {
+        return array_map(static fn (User $user): string => $user->getEmail()->getValue(), $page->items);
     }
 }

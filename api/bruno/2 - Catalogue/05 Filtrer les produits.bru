@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/v1/shop/products?category_id={{categoryId}}&min_price=20&max_price=30&scent=ambre&size=L
+  url: {{baseUrl}}/api/v1/shop/products?category_id={{categoryId}}&min_price=20&max_price=30&fragrance=ambre&size=L&sort=price&order=desc&per_page=100
   body: none
   auth: none
 }
@@ -14,14 +14,37 @@ params:query {
   category_id: {{categoryId}}
   min_price: 20
   max_price: 30
-  scent: ambre
+  fragrance: ambre
   size: L
+  sort: price
+  order: desc
+  per_page: 100
 }
 
 tests {
-  test("200 et le produit modifié est dans le résultat", function () {
+  test("200, et chaque produit respecte tous les filtres", function () {
     expect(res.getStatus()).to.equal(200);
-    const ids = res.getBody().map((product) => product.id);
-    expect(ids).to.include(bru.getVar("productId"));
+    expect(res.getBody().pagination.total).to.be.at.least(1);
+    res.getBody().items.forEach((product) => {
+      expect(product.category.id).to.equal(bru.getEnvVar("categoryId"));
+      expect(product.price).to.be.within(20, 30);
+      expect(product.attributes.fragrance).to.equal("ambre");
+      expect(product.attributes.size).to.equal("L");
+    });
   });
+
+  test("du plus cher au moins cher", function () {
+    const prices = res.getBody().items.map((product) => product.price);
+    expect(prices).to.deep.equal([...prices].sort((a, b) => b - a));
+  });
+}
+
+docs {
+  Le produit modifié par la requête 04 (26,50 €, ambre, taille L) répond à ces filtres.
+
+  Paramètres, tous facultatifs :
+  - filtres : `category_id`, `min_price` et `max_price` (inclus), `fragrance` et `size` (valeur exacte) ;
+  - `page` (à partir de 1) et `per_page` (20 par défaut, 100 au plus) ;
+  - `sort` : `name` (par défaut, dans l'ordre alphabétique français) ou `price` ;
+  - `order` : `asc` (par défaut) ou `desc`.
 }

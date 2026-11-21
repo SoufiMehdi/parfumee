@@ -56,6 +56,11 @@ nelmio_api_doc:
                     properties:
                         refresh_token:
                             type: string
+            headers:
+                TotalCount:
+                    description: Number of items matching the filters, over all pages. Same value as `pagination.total`.
+                    schema:
+                        type: integer
             responses:
                 BadRequest:
                     description: The body is not valid JSON, or is not sent as `application/json`

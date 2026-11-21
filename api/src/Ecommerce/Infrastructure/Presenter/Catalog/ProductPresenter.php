@@ -6,10 +6,13 @@ namespace App\Ecommerce\Infrastructure\Presenter\Catalog;
 
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Repository\Page;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\AttributesView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\CategorySummaryView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\PictureView;
+use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductListView;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\View\ProductView;
+use App\Ecommerce\Infrastructure\Presenter\Common\PaginationView;
 
 /**
  * Turns a domain product into what the API returns. The views are also what
@@ -42,12 +45,10 @@ class ProductPresenter
     }
 
     /**
-     * @param Product[] $products
-     *
-     * @return list<ProductView>
+     * @param Page<Product> $page
      */
-    public function presentCollection(array $products): array
+    public function presentPage(Page $page): ProductListView
     {
-        return array_values(array_map($this->present(...), $products));
+        return new ProductListView(array_map($this->present(...), $page->items), PaginationView::of($page));
     }
 }

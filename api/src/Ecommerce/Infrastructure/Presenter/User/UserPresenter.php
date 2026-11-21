@@ -6,7 +6,10 @@ namespace App\Ecommerce\Infrastructure\Presenter\User;
 
 use App\Ecommerce\Domain\Model\User\Address;
 use App\Ecommerce\Domain\Model\User\User;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Infrastructure\Presenter\Common\PaginationView;
 use App\Ecommerce\Infrastructure\Presenter\User\View\AddressView;
+use App\Ecommerce\Infrastructure\Presenter\User\View\UserListView;
 use App\Ecommerce\Infrastructure\Presenter\User\View\UserView;
 
 /**
@@ -40,12 +43,10 @@ class UserPresenter
     }
 
     /**
-     * @param User[] $users
-     *
-     * @return list<UserView>
+     * @param Page<User> $page
      */
-    public function presentCollection(array $users): array
+    public function presentPage(Page $page): UserListView
     {
-        return array_values(array_map($this->present(...), $users));
+        return new UserListView(array_map($this->present(...), $page->items), PaginationView::of($page));
     }
 }

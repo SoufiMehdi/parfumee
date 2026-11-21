@@ -5,19 +5,24 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Validation;
 
 use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
-use App\Ecommerce\Application\DTO\Catalog\GetProductsFilterDto;
+use App\Ecommerce\Application\DTO\Catalog\ListProductsQueryDto;
+use App\Ecommerce\Application\DTO\User\ListUsersQueryDto;
 use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
-use App\Ecommerce\Application\UseCase\Catalog\GetFilteredProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
+use App\Ecommerce\Application\UseCase\User\ListUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\LoginUserUseCase;
 use App\Ecommerce\Application\UseCase\User\RegisterUserUseCase;
 use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
+use App\Ecommerce\Domain\Repository\Page;
+use App\Ecommerce\Domain\Repository\Pagination;
 use App\Tests\Support\AuthenticatesRequests;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -122,27 +127,51 @@ final class InputValidationTest extends WebTestCase
 
     public function testFilterIsMappedFromTheQueryString(): void
     {
-        $dto = $this->captureDto(GetFilteredProductsUseCase::class, []);
+        $dto = $this->captureDto(ListProductsUseCase::class, self::emptyPage());
 
-        $this->client->request('GET', '/api/v1/shop/products?category_id='.self::ID.'&min_price=10&max_price=30.5&scent=amber');
+        $this->client->request('GET', '/api/v1/shop/products?category_id='.self::ID.'&min_price=10&max_price=30.5&fragrance=amber');
 
         self::assertResponseStatusCodeSame(200);
-        self::assertInstanceOf(GetProductsFilterDto::class, $dto->value);
+        self::assertInstanceOf(ListProductsQueryDto::class, $dto->value);
         self::assertSame(self::ID, $dto->value->categoryId);
         self::assertSame(10.0, $dto->value->minPrice);
         self::assertSame(30.5, $dto->value->maxPrice);
-        self::assertSame('amber', $dto->value->scent);
+        self::assertSame('amber', $dto->value->fragrance);
         self::assertNull($dto->value->size);
+    }
+
+    public function testPaginationAndSortAreMappedFromTheQueryString(): void
+    {
+        $dto = $this->captureDto(ListProductsUseCase::class, self::emptyPage());
+
+        $this->client->request('GET', '/api/v1/shop/products?page=3&per_page=50&sort=price&order=desc');
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertInstanceOf(ListProductsQueryDto::class, $dto->value);
+        self::assertSame(3, $dto->value->page);
+        self::assertSame(50, $dto->value->perPage);
+        self::assertSame('price', $dto->value->sort);
+        self::assertSame('desc', $dto->value->order);
     }
 
     public function testFilterIsOptional(): void
     {
-        $dto = $this->captureDto(GetFilteredProductsUseCase::class, []);
+        $dto = $this->captureDto(ListProductsUseCase::class, self::emptyPage());
 
         $this->client->request('GET', '/api/v1/shop/products');
 
         self::assertResponseStatusCodeSame(200);
-        self::assertEquals(new GetProductsFilterDto(), $dto->value);
+        self::assertEquals(new ListProductsQueryDto(), $dto->value);
+    }
+
+    public function testUserListQueryIsMapped(): void
+    {
+        $dto = $this->captureDto(ListUsersUseCase::class, self::emptyPage());
+
+        $this->client->request('GET', '/api/v1/admin/users?q=ada&page=2&per_page=10&sort=last_name&order=desc');
+
+        self::assertResponseStatusCodeSame(200);
+        self::assertEquals(new ListUsersQueryDto(q: 'ada', page: 2, perPage: 10, sort: 'last_name', order: 'desc'), $dto->value);
     }
 
     // --- Refused bodies ------------------------------------------------------
@@ -264,21 +293,54 @@ final class InputValidationTest extends WebTestCase
      */
     public static function invalidFilters(): iterable
     {
-        yield 'category that is not a UUID' => ['category_id=candles', 'category_id'];
-        yield 'text price' => ['min_price=cheap', 'min_price'];
-        yield 'negative price' => ['max_price=-1', 'max_price'];
-        yield 'maximum below minimum' => ['min_price=30&max_price=10', 'max_price'];
-        yield '256-character scent' => ['scent='.str_repeat('a', 256), 'scent'];
+        $products = '/api/v1/shop/products?';
+        yield 'category that is not a UUID' => [$products.'category_id=candles', 'category_id'];
+        yield 'text price' => [$products.'min_price=cheap', 'min_price'];
+        yield 'negative price' => [$products.'max_price=-1', 'max_price'];
+        yield 'maximum below minimum' => [$products.'min_price=30&max_price=10', 'max_price'];
+        yield '256-character fragrance' => [$products.'fragrance='.str_repeat('a', 256), 'fragrance'];
+        yield 'page 0' => [$products.'page=0', 'page'];
+        yield 'negative page' => [$products.'page=-1', 'page'];
+        yield 'text page' => [$products.'page=two', 'page'];
+        // Symfony turns it into the largest integer, which the range refuses.
+        yield 'page beyond the integers' => [$products.'page=99999999999999999999', 'page'];
+        yield 'page after the last one allowed' => [$products.'page=1000001', 'page'];
+        yield 'no product per page' => [$products.'per_page=0', 'per_page'];
+        yield 'too many products per page' => [$products.'per_page=101', 'per_page'];
+        yield 'unknown product sort' => [$products.'sort=stock', 'sort'];
+        // React-admin sorts by id unless told otherwise: its data provider must send a real field.
+        yield 'sort by id' => [$products.'sort=id', 'sort'];
+        yield 'unknown order' => [$products.'order=sideways', 'order'];
+        $users = '/api/v1/admin/users?';
+        yield '256-character account search' => [$users.'q='.str_repeat('a', 256), 'q'];
+        yield 'sort accounts by password' => [$users.'sort=password', 'sort'];
+        yield 'too many accounts per page' => [$users.'per_page=1000', 'per_page'];
+        yield 'unknown account order' => [$users.'order=up', 'order'];
     }
 
     #[DataProvider('invalidFilters')]
-    public function testInvalidFilterIsRefused(string $query, string $expectedField): void
+    public function testInvalidFilterIsRefused(string $uri, string $expectedField): void
     {
         $this->forbidUseCases();
-        $this->client->request('GET', '/api/v1/shop/products?'.$query);
+        $this->client->request('GET', $uri);
 
         self::assertResponseStatusCodeSame(422);
         self::assertContains($expectedField, array_column($this->decodedResponse()['violations'], 'field'));
+    }
+
+    /**
+     * The answer is right, but Symfony passes the raw "1.5" to the constructor of
+     * the DTO before reporting the error, and PHP warns while converting it to an int.
+     * The warning is expected here, and only here.
+     */
+    #[IgnoreDeprecations]
+    public function testADecimalPageIsRefused(): void
+    {
+        $this->forbidUseCases();
+        $this->client->request('GET', '/api/v1/shop/products?page=1.5');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame(['page'], array_column($this->decodedResponse()['violations'], 'field'));
     }
 
     /**
@@ -350,7 +412,7 @@ final class InputValidationTest extends WebTestCase
     {
         $useCases = [
             RegisterUserUseCase::class, LoginUserUseCase::class, UpdateUserUseCase::class, GetUserUseCase::class, DeleteUserUseCase::class,
-            CreateProductUseCase::class, UpdateProductUseCase::class, GetProductUseCase::class, GetFilteredProductsUseCase::class,
+            CreateProductUseCase::class, UpdateProductUseCase::class, GetProductUseCase::class, ListProductsUseCase::class, ListUsersUseCase::class,
         ];
         foreach ($useCases as $useCase) {
             $mock = $this->createMock($useCase);
@@ -365,5 +427,13 @@ final class InputValidationTest extends WebTestCase
     private function decodedResponse(): array
     {
         return json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @return Page<mixed>
+     */
+    private static function emptyPage(): Page
+    {
+        return new Page([], 0, new Pagination());
     }
 }

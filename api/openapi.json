@@ -131,7 +131,7 @@
                     "Back-office \u00b7 Catalogue"
                 ],
                 "summary": "List the products",
-                "description": "Requires the editor role. Every filter is optional.",
+                "description": "Requires the editor role. One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.",
                 "operationId": "get_admin_products_list",
                 "parameters": [
                     {
@@ -149,6 +149,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Inclusive.",
                             "type": "number",
                             "format": "float",
                             "nullable": true,
@@ -161,6 +162,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Inclusive.",
                             "type": "number",
                             "format": "float",
                             "nullable": true,
@@ -169,10 +171,11 @@
                         }
                     },
                     {
-                        "name": "scent",
+                        "name": "fragrance",
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Exact value of the fragrance attribute.",
                             "type": "string",
                             "nullable": true,
                             "default": null,
@@ -184,23 +187,77 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Exact value of the size attribute.",
                             "type": "string",
                             "nullable": true,
                             "default": null,
                             "maxLength": 255
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Number of the page, from 1.",
+                            "type": "integer",
+                            "default": 1,
+                            "maximum": 1000000,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Maximum number of products on a page.",
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Field to sort by. Products with the same value are then sorted by id, so that pages never overlap.",
+                            "type": "string",
+                            "default": "name",
+                            "enum": [
+                                "name",
+                                "price"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "asc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "The matching products",
+                        "description": "One page of the matching products",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/TotalCount"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/ProductView"
-                                    }
+                                    "$ref": "#/components/schemas/ProductListView"
                                 }
                             }
                         }
@@ -450,21 +507,92 @@
                     "Back-office \u00b7 Users"
                 ],
                 "summary": "List the accounts",
-                "description": "Requires the administrator role.",
+                "description": "Requires the administrator role. One page of the accounts, sorted by email unless told otherwise.",
                 "operationId": "get_admin_users_list",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Part of the email, the first name or the last name, whatever the case.",
+                            "type": "string",
+                            "nullable": true,
+                            "default": null,
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Number of the page, from 1.",
+                            "type": "integer",
+                            "default": 1,
+                            "maximum": 1000000,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Maximum number of accounts on a page.",
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Field to sort by. Accounts with the same value are then sorted by id, so that pages never overlap.",
+                            "type": "string",
+                            "default": "email",
+                            "enum": [
+                                "email",
+                                "first_name",
+                                "last_name"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "asc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Every account",
+                        "description": "One page of the matching accounts",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/TotalCount"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/UserView"
-                                    }
+                                    "$ref": "#/components/schemas/UserListView"
                                 }
                             }
                         }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
                     },
                     "401": {
                         "$ref": "#/components/responses/Unauthorized"
@@ -799,7 +927,7 @@
                     "Shop \u00b7 Catalogue"
                 ],
                 "summary": "List the products",
-                "description": "Every filter is optional: without any, the whole catalogue is returned.",
+                "description": "One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.",
                 "operationId": "get_shop_products_list",
                 "parameters": [
                     {
@@ -817,6 +945,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Inclusive.",
                             "type": "number",
                             "format": "float",
                             "nullable": true,
@@ -829,6 +958,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Inclusive.",
                             "type": "number",
                             "format": "float",
                             "nullable": true,
@@ -837,10 +967,11 @@
                         }
                     },
                     {
-                        "name": "scent",
+                        "name": "fragrance",
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Exact value of the fragrance attribute.",
                             "type": "string",
                             "nullable": true,
                             "default": null,
@@ -852,23 +983,77 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "Exact value of the size attribute.",
                             "type": "string",
                             "nullable": true,
                             "default": null,
                             "maxLength": 255
                         }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Number of the page, from 1.",
+                            "type": "integer",
+                            "default": 1,
+                            "maximum": 1000000,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Maximum number of products on a page.",
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Field to sort by. Products with the same value are then sorted by id, so that pages never overlap.",
+                            "type": "string",
+                            "default": "name",
+                            "enum": [
+                                "name",
+                                "price"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "asc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "The matching products",
+                        "description": "One page of the matching products",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/TotalCount"
+                            }
+                        },
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/ProductView"
-                                    }
+                                    "$ref": "#/components/schemas/ProductListView"
                                 }
                             }
                         }
@@ -990,7 +1175,7 @@
                 },
                 "type": "object"
             },
-            "GetProductsFilterDto": {
+            "ListProductsQueryDto": {
                 "properties": {
                     "category_id": {
                         "type": "string",
@@ -998,6 +1183,7 @@
                         "default": null
                     },
                     "min_price": {
+                        "title": "Inclusive.",
                         "type": "number",
                         "format": "float",
                         "nullable": true,
@@ -1005,23 +1191,57 @@
                         "minimum": 0
                     },
                     "max_price": {
+                        "title": "Inclusive.",
                         "type": "number",
                         "format": "float",
                         "nullable": true,
                         "default": null,
                         "minimum": 0
                     },
-                    "scent": {
+                    "fragrance": {
+                        "title": "Exact value of the fragrance attribute.",
                         "type": "string",
                         "nullable": true,
                         "default": null,
                         "maxLength": 255
                     },
                     "size": {
+                        "title": "Exact value of the size attribute.",
                         "type": "string",
                         "nullable": true,
                         "default": null,
                         "maxLength": 255
+                    },
+                    "page": {
+                        "title": "Number of the page, from 1.",
+                        "type": "integer",
+                        "default": 1,
+                        "maximum": 1000000,
+                        "minimum": 1
+                    },
+                    "per_page": {
+                        "title": "Maximum number of products on a page.",
+                        "type": "integer",
+                        "default": 20,
+                        "maximum": 100,
+                        "minimum": 1
+                    },
+                    "sort": {
+                        "title": "Field to sort by. Products with the same value are then sorted by id, so that pages never overlap.",
+                        "type": "string",
+                        "default": "name",
+                        "enum": [
+                            "name",
+                            "price"
+                        ]
+                    },
+                    "order": {
+                        "type": "string",
+                        "default": "asc",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ]
                     }
                 },
                 "type": "object"
@@ -1080,6 +1300,50 @@
                         "type": "object",
                         "default": [],
                         "additionalProperties": {}
+                    }
+                },
+                "type": "object"
+            },
+            "ListUsersQueryDto": {
+                "properties": {
+                    "q": {
+                        "title": "Part of the email, the first name or the last name, whatever the case.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null,
+                        "maxLength": 255
+                    },
+                    "page": {
+                        "title": "Number of the page, from 1.",
+                        "type": "integer",
+                        "default": 1,
+                        "maximum": 1000000,
+                        "minimum": 1
+                    },
+                    "per_page": {
+                        "title": "Maximum number of accounts on a page.",
+                        "type": "integer",
+                        "default": 20,
+                        "maximum": 100,
+                        "minimum": 1
+                    },
+                    "sort": {
+                        "title": "Field to sort by. Accounts with the same value are then sorted by id, so that pages never overlap.",
+                        "type": "string",
+                        "default": "email",
+                        "enum": [
+                            "email",
+                            "first_name",
+                            "last_name"
+                        ]
+                    },
+                    "order": {
+                        "type": "string",
+                        "default": "asc",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ]
                     }
                 },
                 "type": "object"
@@ -1392,6 +1656,51 @@
                 },
                 "type": "object"
             },
+            "PaginationView": {
+                "required": [
+                    "page",
+                    "per_page",
+                    "total",
+                    "total_pages"
+                ],
+                "properties": {
+                    "page": {
+                        "title": "Number of the page, from 1.",
+                        "type": "integer"
+                    },
+                    "per_page": {
+                        "title": "Maximum number of items on a page.",
+                        "type": "integer"
+                    },
+                    "total": {
+                        "title": "Number of items matching the filters, over all pages.",
+                        "type": "integer"
+                    },
+                    "total_pages": {
+                        "title": "Number of pages, 0 when nothing matches. A page after the last one is empty, not an error.",
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "ProductListView": {
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ProductView"
+                        }
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationView"
+                    }
+                },
+                "type": "object"
+            },
             "IdView": {
                 "required": [
                     "id"
@@ -1399,6 +1708,24 @@
                 "properties": {
                     "id": {
                         "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "UserListView": {
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/UserView"
+                        }
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationView"
                     }
                 },
                 "type": "object"
@@ -1464,6 +1791,14 @@
                             "$ref": "#/components/schemas/ValidationError"
                         }
                     }
+                }
+            }
+        },
+        "headers": {
+            "TotalCount": {
+                "description": "Number of items matching the filters, over all pages. Same value as `pagination.total`.",
+                "schema": {
+                    "type": "integer"
                 }
             }
         },
