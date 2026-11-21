@@ -20,4 +20,9 @@ tests {
     expect(res.getBody().email).to.equal(bru.getEnvVar("adminEmail"));
     expect(res.getBody().addresses).to.be.an("array");
   });
+
+  test("la date d'inscription et celle de la dernière modification, en UTC", function () {
+    expect(res.getBody().created_at).to.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/);
+    expect(res.getBody().updated_at).to.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/);
+  });
 }

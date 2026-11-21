@@ -34,11 +34,11 @@ tests {
 }
 
 docs {
-  Réservée aux administrateurs. Une page de comptes, triés par nom de famille.
+  Réservée aux administrateurs. Une page de comptes, triés par email.
 
   Paramètres, tous facultatifs :
   - `q` : un morceau de l'email, du prénom ou du nom, sans tenir compte des majuscules ;
   - `page` (à partir de 1) et `per_page` (20 par défaut, 100 au plus) ;
-  - `sort` : `email` (par défaut), `first_name` ou `last_name` ;
+  - `sort` : `email` (par défaut), `first_name`, `last_name` ou `created_at` (date d'inscription) ;
   - `order` : `asc` (par défaut) ou `desc`.
 }
