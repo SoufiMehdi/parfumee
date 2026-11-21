@@ -25,27 +25,27 @@ class DeleteUserUseCaseTest extends TestCase
 
     public function testExecuteDeletesUser(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
 
         $this->userRepository
             ->expects($this->once())
             ->method('delete')
             ->with($id);
 
-        $this->useCase->execute($id->toRfc4122());
+        $this->useCase->execute($id);
     }
 
     #[AllowMockObjectsWithoutExpectations]
     public function testExecuteThrowsExceptionWhenUserNotFound(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
 
         $this->userRepository
             ->method('delete')
-            ->willThrowException(new UserNotFoundException($id->toRfc4122()));
+            ->willThrowException(new UserNotFoundException($id));
 
         $this->expectException(UserNotFoundException::class);
 
-        $this->useCase->execute($id->toRfc4122());
+        $this->useCase->execute($id);
     }
 }

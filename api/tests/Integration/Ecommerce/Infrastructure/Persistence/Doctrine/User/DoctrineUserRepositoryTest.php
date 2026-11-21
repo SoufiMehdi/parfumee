@@ -28,11 +28,11 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
 
     public function testASavedUserIsReadBackWithEveryField(): void
     {
-        $id = Uuid::v4();
+        $id = Uuid::v4()->toRfc4122();
         $addressId = Uuid::v4()->toRfc4122();
 
         $this->repository->save(new User(
-            $id->toRfc4122(),
+            $id,
             new Email('ada@example.test'),
             'hashed-password',
             'Ada',
@@ -45,7 +45,7 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
 
         $user = $this->repository->findById($id);
 
-        self::assertSame($id->toRfc4122(), $user->getId());
+        self::assertSame($id, $user->getId());
         self::assertSame('ada@example.test', $user->getEmail()->getValue());
         self::assertSame('hashed-password', $user->getPasswordHash());
         self::assertSame('Ada', $user->getFirstName());
@@ -69,7 +69,7 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
         $id = DoctrineUserFactory::createOne()->getId();
         $this->entityManager->clear();
 
-        $user = $this->repository->findById(Uuid::fromString($id));
+        $user = $this->repository->findById($id);
 
         self::assertNull($user->getPhoneNumber());
         self::assertSame([], $user->getAddresses());
@@ -79,7 +79,7 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
     {
         $this->expectException(UserNotFoundException::class);
 
-        $this->repository->findById(Uuid::v4());
+        $this->repository->findById(Uuid::v4()->toRfc4122());
     }
 
     public function testFindByEmail(): void
@@ -111,7 +111,7 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
     {
         $doctrineUser = DoctrineUserFactory::createOne(['firstName' => 'Ada', 'phoneNumber' => '+33612345678']);
         DoctrineAddressFactory::createOne(['user' => $doctrineUser, 'city' => 'Lyon']);
-        $id = Uuid::fromString($doctrineUser->getId());
+        $id = $doctrineUser->getId();
         $this->entityManager->clear();
 
         $user = $this->repository->findById($id);
@@ -136,7 +136,7 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
         $doctrineUser = DoctrineUserFactory::createOne();
         DoctrineAddressFactory::createMany(2, ['user' => $doctrineUser]);
         $other = DoctrineAddressFactory::createOne();
-        $id = Uuid::fromString($doctrineUser->getId());
+        $id = $doctrineUser->getId();
         $otherAddressId = $other->getId();
         $this->entityManager->clear();
 
@@ -152,7 +152,7 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
     {
         $this->expectException(UserNotFoundException::class);
 
-        $this->repository->delete(Uuid::v4());
+        $this->repository->delete(Uuid::v4()->toRfc4122());
     }
 
     public function testTwoUsersCannotShareAnEmail(): void

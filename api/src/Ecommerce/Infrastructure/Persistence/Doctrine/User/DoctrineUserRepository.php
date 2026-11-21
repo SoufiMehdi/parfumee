@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Persistence\Doctrine\User;
 
+use App\Ecommerce\Domain\Exception\User\UserNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
 use App\Ecommerce\Infrastructure\Persistence\Entity\User\DoctrineUser;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\User\UserMapper;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\Uid\Uuid;
 
 class DoctrineUserRepository implements UserRepositoryInterface
 {
@@ -19,12 +19,12 @@ class DoctrineUserRepository implements UserRepositoryInterface
     ) {
     }
 
-    public function findById(Uuid $id): User
+    public function findById(string $id): User
     {
-        $doctrineUser = $this->entityManager->find(DoctrineUser::class, $id->toRfc4122());
+        $doctrineUser = $this->entityManager->find(DoctrineUser::class, $id);
 
         if (!$doctrineUser) {
-            throw new \App\Ecommerce\Domain\Exception\User\UserNotFoundException($id->toRfc4122());
+            throw new UserNotFoundException($id);
         }
 
         return $this->mapper->toDomain($doctrineUser);
@@ -61,12 +61,12 @@ class DoctrineUserRepository implements UserRepositoryInterface
         $this->entityManager->flush();
     }
 
-    public function delete(Uuid $id): void
+    public function delete(string $id): void
     {
-        $doctrineUser = $this->entityManager->find(DoctrineUser::class, $id->toRfc4122());
+        $doctrineUser = $this->entityManager->find(DoctrineUser::class, $id);
 
         if (!$doctrineUser) {
-            throw new \App\Ecommerce\Domain\Exception\User\UserNotFoundException($id->toRfc4122());
+            throw new UserNotFoundException($id);
         }
 
         $this->entityManager->remove($doctrineUser);

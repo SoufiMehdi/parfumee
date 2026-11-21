@@ -6,7 +6,6 @@ namespace App\Ecommerce\Application\UseCase\User;
 
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\User\UserRepositoryInterface;
-use Symfony\Component\Uid\Uuid;
 
 readonly class GetUserUseCase
 {
@@ -17,6 +16,6 @@ readonly class GetUserUseCase
 
     public function execute(string $id): User
     {
-        return $this->userRepository->findById(Uuid::fromString($id));
+        return $this->userRepository->findById($id);
     }
 }
