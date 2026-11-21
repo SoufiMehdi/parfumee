@@ -239,6 +239,21 @@ Les noms se trient dans l'ordre alphabétique français (« ambre » avant « Bo
 
 Exemple : `GET /api/v1/shop/products?fragrance=ambre&sort=price&order=desc&per_page=10`
 
+## Appeler l'API depuis un navigateur (CORS)
+
+La boutique et le back-office tournent sur leur propre origine et appellent l'API depuis le navigateur. L'API n'autorise que ces deux origines, une variable chacune :
+
+| Variable | Développement (`api/.env.dev`) | Production |
+|---|---|---|
+| `CORS_SHOP_ORIGIN` | `http://localhost:3000` (Next.js ou Nuxt) | à définir, par exemple `https://www.example.fr` |
+| `CORS_ADMIN_ORIGIN` | `http://localhost:5173` (Vite) | à définir, par exemple `https://admin.example.fr` |
+
+- **Comparaison exacte** : schéma, hôte et port, sans barre finale. `http://localhost:5173/` ou `http://127.0.0.1:5173` ne correspondent pas à `http://localhost:5173`.
+- **Autre port en développement** : surcharger la variable dans `api/.env.dev.local`, non versionné.
+- **Valeur vide** : aucun front n'est autorisé. C'est le cas par défaut dans `api/.env`, donc en production tant que les variables ne sont pas définies.
+- **En-tête exposé** : le front peut lire `X-Total-Count`, le total d'une liste.
+- **Limite** : le CORS n'empêche que la lecture des réponses par une page web d'une autre origine. Un script hors navigateur appelle l'API librement : ce sont le jeton et les rôles qui la protègent.
+
 ## Contrat de l'API (OpenAPI)
 
 L'API se décrit elle-même : routes, corps attendus, réponses et erreurs.
@@ -297,6 +312,7 @@ Ne jamais mettre de vrai secret dans un fichier versionné. `.env.local` n'est p
 | Les tests d'intégration échouent tous | La base de test est arrêtée : `docker compose up -d`. |
 | Erreur à la connexion ou tests de sécurité en échec, mention de `private.pem` | Les clés JWT manquent : refaire l'étape 4. |
 | Une migration échoue sur une colonne `NOT NULL` | La base contient d'anciennes données : repartir d'une base vide. |
+| Le front reçoit une erreur CORS (« blocked by CORS policy ») | Son origine ne correspond pas exactement à `CORS_SHOP_ORIGIN` ou `CORS_ADMIN_ORIGIN` : vérifier le port, `localhost` contre `127.0.0.1`, et l'absence de barre finale. |
 | Upload d'image refusé au-delà de 2 Mo | Limite `upload_max_filesize` de PHP, à relever dans son `php.ini` (l'API accepte jusqu'à 5 Mo). |
 
 ## Contribuer

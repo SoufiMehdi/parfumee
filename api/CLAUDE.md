@@ -80,6 +80,9 @@ Toute liste renvoyée par l'API est paginée. La chaîne complète, à reproduir
   - `queriesRunBy(fn () => ...)` renvoie les requêtes SQL exécutées : de quoi vérifier qu'une liste ne fait pas une requête par élément.
   - La base est le service `database_test` de `compose.override.yaml` (`docker compose up -d`). Sans elle, ces tests **échouent** : ne jamais les remplacer par un `markTestSkipped`.
 - Les tests **fonctionnels** (`tests/Functional/`, `WebTestCase`) couvrent les contrôleurs et la sécurité (401/403 attendus).
+  - Ils ne doivent **jamais** atteindre la base : les use cases qui pourraient s'exécuter sont remplacés par des doubles (`static::getContainer()->set()`).
+  - Le client reconstruit le conteneur entre deux requêtes d'un même test : un double ne vaut que pour la **première** requête. Une requête par test, sauf si les suivantes ne touchent aucun use case (requête préliminaire CORS, refus du pare-feu).
+  - Ce défaut passe inaperçu en local, où la base de test a ses tables, et casse la CI, où elle est vide. Pour le voir avant de pousser : `docker compose restart database_test`, puis `vendor/bin/phpunit tests/Functional`.
 - Le namespace d'un test suit son dossier : `App\Tests\Unit\...`, `App\Tests\Integration\...`.
 - PHPUnit est configuré avec `failOnWarning`, `failOnNotice` et `failOnDeprecation` : un warning PHP fait échouer la suite.
 - Un double sans attente se crée avec `createStub()`, pas `createMock()`. `createMock()` est réservé aux doubles sur lesquels on appelle `expects()` ; sinon PHPUnit affiche un avertissement. La sortie de la suite doit rester « OK » sans réserve.
@@ -90,5 +93,7 @@ Toute liste renvoyée par l'API est paginée. La chaîne complète, à reproduir
 - `.env` ne contient aucun secret : `APP_SECRET` et `JWT_PASSPHRASE` y sont vides exprès. Les valeurs de dev sont dans `.env.dev`, celles de test dans `.env.test` ; `tests/Unit/Config/EnvFilesTest` le vérifie. `.env.local` n'est pas lu en test.
 - Avant de pousser : `composer check` (style, PHPStan niveau 6, conteneur, tests). PHPStan est à 0 erreur : ne pas ajouter de baseline ni de `@phpstan-ignore`. `composer fix-cs` corrige le style.
 - Un docblock `@var` de propriété se place **au-dessus** des attributs `#[ORM\…]`, sinon PHPStan ne le lit pas.
+- CORS (`config/packages/nelmio_cors.yaml`) : deux origines exactes, `CORS_SHOP_ORIGIN` et `CORS_ADMIN_ORIGIN`. Ne pas passer en mode expression régulière (`origin_regex`) : une valeur vide y autorise toutes les origines. Tout se règle sous le chemin `'^/api/'`, jamais dans `defaults`, que le bundle applique à tous les chemins.
+- Un nouvel en-tête de réponse que les fronts doivent lire (comme `X-Total-Count`) s'ajoute à `expose_headers`, sinon le navigateur le leur cache. `CorsTest` couvre ces règles.
 - La migration `Version20261116102013` (table `refresh_tokens`) est à jouer sur chaque base de dev.
 - La migration `Version20260612051158` ajoute des colonnes `NOT NULL` sans défaut : elle échoue si des utilisateurs existent déjà.
