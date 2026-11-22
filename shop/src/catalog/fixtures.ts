@@ -11,6 +11,8 @@ export function aProduct(overrides: Partial<Product> = {}): Product {
         price: 24.9,
         category: { id: 'c-1', name: 'Bougies Parfumées' },
         attributes: { weight: 180, fragrance: 'ambre', size: 'M', description: null, presentation: null },
+        // The shop is only ever sent published products.
+        status: 'published',
         pictures: [],
         created_at: '2026-11-21T10:00:00+00:00',
         updated_at: '2026-11-21T10:00:00+00:00',

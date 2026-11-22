@@ -16,6 +16,7 @@ const resources = {
             fragrance: 'Parfum',
             min_price: 'Prix minimum',
             max_price: 'Prix maximum',
+            status: 'Statut',
             created_at: 'Créé le',
         },
     },

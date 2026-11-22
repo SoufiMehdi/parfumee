@@ -96,6 +96,7 @@ describe('App', () => {
             price: 24.9,
             category: { id: 'c-1', name: 'Bougies' },
             attributes: { weight: 180, fragrance: 'ambre', size: 'M', description: null, presentation: null },
+            status: 'draft',
             pictures: [],
             created_at: '2026-11-21T10:00:00+00:00',
             updated_at: '2026-11-21T10:00:00+00:00',
@@ -106,7 +107,19 @@ describe('App', () => {
 
         expect(await screen.findByText('Bougie Ambre')).toBeTruthy();
         expect(screen.getByText('Bougies')).toBeTruthy();
+        expect(screen.getByText('Brouillon')).toBeTruthy();
         expect(Object.fromEntries(callsTo(calls, PRODUCTS)[0].query)).toEqual({ page: '1', per_page: '25', sort: 'created_at', order: 'desc' });
+    });
+
+    it('asks the API for the archived products when the filter says so', async () => {
+        // The filter as react-admin keeps it in the address, once chosen in the list.
+        window.history.replaceState({}, '', `/#/products?filter=${encodeURIComponent(JSON.stringify({ status: 'archived' }))}`);
+        const { calls } = withSession(ADMIN, { [PRODUCTS]: onePage([]) });
+
+        render(<App />);
+
+        expect(await screen.findByText('Archivé')).toBeTruthy();
+        expect(Object.fromEntries(callsTo(calls, PRODUCTS)[0].query)).toMatchObject({ status: 'archived' });
     });
 
     it('lists the accounts, with their role, for an administrator', async () => {
