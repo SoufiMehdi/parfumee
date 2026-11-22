@@ -76,6 +76,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the categories
+         * @description Requires the editor role. One page of the categories, sorted by name unless told otherwise. Every filter is optional.
+         */
+        get: operations["get_admin_categories_list"];
+        put?: never;
+        /**
+         * Create a category
+         * @description Requires the editor role. The slug is computed from the name. With parent_id, the category is filed under that top-level category.
+         */
+        post: operations["post_admin_categories_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read a category
+         * @description Requires the editor role.
+         */
+        get: operations["get_admin_categories_get"];
+        /**
+         * Update a category
+         * @description Requires the editor role. The slug follows the name. Without parent_id, the category becomes a top-level one.
+         */
+        put: operations["put_admin_categories_update"];
+        post?: never;
+        /**
+         * Delete a category
+         * @description Requires the editor role. Only an empty category is deleted: one that holds a child category or a product (archived ones included) answers 409.
+         */
+        delete: operations["delete_admin_categories_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/me": {
         parameters: {
             query?: never;
@@ -362,8 +414,65 @@ export interface components {
             email: string;
             password: string;
         };
+        ListCategoriesQueryDto: {
+            /**
+             * Part of the name, whatever the case.
+             * @default null
+             */
+            q: string | null;
+            /**
+             * The children of this category only.
+             * @default null
+             */
+            parent_id: string | null;
+            /**
+             * true: the top-level categories only.
+             * @default false
+             */
+            top_level: boolean;
+            /**
+             * Number of the page, from 1.
+             * @default 1
+             */
+            page: number;
+            /**
+             * Maximum number of categories on a page.
+             * @default 20
+             */
+            per_page: number;
+            /**
+             * Field to sort by. Categories with the same value are then sorted by id, so that pages never overlap.
+             * @default name
+             * @enum {string}
+             */
+            sort: "name" | "created_at";
+            /**
+             * @default asc
+             * @enum {string}
+             */
+            order: "asc" | "desc";
+        };
+        CreateCategoryDto: {
+            name: string;
+            /**
+             * A top-level category to file this one under. Left out: a top-level category.
+             * @default null
+             */
+            parent_id: string | null;
+        };
+        UpdateCategoryDto: {
+            name: string;
+            /**
+             * A top-level category to file this one under. Left out: a top-level category.
+             * @default null
+             */
+            parent_id: string | null;
+        };
         ListProductsQueryDto: {
-            /** @default null */
+            /**
+             * A category: a top-level one gives the products of its child categories too.
+             * @default null
+             */
             category_id: string | null;
             /**
              * Inclusive.
@@ -514,6 +623,45 @@ export interface components {
             /** Single-use value to exchange for a new session on /api/v1/token/refresh. */
             refresh_token: string;
         };
+        CategorySummaryView: {
+            id: string;
+            name: string;
+        };
+        CategoryView: {
+            id: string;
+            name: string;
+            /** URL-safe name, unique among the categories. */
+            slug: string;
+            /** The top-level category this one is filed under; null for a top-level category. */
+            parent?: components["schemas"]["CategorySummaryView"] | (never | null);
+            /**
+             * When the category was created, in UTC.
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * When the category last changed, in UTC.
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        PaginationView: {
+            /** Number of the page, from 1. */
+            page: number;
+            /** Maximum number of items on a page. */
+            per_page: number;
+            /** Number of items matching the filters, over all pages. */
+            total: number;
+            /** Number of pages, 0 when nothing matches. A page after the last one is empty, not an error. */
+            total_pages: number;
+        };
+        CategoryListView: {
+            items: components["schemas"]["CategoryView"][];
+            pagination: components["schemas"]["PaginationView"];
+        };
+        IdView: {
+            id: string;
+        };
         AddressView: {
             id: string;
             /** "shipping" or "billing". */
@@ -542,10 +690,6 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-        };
-        CategorySummaryView: {
-            id: string;
-            name: string;
         };
         AttributesView: {
             /**
@@ -592,22 +736,9 @@ export interface components {
              */
             updated_at: string;
         };
-        PaginationView: {
-            /** Number of the page, from 1. */
-            page: number;
-            /** Maximum number of items on a page. */
-            per_page: number;
-            /** Number of items matching the filters, over all pages. */
-            total: number;
-            /** Number of pages, 0 when nothing matches. A page after the last one is empty, not an error. */
-            total_pages: number;
-        };
         ProductListView: {
             items: components["schemas"]["ProductView"][];
             pagination: components["schemas"]["PaginationView"];
-        };
-        IdView: {
-            id: string;
         };
         UserListView: {
             items: components["schemas"]["UserView"][];
@@ -647,6 +778,15 @@ export interface components {
         };
         /** @description The resource does not exist */
         NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description The request conflicts with the current state of the resource */
+        Conflict: {
             headers: {
                 [name: string]: unknown;
             };
@@ -720,6 +860,179 @@ export interface operations {
             };
             422: components["responses"]["ValidationFailed"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    get_admin_categories_list: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                parent_id?: string | null;
+                top_level?: boolean;
+                page?: number;
+                per_page?: number;
+                sort?: "name" | "created_at";
+                order?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the matching categories */
+            200: {
+                headers: {
+                    "X-Total-Count": components["headers"]["TotalCount"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryListView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    post_admin_categories_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCategoryDto"];
+            };
+        };
+        responses: {
+            /** @description The category is created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdView"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description The parent category does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description A field is invalid (with violations), or the parent is itself a child category (without) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"] | components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    get_admin_categories_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The category */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    put_admin_categories_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCategoryDto"];
+            };
+        };
+        responses: {
+            /** @description The updated category */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryView"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description The category or its parent does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description A field is invalid (with violations), or the parent breaks the two levels (itself, a child category, or a category that holds others going under one) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"] | components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    delete_admin_categories_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The category is deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     get_admin_me_get: {
