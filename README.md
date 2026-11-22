@@ -183,6 +183,7 @@ npm run dev
 
 Ouvrir http://localhost:5173, puis se connecter avec un compte éditeur ou administrateur (voir « Créer un compte administrateur »). Un compte client est refusé : « Ce compte n'a pas accès au back-office ».
 
+- **Écrans** : la liste des produits (éditeurs et administrateurs) et celle des comptes (administrateurs seulement), avec tri, filtres et pagination. Pas encore de formulaires (`P2-09`, `P3-06`) : pour avoir des produits en développement, les créer avec la collection Bruno (`2 - Catalogue / 02 Créer un produit`).
 - **Port imposé** : 5173 est l'origine que l'API autorise (CORS). S'il est pris, `npm run dev` s'arrête plutôt que de changer de port.
 - **Session** : elle dure tant qu'elle est renouvelée (le refresh token vaut 30 jours) ; « Déconnexion » la termine aussi côté serveur.
 - **Production** : `VITE_API_URL=https://api.example.fr npm run build`, puis servir `admin/dist/` en fichiers statiques (`P7-01`).
