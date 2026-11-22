@@ -11,9 +11,11 @@ use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class UpdateProductUseCaseTest extends TestCase
@@ -88,5 +90,31 @@ class UpdateProductUseCaseTest extends TestCase
 
         $this->assertSame('ambre-2', $result->getSlug());
         $this->assertSame(12.0, $result->getPrice());
+    }
+
+    /**
+     * @return iterable<string, array{?string, ProductStatus}>
+     */
+    public static function statusChanges(): iterable
+    {
+        yield 'left out: the status is kept' => [null, ProductStatus::PUBLISHED];
+        yield 'back to draft' => ['draft', ProductStatus::DRAFT];
+        yield 'archived' => ['archived', ProductStatus::ARCHIVED];
+    }
+
+    #[DataProvider('statusChanges')]
+    public function testTheStatusChangesOnlyWhenOneIsGiven(?string $status, ProductStatus $expected): void
+    {
+        $category = new Category('cat-1', 'Bougies', 'bougies');
+        $product = new Product('prod-1', 'Ambre', 'ambre', 10.0, $category, status: ProductStatus::PUBLISHED);
+        $productRepo = $this->createStub(ProductRepositoryInterface::class);
+        $productRepo->method('findById')->willReturn($product);
+        $categoryRepo = $this->createStub(CategoryRepositoryInterface::class);
+        $categoryRepo->method('findById')->willReturn($category);
+
+        $useCase = new UpdateProductUseCase($productRepo, $categoryRepo, new AttributesMapper(), new ProductSlugResolver($this->createStub(SlugGeneratorInterface::class), $productRepo));
+        $useCase->execute(new UpdateProductDto(name: 'Ambre', price: 10.0, categoryId: 'cat-1', status: $status), 'prod-1');
+
+        $this->assertSame($expected, $product->getStatus());
     }
 }

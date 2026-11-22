@@ -7,6 +7,7 @@ namespace App\Ecommerce\Application\UseCase\Catalog;
 use App\Ecommerce\Application\DTO\Catalog\ListProductsQueryDto;
 use App\Ecommerce\Domain\Exception\InvalidListQueryException;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Catalog\ProductCriteria;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductSortField;
@@ -25,12 +26,15 @@ class ListProductsUseCase
     }
 
     /**
+     * @param non-empty-list<ProductStatus> $statuses the statuses the caller may see: the shop sees the published products only
+     *
      * @return Page<Product>
      */
-    public function execute(ListProductsQueryDto $query): Page
+    public function execute(ListProductsQueryDto $query, array $statuses): Page
     {
         return $this->productRepository->findPage(
             new ProductCriteria(
+                statuses: $statuses,
                 categoryId: $query->categoryId,
                 minPrice: $query->minPrice,
                 maxPrice: $query->maxPrice,

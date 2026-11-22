@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Timestamps;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -38,6 +39,9 @@ class DoctrineProduct
     #[ORM\JoinColumn(nullable: false)]
     private DoctrineCategory $category;
 
+    #[ORM\Column(type: Types::STRING, length: 20, enumType: ProductStatus::class)]
+    private ProductStatus $status;
+
     /**
      * C'est ici que réside la magie pour le côté générique.
      * Le type 'json' sur PostgreSQL crée une colonne JSONB par défaut.
@@ -60,6 +64,7 @@ class DoctrineProduct
         string $slug,
         float $price, DoctrineCategory $category,
         array $attributes = [],
+        ProductStatus $status = ProductStatus::DRAFT,
     ) {
         $this->id = $id;
         $this->name = $name;
@@ -67,6 +72,7 @@ class DoctrineProduct
         $this->price = self::toDecimal($price);
         $this->category = $category;
         $this->attributes = $attributes;
+        $this->status = $status;
         $this->pictures = new ArrayCollection();
     }
 
@@ -103,6 +109,16 @@ class DoctrineProduct
     public function setPrice(float $price): void
     {
         $this->price = self::toDecimal($price);
+    }
+
+    public function getStatus(): ProductStatus
+    {
+        return $this->status;
+    }
+
+    public function setStatus(ProductStatus $status): void
+    {
+        $this->status = $status;
     }
 
     public function getCategory(): DoctrineCategory

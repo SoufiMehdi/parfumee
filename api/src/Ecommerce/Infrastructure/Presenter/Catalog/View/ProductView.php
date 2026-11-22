@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Presenter\Catalog\View;
 
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
+
 /**
  * A product, as returned by the API.
  */
@@ -18,6 +20,8 @@ final readonly class ProductView
         public float $price,
         public CategorySummaryView $category,
         public AttributesView $attributes,
+        /** Only a published product is shown by the shop. */
+        public ProductStatus $status,
         /** @var list<PictureView> */
         public array $pictures,
         /** When the product was created, in UTC. */

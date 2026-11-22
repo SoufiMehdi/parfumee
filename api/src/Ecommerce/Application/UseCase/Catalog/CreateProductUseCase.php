@@ -9,6 +9,7 @@ use App\Ecommerce\Application\Mapper\AttributesMapper;
 use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use Symfony\Component\Uid\Uuid;
@@ -38,7 +39,8 @@ class CreateProductUseCase
             $this->slugResolver->resolve($dto->name),
             $dto->price,
             $category,
-            $this->attributesMapper->fromDto($dto)
+            $this->attributesMapper->fromDto($dto),
+            status: null === $dto->status ? ProductStatus::DRAFT : ProductStatus::fromValue($dto->status),
         );
         // 3. Enregistrer le produit en base de données via le repository
         $this->productRepository->save($product);

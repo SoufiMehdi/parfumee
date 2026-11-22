@@ -14,6 +14,7 @@ use App\Ecommerce\Infrastructure\Persistence\Doctrine\SqlOrderBy;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use App\Ecommerce\Infrastructure\Persistence\Mapper\Catalog\ProductMapper;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\ParameterType;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -79,8 +80,9 @@ class DoctrineProductRepository implements ProductRepositoryInterface
     {
         // The filters on the JSON attributes and the French sort need PostgreSQL features
         // that DQL does not have: the ids of the page are found in SQL, then loaded in DQL.
-        $conditions = [];
-        $parameters = [];
+        $conditions = ['p.status IN (:statuses)'];
+        $parameters = ['statuses' => array_map(static fn ($status): string => $status->value, $criteria->statuses)];
+        $types = ['statuses' => ArrayParameterType::STRING];
         if (null !== $criteria->categoryId) {
             $conditions[] = 'p.category_id = :categoryId';
             $parameters['categoryId'] = $criteria->categoryId;
@@ -101,7 +103,7 @@ class DoctrineProductRepository implements ProductRepositoryInterface
             $conditions[] = "p.attributes->>'size' = :size";
             $parameters['size'] = $criteria->size;
         }
-        $where = [] === $conditions ? '' : ' WHERE '.implode(' AND ', $conditions);
+        $where = ' WHERE '.implode(' AND ', $conditions);
 
         $sortColumn = match ($criteria->sortBy) {
             ProductSortField::NAME => SqlOrderBy::frenchText('p.name'),
@@ -110,13 +112,13 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         };
 
         $connection = $this->entityManager->getConnection();
-        $total = (int) $connection->fetchOne('SELECT COUNT(*) FROM products p'.$where, $parameters);
+        $total = (int) $connection->fetchOne('SELECT COUNT(*) FROM products p'.$where, $parameters, $types);
         $ids = array_map(strval(...), $connection->fetchFirstColumn(
             'SELECT p.id FROM products p'.$where
                 .' ORDER BY '.SqlOrderBy::clause($sortColumn, $criteria->direction, 'p.id')
                 .' LIMIT :limit OFFSET :offset',
             $parameters + ['limit' => $pagination->perPage, 'offset' => $pagination->offset()],
-            ['limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
+            $types + ['limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
         ));
 
         return new Page($this->loadInOrder($ids), $total, $pagination);

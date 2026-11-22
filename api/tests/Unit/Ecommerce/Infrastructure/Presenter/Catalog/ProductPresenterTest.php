@@ -8,6 +8,7 @@ use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Page;
 use App\Ecommerce\Domain\Repository\Pagination;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
@@ -43,6 +44,7 @@ final class ProductPresenterTest extends TestCase
             [new Picture('picture-id', 'products/a.jpg', 'Une bougie', 2)],
             new \DateTimeImmutable(self::CREATED_AT),
             new \DateTimeImmutable(self::UPDATED_AT),
+            ProductStatus::ARCHIVED,
         );
 
         $view = $this->presenter->present($product);
@@ -54,6 +56,7 @@ final class ProductPresenterTest extends TestCase
             24.9,
             new CategorySummaryView('category-id', 'Bougies'),
             new AttributesView(180.0, 'ambre', 'M', 'Cire de soja.', 'Verre ambré'),
+            ProductStatus::ARCHIVED,
             [new PictureView('picture-id', 'products/a.jpg', 'Une bougie', 2)],
             new \DateTimeImmutable(self::CREATED_AT),
             new \DateTimeImmutable(self::UPDATED_AT),

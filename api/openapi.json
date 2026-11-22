@@ -134,7 +134,7 @@
                     "Back-office \u00b7 Catalogue"
                 ],
                 "summary": "List the products",
-                "description": "Requires the editor role. One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.",
+                "description": "Requires the editor role. One page of the catalogue, sorted by name unless told otherwise. Every filter is optional; without a status, the archived products are left out.",
                 "operationId": "get_admin_products_list",
                 "parameters": [
                     {
@@ -248,6 +248,22 @@
                                 "desc"
                             ]
                         }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Left out: the drafts and the published products, without the archived ones.",
+                            "type": "string",
+                            "nullable": true,
+                            "default": null,
+                            "enum": [
+                                "draft",
+                                "published",
+                                "archived"
+                            ]
+                        }
                     }
                 ],
                 "responses": {
@@ -282,7 +298,7 @@
                     "Back-office \u00b7 Catalogue"
                 ],
                 "summary": "Create a product",
-                "description": "Requires the editor role. The slug is computed from the name.",
+                "description": "Requires the editor role. The slug is computed from the name. A product is a draft unless created with another status.",
                 "operationId": "post_admin_products_create",
                 "requestBody": {
                     "required": true,
@@ -336,7 +352,7 @@
                     "Back-office \u00b7 Catalogue"
                 ],
                 "summary": "Read a product",
-                "description": "Requires the editor role.",
+                "description": "Requires the editor role. Whatever its status, archived included.",
                 "operationId": "get_admin_products_get",
                 "parameters": [
                     {
@@ -376,7 +392,7 @@
                     "Back-office \u00b7 Catalogue"
                 ],
                 "summary": "Update a product",
-                "description": "Requires the editor role. The slug follows the name.",
+                "description": "Requires the editor role. The slug follows the name. Without a status, the product keeps its own.",
                 "operationId": "put_admin_products_update",
                 "parameters": [
                     {
@@ -425,6 +441,39 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Back-office \u00b7 Catalogue"
+                ],
+                "summary": "Archive a product",
+                "description": "Requires the editor role. The product leaves the shop but is kept, with the status \"archived\": the orders that sold it still read it. Archiving an archived product changes nothing.",
+                "operationId": "delete_admin_products_archive",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[13-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The product is archived"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     },
                     "401": {
                         "$ref": "#/components/responses/Unauthorized"
@@ -972,7 +1021,7 @@
                     "Shop \u00b7 Catalogue"
                 ],
                 "summary": "List the products",
-                "description": "One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.",
+                "description": "One page of the published products, sorted by name unless told otherwise. Every filter is optional.",
                 "operationId": "get_shop_products_list",
                 "parameters": [
                     {
@@ -1117,6 +1166,7 @@
                     "Shop \u00b7 Catalogue"
                 ],
                 "summary": "Read a product",
+                "description": "A product that is not published is not found.",
                 "operationId": "get_shop_products_get",
                 "parameters": [
                     {
@@ -1293,6 +1343,22 @@
                 },
                 "type": "object"
             },
+            "ProductStatusFilterDto": {
+                "properties": {
+                    "status": {
+                        "title": "Left out: the drafts and the published products, without the archived ones.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null,
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
             "CreateProductDto": {
                 "required": [
                     "name",
@@ -1318,6 +1384,17 @@
                         "type": "object",
                         "default": [],
                         "additionalProperties": {}
+                    },
+                    "status": {
+                        "title": "Left out: a new product is a draft, and an updated one keeps its status.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null,
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ]
                     }
                 },
                 "type": "object"
@@ -1347,6 +1424,17 @@
                         "type": "object",
                         "default": [],
                         "additionalProperties": {}
+                    },
+                    "status": {
+                        "title": "Left out: a new product is a draft, and an updated one keeps its status.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null,
+                        "enum": [
+                            "draft",
+                            "published",
+                            "archived"
+                        ]
                     }
                 },
                 "type": "object"
@@ -1664,6 +1752,14 @@
                 },
                 "type": "object"
             },
+            "ProductStatus": {
+                "type": "string",
+                "enum": [
+                    "draft",
+                    "published",
+                    "archived"
+                ]
+            },
             "PictureView": {
                 "required": [
                     "id",
@@ -1696,6 +1792,7 @@
                     "price",
                     "category",
                     "attributes",
+                    "status",
                     "pictures",
                     "created_at",
                     "updated_at"
@@ -1721,6 +1818,9 @@
                     },
                     "attributes": {
                         "$ref": "#/components/schemas/AttributesView"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/ProductStatus"
                     },
                     "pictures": {
                         "type": "array",
