@@ -15,6 +15,7 @@ use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Picture;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Page;
 use App\Ecommerce\Domain\Repository\Pagination;
 use App\Ecommerce\Infrastructure\Presenter\Catalog\ProductPresenter;
@@ -68,7 +69,7 @@ class ProductControllerTest extends WebTestCase
         $presenterMock = $this->createMock(ProductPresenter::class);
         $productMock = $this->createStub(Product::class);
 
-        $useCaseMock->expects($this->once())->method('execute')->with('11111111-1111-4111-8111-111111111111')->willReturn($productMock);
+        $useCaseMock->expects($this->once())->method('execute')->with('11111111-1111-4111-8111-111111111111', [ProductStatus::PUBLISHED])->willReturn($productMock);
         $presenterMock->expects($this->once())->method('present')->with($productMock)->willReturn(new ProductView(
             '11111111-1111-4111-8111-111111111111',
             'Parfum',
@@ -76,6 +77,7 @@ class ProductControllerTest extends WebTestCase
             12.5,
             new CategorySummaryView('22222222-2222-4222-8222-222222222222', 'Bougies'),
             new AttributesView(180.0, null, null, null, null),
+            ProductStatus::PUBLISHED,
             [new PictureView('img-1', 'products/a.jpg', null, 2)],
             // Paris time on purpose: the response must give the same instant in UTC.
             new \DateTimeImmutable('2026-11-01 10:30:00', new \DateTimeZone('Europe/Paris')),
@@ -98,6 +100,7 @@ class ProductControllerTest extends WebTestCase
             'category' => ['id' => '22222222-2222-4222-8222-222222222222', 'name' => 'Bougies'],
             // 180, not 180.0: JSON has a single number type.
             'attributes' => ['weight' => 180, 'fragrance' => null, 'size' => null, 'description' => null, 'presentation' => null],
+            'status' => 'published',
             'pictures' => [['id' => 'img-1', 'url' => 'products/a.jpg', 'alt' => null, 'sort_order' => 2]],
             // Every date leaves in UTC, in the RFC 3339 format.
             'created_at' => '2026-11-01T09:30:00+00:00',

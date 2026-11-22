@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Security;
 
+use App\Ecommerce\Application\UseCase\Catalog\ArchiveProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
@@ -88,6 +89,7 @@ final class AccessControlTest extends WebTestCase
         yield 'admin: read product' => ['GET', '/api/v1/admin/products/'.self::OTHER_ID];
         yield 'admin: create product' => ['POST', '/api/v1/admin/products'];
         yield 'admin: update product' => ['PUT', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'admin: archive product' => ['DELETE', '/api/v1/admin/products/'.self::OTHER_ID];
         yield 'admin: upload picture' => ['POST', '/api/v1/admin/products/'.self::OTHER_ID.'/pictures'];
     }
 
@@ -111,6 +113,7 @@ final class AccessControlTest extends WebTestCase
         yield 'read product' => ['GET', '/api/v1/admin/products/'.self::OTHER_ID];
         yield 'create product' => ['POST', '/api/v1/admin/products'];
         yield 'update product' => ['PUT', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'archive product' => ['DELETE', '/api/v1/admin/products/'.self::OTHER_ID];
         yield 'upload picture' => ['POST', '/api/v1/admin/products/'.self::OTHER_ID.'/pictures'];
     }
 
@@ -316,7 +319,7 @@ final class AccessControlTest extends WebTestCase
      */
     private function forbidUseCases(): void
     {
-        foreach ([ListUsersUseCase::class, GetUserUseCase::class, UpdateUserUseCase::class, DeleteUserUseCase::class] as $class) {
+        foreach ([ListUsersUseCase::class, GetUserUseCase::class, UpdateUserUseCase::class, DeleteUserUseCase::class, ArchiveProductUseCase::class] as $class) {
             $useCase = $this->createMock($class);
             $useCase->expects(self::never())->method('execute');
             static::getContainer()->set($class, $useCase);
@@ -332,6 +335,10 @@ final class AccessControlTest extends WebTestCase
         $get = $this->createStub(GetProductUseCase::class);
         $get->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));
         static::getContainer()->set(GetProductUseCase::class, $get);
+
+        $archive = $this->createStub(ArchiveProductUseCase::class);
+        $archive->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));
+        static::getContainer()->set(ArchiveProductUseCase::class, $archive);
     }
 
     /**

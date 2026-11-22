@@ -4,7 +4,7 @@
 
 ## Où on en est
 
-- **Phase en cours :** Phase 1 — Socle API pour deux fronts. La phase 0 est terminée.
+- **Phase en cours :** Phase 2 — Catalogue complet. Les phases 0 et 1 sont terminées.
 - **Fait :** `P0-01` (contrôle d'accès), mergée dans `main` (PR #6).
 - **Fait :** `P0-02` (validation des uploads), mergée dans `main` (PR #7).
 - **Fait :** `P0-03` (repository des images), mergée dans `main` (PR #8).
@@ -30,8 +30,9 @@
 - **Décidé le 2026-11-22 :** la boutique sera en Next.js (ADR 0006), le back-office en React-admin (ADR 0003, acceptée).
 - **Fait :** `P1-09` (back-office React-admin et sa session, avec la déconnexion côté serveur), mergée dans `main` (PR #31).
 - **Fait :** `P1-10` (le `dataProvider` du back-office, et les listes des produits et des comptes), mergée dans `main` (PR #32).
-- **En relecture :** `P1-11` (la boutique Next.js et son client d'API typé), sur la branche `feat/P1-11-shop-nextjs`. C'est la dernière tâche de la phase 1.
-- **Prochaine tâche conseillée :** la phase 2, catalogue complet. D'abord `P2-02` (statut des produits) et `P2-01` (catégories), côté API ; puis les écrans (`P2-09`, `P2-11`).
+- **Fait :** `P1-11` (la boutique Next.js et son client d'API typé), mergée dans `main` (PR #33). **La phase 1 est terminée.**
+- **En relecture :** `P2-02` (statut des produits : brouillon, publié, archivé ; la suppression archive), sur la branche `feat/P2-02-product-status`.
+- **Prochaine tâche conseillée :** `P2-01` (catégories, côté API), puis les écrans (`P2-09` pour le back-office, `P2-11` pour la boutique).
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -58,6 +59,9 @@
 - Boutique : `API_URL` est lue à chaque requête par le serveur Next.js. En dev, `shop/.env.development`, le seul fichier d'environnement versionné ; en production, l'environnement du conteneur, avec la sortie `standalone` dans l'image Docker (`P7-01`).
 - Boutique : avec le cache de Next.js 16, une donnée lue à chaque requête s'appelle après `connection()`, dans un `<Suspense>`. Mettre en cache le catalogue (`'use cache'`) le ferait calculer à la compilation, donc avec l'API joignable à ce moment-là : à trancher avec `P2-11`.
 - Boutique : pas encore de framework CSS ni de police web, l'apparence restant à concevoir (`P2-11`).
+- Statut des produits (`P2-02`) : la migration `Version20261122162959` est à jouer sur chaque base de dev (`php bin/console doctrine:migrations:migrate`), sinon toute route qui lit un produit répond 500. Elle publie les produits existants.
+- Statut des produits : un produit créé sans `status` est un brouillon, que la boutique ne voit pas. La collection Bruno crée le sien publié ; le back-office n'a pas encore de formulaire pour changer le statut (`P2-09`), seulement le filtre et la colonne.
+- Statut des produits : `DELETE /api/v1/admin/products/{id}` archive, n'efface jamais. Il n'existe pas de suppression définitive ; les produits archivés restent dans la base (et leurs images sur le disque).
 - Back-office : pas encore de formulaires (`P2-09` pour les produits, `P3-06` pour les comptes). Les produits de développement se créent avec la collection Bruno, qui utilise la catégorie des fixtures : sur une base qui a déjà des comptes, la charger avec `php bin/console doctrine:fixtures:load --append` (sans `--append`, la commande vide la base).
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
 - Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
@@ -118,6 +122,16 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-22 — P2-02 : statut des produits (branche `feat/P2-02-product-status`, en relecture)
+- Domaine : `ProductStatus` (`draft`, `published`, `archived`) sur `Product`, avec `changeStatus()` et `archive()`. Toute transition est permise, un produit archivé peut être republié.
+- Lecture : les use cases de liste et de lecture reçoivent les statuts que l'appelant peut voir ; le contrôleur les choisit. La boutique ne voit que les produits publiés, et reçoit le même 404 pour un brouillon que pour un id inconnu. Le back-office lit tout produit ; sa liste met les archivés de côté, sauf avec `?status=archived` (filtre `status`, 422 pour un statut inconnu).
+- Écriture : `status` facultatif à la création (brouillon par défaut) et à la modification (absent : inchangé). `DELETE /api/v1/admin/products/{id}` archive le produit (204), via `ArchiveProductUseCase` ; archiver deux fois n'est pas une erreur.
+- Base : colonne `status` (`VARCHAR(20)`, contrainte `CHECK` sur les trois valeurs). La migration publie les produits existants, puis retire la valeur par défaut. Le filtre de liste est une condition SQL de plus (`p.status IN (...)`), comptée dans le total.
+- Contrat OpenAPI : `status` dans `ProductView` (enum `ProductStatus`), dans les corps de création et de modification, et en filtre de la liste du back-office ; route `DELETE`. Types des deux fronts régénérés.
+- Back-office : colonne « Statut » et filtre par statut dans la liste des produits, libellés en français. Boutique : rien à changer, l'API ne lui envoie que des produits publiés.
+- Collection Bruno : `02 Créer un produit` le crée publié ; `09 Archiver le produit` et `10 Produit archivé absent de la boutique` ajoutées.
+- Vérifications : `composer check` vert, PHPUnit « OK (508 tests) » sur une base de test vide ; 53 tests Vitest dans le back-office, 14 dans la boutique ; treize régressions introduites exprès (onze dans l'API, deux dans le back-office), toutes détectées ; migration essayée sur une ligne existante (publiée, sans valeur par défaut, statut inconnu refusé) ; collection Bruno, 24 requêtes sur 24, contre un serveur sur la base de test.
 
 ### 2026-11-22 — P1-11 : boutique Next.js et client d'API typé (branche `feat/P1-11-shop-nextjs`, en relecture)
 - `shop/` : Next.js 16 (App Router), React 19, TypeScript 5.9 ; auto-hébergée (ADR 0006).

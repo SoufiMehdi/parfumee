@@ -9,8 +9,10 @@ use App\Ecommerce\Application\Mapper\AttributesMapper;
 use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
 use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
+use App\Ecommerce\Domain\Exception\Catalog\InvalidProductStatusException;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Service\Catalog\SlugGeneratorInterface;
@@ -65,7 +67,9 @@ class CreateProductUseCaseTest extends TestCase
         $this->productRepository
             ->expects($this->once())
             ->method('save')
-            ->with($this->callback(static fn (Product $product): bool => 'bougie-parfumee' === $product->getSlug()));
+            ->with($this->callback(static fn (Product $product): bool => 'bougie-parfumee' === $product->getSlug()
+                // No status asked for: a draft, which the shop does not show.
+                && ProductStatus::DRAFT === $product->getStatus()));
 
         // 2. Exécution (Act)
         $result = $this->useCase->execute($dto);
@@ -73,6 +77,27 @@ class CreateProductUseCaseTest extends TestCase
         // 3. Vérifications (Assert)
         $this->assertIsString($result);
         $this->assertTrue(Uuid::isValid($result));
+    }
+
+    public function testAProductCanBeCreatedPublished(): void
+    {
+        $categoryId = Uuid::v4()->toRfc4122();
+        $this->categoryRepository->expects($this->once())->method('findById')->willReturn(new Category($categoryId, 'Bougies', 'bougies'));
+        $this->productRepository->expects($this->once())->method('save')
+            ->with($this->callback(static fn (Product $product): bool => ProductStatus::PUBLISHED === $product->getStatus()));
+
+        $this->useCase->execute(new CreateProductDto(name: 'Bougie', price: 20.0, categoryId: $categoryId, status: 'published'));
+    }
+
+    public function testAnUnknownStatusIsRefusedAndNothingIsSaved(): void
+    {
+        $categoryId = Uuid::v4()->toRfc4122();
+        $this->categoryRepository->expects($this->once())->method('findById')->willReturn(new Category($categoryId, 'Bougies', 'bougies'));
+        $this->productRepository->expects($this->never())->method('save');
+
+        $this->expectException(InvalidProductStatusException::class);
+
+        $this->useCase->execute(new CreateProductDto(name: 'Bougie', price: 20.0, categoryId: $categoryId, status: 'online'));
     }
 
     #[AllowMockObjectsWithoutExpectations]

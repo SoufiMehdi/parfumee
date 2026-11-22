@@ -105,13 +105,13 @@ export interface paths {
         };
         /**
          * List the products
-         * @description Requires the editor role. One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.
+         * @description Requires the editor role. One page of the catalogue, sorted by name unless told otherwise. Every filter is optional; without a status, the archived products are left out.
          */
         get: operations["get_admin_products_list"];
         put?: never;
         /**
          * Create a product
-         * @description Requires the editor role. The slug is computed from the name.
+         * @description Requires the editor role. The slug is computed from the name. A product is a draft unless created with another status.
          */
         post: operations["post_admin_products_create"];
         delete?: never;
@@ -129,16 +129,20 @@ export interface paths {
         };
         /**
          * Read a product
-         * @description Requires the editor role.
+         * @description Requires the editor role. Whatever its status, archived included.
          */
         get: operations["get_admin_products_get"];
         /**
          * Update a product
-         * @description Requires the editor role. The slug follows the name.
+         * @description Requires the editor role. The slug follows the name. Without a status, the product keeps its own.
          */
         put: operations["put_admin_products_update"];
         post?: never;
-        delete?: never;
+        /**
+         * Archive a product
+         * @description Requires the editor role. The product leaves the shop but is kept, with the status "archived": the orders that sold it still read it. Archiving an archived product changes nothing.
+         */
+        delete: operations["delete_admin_products_archive"];
         options?: never;
         head?: never;
         patch?: never;
@@ -300,7 +304,7 @@ export interface paths {
         };
         /**
          * List the products
-         * @description One page of the catalogue, sorted by name unless told otherwise. Every filter is optional.
+         * @description One page of the published products, sorted by name unless told otherwise. Every filter is optional.
          */
         get: operations["get_shop_products_list"];
         put?: never;
@@ -318,7 +322,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read a product */
+        /**
+         * Read a product
+         * @description A product that is not published is not found.
+         */
         get: operations["get_shop_products_get"];
         put?: never;
         post?: never;
@@ -402,6 +409,14 @@ export interface components {
              */
             order: "asc" | "desc";
         };
+        ProductStatusFilterDto: {
+            /**
+             * Left out: the drafts and the published products, without the archived ones.
+             * @default null
+             * @enum {string|null}
+             */
+            status: "draft" | "published" | "archived" | null;
+        };
         CreateProductDto: {
             name: string;
             /** Format: float */
@@ -411,6 +426,12 @@ export interface components {
             attributes: {
                 [key: string]: unknown;
             };
+            /**
+             * Left out: a new product is a draft, and an updated one keeps its status.
+             * @default null
+             * @enum {string|null}
+             */
+            status: "draft" | "published" | "archived" | null;
         };
         UpdateProductDto: {
             name: string;
@@ -421,6 +442,12 @@ export interface components {
             attributes: {
                 [key: string]: unknown;
             };
+            /**
+             * Left out: a new product is a draft, and an updated one keeps its status.
+             * @default null
+             * @enum {string|null}
+             */
+            status: "draft" | "published" | "archived" | null;
         };
         ListUsersQueryDto: {
             /**
@@ -531,6 +558,8 @@ export interface components {
             description?: string | null;
             presentation?: string | null;
         };
+        /** @enum {string} */
+        ProductStatus: "draft" | "published" | "archived";
         PictureView: {
             id: string;
             /** Path of the file, relative to the uploads directory. */
@@ -550,6 +579,7 @@ export interface components {
             price: number;
             category: components["schemas"]["CategorySummaryView"];
             attributes: components["schemas"]["AttributesView"];
+            status: components["schemas"]["ProductStatus"];
             pictures: components["schemas"]["PictureView"][];
             /**
              * When the product was created, in UTC.
@@ -726,6 +756,7 @@ export interface operations {
                 per_page?: number;
                 sort?: "name" | "price" | "created_at";
                 order?: "asc" | "desc";
+                status?: "draft" | "published" | "archived" | null;
             };
             header?: never;
             path?: never;
@@ -847,6 +878,29 @@ export interface operations {
                 };
             };
             422: components["responses"]["ValidationFailed"];
+        };
+    };
+    delete_admin_products_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The product is archived */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     post_admin_products_upload_picture: {

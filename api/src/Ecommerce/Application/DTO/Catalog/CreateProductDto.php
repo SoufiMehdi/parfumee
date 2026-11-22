@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Application\DTO\Catalog;
 
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class CreateProductDto
@@ -35,6 +36,9 @@ readonly class CreateProductDto
             allowExtraFields: true,
         )]
         public array $attributes = [],
+        /** Left out: a new product is a draft, and an updated one keeps its status. */
+        #[Assert\Choice(callback: [ProductStatus::class, 'values'])]
+        public ?string $status = null,
     ) {
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Factory\Catalog;
 
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
 use Symfony\Component\Uid\Uuid;
 use Zenstruck\Foundry\Persistence\PersistentObjectFactory;
@@ -26,6 +27,8 @@ final class DoctrineProductFactory extends PersistentObjectFactory
             'slug' => self::faker()->unique()->slug(3),
             'price' => self::faker()->randomFloat(2, 5, 60),
             'category' => DoctrineCategoryFactory::new(),
+            // Published, as the shop lists them; the drafts are asked for explicitly.
+            'status' => ProductStatus::PUBLISHED,
             'attributes' => [
                 'weight' => 180.0,
                 'fragrance' => 'amber',

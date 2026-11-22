@@ -8,6 +8,7 @@ use App\Ecommerce\Application\Mapper\AttributesMapper;
 use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineCategory;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrinePicture;
 use App\Ecommerce\Infrastructure\Persistence\Entity\Catalog\DoctrineProduct;
@@ -52,6 +53,7 @@ class ProductMapperTest extends TestCase
         $product->method('getSlug')->willReturn('product-name');
         $product->method('getPrice')->willReturn(100.50);
         $product->method('getAttributes')->willReturn($attributeMock); // Retourne le mock au lieu d'un tableau array
+        $product->method('getStatus')->willReturn(ProductStatus::PUBLISHED);
 
         $this->attributesMapper->expects($this->once())
             ->method('toDto')
@@ -68,6 +70,7 @@ class ProductMapperTest extends TestCase
         $this->assertSame('product-name', $result->getSlug());
         $this->assertSame(100.50, $result->getPrice());
         $this->assertSame($doctrineCategory, $result->getCategory());
+        $this->assertSame(ProductStatus::PUBLISHED, $result->getStatus());
     }
 
     #[AllowMockObjectsWithoutExpectations]
@@ -83,6 +86,7 @@ class ProductMapperTest extends TestCase
         $product->method('getSlug')->willReturn('updated-name');
         $product->method('getPrice')->willReturn(200.00);
         $product->method('getAttributes')->willReturn($attributeMock);
+        $product->method('getStatus')->willReturn(ProductStatus::ARCHIVED);
 
         $this->attributesMapper->expects($this->once())
             ->method('toDto')
@@ -95,6 +99,7 @@ class ProductMapperTest extends TestCase
         $doctrineProduct->expects($this->once())->method('setPrice')->with(200.00);
         $doctrineProduct->expects($this->once())->method('setCategory')->with($doctrineCategory);
         $doctrineProduct->expects($this->once())->method('setAttributes')->with(['size' => 'L']);
+        $doctrineProduct->expects($this->once())->method('setStatus')->with(ProductStatus::ARCHIVED);
 
         // 2. Act
         $this->mapper->mapDomainToEntity($product, $doctrineProduct, $doctrineCategory);
@@ -116,6 +121,7 @@ class ProductMapperTest extends TestCase
         $doctrineProduct->method('getCategory')->willReturn($doctrineCategory);
         $doctrineProduct->method('getAttributes')->willReturn(['color' => 'blue']); // Doctrine renvoie un tableau
         $doctrineProduct->method('getPictures')->willReturn(new ArrayCollection([$doctrinePicture]));
+        $doctrineProduct->method('getStatus')->willReturn(ProductStatus::DRAFT);
 
         $this->categoryMapper->expects($this->once())->method('toDomain')->with($doctrineCategory)->willReturn($category);
         $this->attributesMapper->expects($this->once())->method('fromArray')->with(['color' => 'blue'])->willReturn($attribute);
@@ -127,5 +133,6 @@ class ProductMapperTest extends TestCase
         // 3. Assert
         $this->assertInstanceOf(Product::class, $result);
         $this->assertSame('name', $result->getSlug());
+        $this->assertSame(ProductStatus::DRAFT, $result->getStatus());
     }
 }

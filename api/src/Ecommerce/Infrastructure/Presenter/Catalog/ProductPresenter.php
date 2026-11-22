@@ -37,6 +37,7 @@ class ProductPresenter
                 $attributes?->getDescription(),
                 $attributes?->getPresentation(),
             ),
+            $product->getStatus(),
             array_values(array_map(
                 static fn (Picture $picture): PictureView => new PictureView($picture->getId(), $picture->url(), $picture->getAlt(), $picture->getSortOrder()),
                 $product->getPictures(),

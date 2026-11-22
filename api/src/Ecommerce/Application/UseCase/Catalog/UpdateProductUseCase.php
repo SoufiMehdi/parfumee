@@ -10,6 +10,7 @@ use App\Ecommerce\Application\Service\Catalog\ProductSlugResolver;
 use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Catalog\CategoryRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 
@@ -47,6 +48,9 @@ class UpdateProductUseCase
             $category,
             $this->attributesMapper->fromDto($dto) // Utilisation de l'instance
         );
+        if (null !== $dto->status) {
+            $product->changeStatus(ProductStatus::fromValue($dto->status));
+        }
 
         $this->productRepository->save($product);
 

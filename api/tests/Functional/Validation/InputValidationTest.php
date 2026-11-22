@@ -8,6 +8,7 @@ use App\Ecommerce\Application\DTO\Catalog\CreateProductDto;
 use App\Ecommerce\Application\DTO\Catalog\ListProductsQueryDto;
 use App\Ecommerce\Application\DTO\User\ListUsersQueryDto;
 use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
+use App\Ecommerce\Application\UseCase\Catalog\ArchiveProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
@@ -220,6 +221,8 @@ final class InputValidationTest extends WebTestCase
         // B16: an empty body used to create a product named '' at price 0.
         yield 'product update with an empty object' => ['PUT', '/api/v1/admin/products/'.self::ID, [], 'name'];
         yield 'product update with a negative price' => ['PUT', '/api/v1/admin/products/'.self::ID, ['price' => -5] + $product, 'price'];
+        yield 'product with an unknown status' => ['POST', '/api/v1/admin/products', ['status' => 'online'] + $product, 'status'];
+        yield 'product update with an unknown status' => ['PUT', '/api/v1/admin/products/'.self::ID, ['status' => 'deleted'] + $product, 'status'];
     }
 
     /**
@@ -316,6 +319,7 @@ final class InputValidationTest extends WebTestCase
         yield 'sort accounts by password' => [$users.'sort=password', 'sort'];
         yield 'too many accounts per page' => [$users.'per_page=1000', 'per_page'];
         yield 'unknown account order' => [$users.'order=up', 'order'];
+        yield 'unknown product status' => ['/api/v1/admin/products?status=deleted', 'status'];
     }
 
     #[DataProvider('invalidFilters')]
@@ -350,6 +354,7 @@ final class InputValidationTest extends WebTestCase
     {
         yield 'read product' => ['GET', '/api/v1/shop/products/abc'];
         yield 'update product' => ['PUT', '/api/v1/admin/products/abc'];
+        yield 'archive product' => ['DELETE', '/api/v1/admin/products/abc'];
         yield 'upload picture' => ['POST', '/api/v1/admin/products/abc/pictures'];
         yield 'read user' => ['GET', '/api/v1/admin/users/abc'];
         yield 'update user' => ['PUT', '/api/v1/admin/users/abc'];
@@ -413,6 +418,7 @@ final class InputValidationTest extends WebTestCase
         $useCases = [
             RegisterUserUseCase::class, LoginUserUseCase::class, UpdateUserUseCase::class, GetUserUseCase::class, DeleteUserUseCase::class,
             CreateProductUseCase::class, UpdateProductUseCase::class, GetProductUseCase::class, ListProductsUseCase::class, ListUsersUseCase::class,
+            ArchiveProductUseCase::class,
         ];
         foreach ($useCases as $useCase) {
             $mock = $this->createMock($useCase);

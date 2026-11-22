@@ -19,6 +19,7 @@ body:json {
     "name": "Bougie Été à l'Ambre",
     "price": 24.9,
     "category_id": "{{categoryId}}",
+    "status": "published",
     "attributes": {
       "weight": 180,
       "fragrance": "ambre",
@@ -42,7 +43,9 @@ tests {
 }
 
 docs {
-  Réservée aux administrateurs. La catégorie `categoryId` est celle des fixtures (`php bin/console doctrine:fixtures:load`).
+  Réservée aux éditeurs (et donc aux administrateurs). La catégorie `categoryId` est celle des fixtures (`php bin/console doctrine:fixtures:load`).
+  
+  Créé publié, pour que la boutique le montre (requête 03). Sans `status`, un produit est créé en brouillon : la boutique ne le voit pas.
 
   Enregistre l'identifiant du produit dans `productId` pour les requêtes suivantes. Chaque exécution crée un nouveau produit.
 }

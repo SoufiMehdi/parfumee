@@ -35,6 +35,10 @@ tests {
     expect(res.getBody().attributes.size).to.equal("L");
   });
 
+  test("sans statut dans la requête, le produit garde le sien", function () {
+    expect(res.getBody().status).to.equal("published");
+  });
+
   test("les dates sont en UTC, et la modification est postérieure à la création", function () {
     const body = res.getBody();
     expect(body.created_at).to.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/);

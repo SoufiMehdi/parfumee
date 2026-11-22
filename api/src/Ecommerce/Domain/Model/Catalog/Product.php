@@ -22,6 +22,7 @@ class Product
      * @param Picture[]               $pictures
      * @param \DateTimeImmutable|null $createdAt set when the product is first saved: null for a product never saved
      * @param \DateTimeImmutable|null $updatedAt set when a change of the product is saved
+     * @param ProductStatus           $status    a new product is a draft: the shop does not show it yet
      */
     public function __construct(
         string $id,
@@ -33,6 +34,7 @@ class Product
         array $pictures = [],
         private readonly ?\DateTimeImmutable $createdAt = null,
         private readonly ?\DateTimeImmutable $updatedAt = null,
+        private ProductStatus $status = ProductStatus::DRAFT,
     ) {
         $this->id = $id;
         $this->name = $name;
@@ -113,6 +115,34 @@ class Product
         $this->setPrice($price);
         $this->category = $category;
         $this->attributes = ($attributes) ? $attributes : $this->attributes;
+    }
+
+    public function getStatus(): ProductStatus
+    {
+        return $this->status;
+    }
+
+    public function isPublished(): bool
+    {
+        return ProductStatus::PUBLISHED === $this->status;
+    }
+
+    /**
+     * Any status can follow any other: a draft is published, a published product goes back
+     * to draft or is archived, an archived one is restored.
+     */
+    public function changeStatus(ProductStatus $status): void
+    {
+        $this->status = $status;
+    }
+
+    /**
+     * Takes the product out of the catalogue without deleting it: what was sold must stay
+     * readable. Archiving an archived product changes nothing.
+     */
+    public function archive(): void
+    {
+        $this->status = ProductStatus::ARCHIVED;
     }
 
     public function addPicture(Picture $picture): void

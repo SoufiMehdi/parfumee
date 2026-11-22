@@ -1,0 +1,25 @@
+meta {
+  name: 09 Archiver le produit
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/admin/products/{{productId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("204, sans contenu", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Réservée aux éditeurs (et donc aux administrateurs). Supprimer un produit l'archive : il quitte la boutique, mais reste en base avec le statut `archived`, pour que les commandes qui l'ont vendu puissent encore le lire. Archiver un produit déjà archivé répond aussi 204.
+}

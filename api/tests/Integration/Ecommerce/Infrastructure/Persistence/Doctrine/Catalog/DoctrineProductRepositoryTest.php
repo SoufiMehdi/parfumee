@@ -7,6 +7,7 @@ namespace App\Tests\Integration\Ecommerce\Infrastructure\Persistence\Doctrine\Ca
 use App\Ecommerce\Domain\Model\Catalog\Attribute;
 use App\Ecommerce\Domain\Model\Catalog\Category;
 use App\Ecommerce\Domain\Model\Catalog\Product;
+use App\Ecommerce\Domain\Model\Catalog\ProductStatus;
 use App\Ecommerce\Domain\Repository\Catalog\ProductCriteria;
 use App\Ecommerce\Domain\Repository\Catalog\ProductRepositoryInterface;
 use App\Ecommerce\Domain\Repository\Catalog\ProductSortField;
@@ -67,6 +68,7 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
             $product->getAttributes()?->toArray(),
         );
         self::assertSame([], $product->getPictures());
+        self::assertSame(ProductStatus::DRAFT, $product->getStatus());
     }
 
     public function testAProductWithoutAttributesIsReadBackWithNullAttributes(): void
@@ -98,6 +100,7 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
             new Category($otherCategory->getId(), 'Fondants', $otherCategory->getSlug()),
             new Attribute(50.0, 'ambre'),
         );
+        $product->archive();
         $this->repository->save($product);
         $this->entityManager->clear();
 
@@ -108,6 +111,7 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
         self::assertSame(9.5, $reloaded->getPrice());
         self::assertSame($otherCategory->getId(), $reloaded->getCategory()->getId());
         self::assertSame(50.0, $reloaded->getAttributes()?->getWeight());
+        self::assertSame(ProductStatus::ARCHIVED, $reloaded->getStatus());
         self::assertCount(1, $this->repository->findAll());
     }
 
@@ -226,6 +230,43 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
         $slugs = $this->slugsOf($page);
         sort($slugs);
         sort($expectedSlugs);
+        self::assertSame($expectedSlugs, $slugs);
+        self::assertSame(\count($expectedSlugs), $page->total);
+    }
+
+    /**
+     * @return iterable<string, array{list<ProductStatus>|null, list<string>}>
+     */
+    public static function statuses(): iterable
+    {
+        yield 'unsaid: the published ones, as the shop sees them' => [null, ['published']];
+        yield 'drafts' => [[ProductStatus::DRAFT], ['draft']];
+        yield 'archived' => [[ProductStatus::ARCHIVED], ['archived']];
+        yield 'drafts and published, as the back-office lists them' => [ProductStatus::managed(), ['draft', 'published']];
+        yield 'every status' => [ProductStatus::cases(), ['archived', 'draft', 'published']];
+    }
+
+    /**
+     * @param list<ProductStatus>|null $statuses
+     * @param list<string>             $expectedSlugs
+     */
+    #[DataProvider('statuses')]
+    public function testFindPageKeepsToTheStatusesAskedFor(?array $statuses, array $expectedSlugs): void
+    {
+        $category = DoctrineCategoryFactory::createOne();
+        foreach (ProductStatus::cases() as $status) {
+            $this->givenAProduct($status->value, 20.0, $category, ['fragrance' => 'amber'], $status);
+        }
+        $this->entityManager->clear();
+
+        // With another filter: the status is one more condition, never a replacement.
+        $criteria = null === $statuses
+            ? new ProductCriteria(fragrance: 'amber')
+            : new ProductCriteria(statuses: $statuses, fragrance: 'amber');
+        $page = $this->repository->findPage($criteria, new Pagination());
+
+        $slugs = $this->slugsOf($page);
+        sort($slugs);
         self::assertSame($expectedSlugs, $slugs);
         self::assertSame(\count($expectedSlugs), $page->total);
     }
@@ -372,13 +413,14 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
     /**
      * @param array<string, mixed> $attributes
      */
-    private function givenAProduct(string $slug, float $price, DoctrineCategory $category, array $attributes): void
+    private function givenAProduct(string $slug, float $price, DoctrineCategory $category, array $attributes, ProductStatus $status = ProductStatus::PUBLISHED): void
     {
         DoctrineProductFactory::createOne([
             'slug' => $slug,
             'price' => $price,
             'category' => $category,
             'attributes' => $attributes,
+            'status' => $status,
         ]);
     }
 }

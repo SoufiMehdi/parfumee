@@ -30,7 +30,8 @@ class ProductMapper
             $product->getSlug(),
             $product->getPrice(),
             $category,
-            $this->attributesMapper->toDto($product->getAttributes())
+            $this->attributesMapper->toDto($product->getAttributes()),
+            $product->getStatus(),
         );
     }
 
@@ -44,6 +45,7 @@ class ProductMapper
         $doctrineProduct->setPrice($product->getPrice());
         $doctrineProduct->setCategory($category);
         $doctrineProduct->setAttributes($this->attributesMapper->toDto($product->getAttributes()));
+        $doctrineProduct->setStatus($product->getStatus());
     }
 
     /**
@@ -62,6 +64,7 @@ class ProductMapper
             // Read only: the dates go from the entity to the model, never back (see Timestamps).
             createdAt: $doctrineProduct->getCreatedAt(),
             updatedAt: $doctrineProduct->getUpdatedAt(),
+            status: $doctrineProduct->getStatus(),
         );
     }
 }

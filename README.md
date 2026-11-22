@@ -227,8 +227,8 @@ Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau
 |---|---|---|
 | `POST` | `/api/v1/shop/register` | Public |
 | `POST` | `/api/v1/shop/login` | Public |
-| `GET` | `/api/v1/shop/products` | Public. Une page de produits (voir « Format des listes ») |
-| `GET` | `/api/v1/shop/products/{id}` | Public |
+| `GET` | `/api/v1/shop/products` | Public. Une page de produits publiés (voir « Format des listes ») |
+| `GET` | `/api/v1/shop/products/{id}` | Public. 404 pour un produit qui n'est pas publié |
 | `GET` `PUT` `DELETE` | `/api/v1/shop/me` | Client connecté : son propre compte |
 
 **Back-office — `/api/v1/admin`**
@@ -237,15 +237,30 @@ Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau
 |---|---|---|
 | `POST` | `/api/v1/admin/login` | Public |
 | `GET` | `/api/v1/admin/me` | Éditeur : son identité et ses rôles |
-| `GET` | `/api/v1/admin/products` | Éditeur. Une page de produits, mêmes paramètres que la boutique |
-| `GET` | `/api/v1/admin/products/{id}` | Éditeur |
-| `POST` | `/api/v1/admin/products` | Éditeur |
-| `PUT` | `/api/v1/admin/products/{id}` | Éditeur |
+| `GET` | `/api/v1/admin/products` | Éditeur. Une page de produits, mêmes paramètres que la boutique, plus le filtre `status` |
+| `GET` | `/api/v1/admin/products/{id}` | Éditeur. Quel que soit son statut |
+| `POST` | `/api/v1/admin/products` | Éditeur. En brouillon, sauf `status` contraire |
+| `PUT` | `/api/v1/admin/products/{id}` | Éditeur. Sans `status`, le produit garde le sien |
+| `DELETE` | `/api/v1/admin/products/{id}` | Éditeur. Archive le produit (204) : il n'est jamais effacé |
 | `POST` | `/api/v1/admin/products/{id}/pictures` | Éditeur |
 | `GET` | `/api/v1/admin/users` | Administrateur. Une page de comptes |
 | `GET` `PUT` `DELETE` | `/api/v1/admin/users/{id}` | Administrateur |
 
 « Éditeur » inclut les administrateurs. Tout le reste de `/api/v1/admin` est réservé aux administrateurs, et tout le reste de `/api/v1/shop` aux clients connectés.
+
+### Statut des produits
+
+Chaque produit a un statut (`status`) :
+
+| Statut | Boutique | Back-office |
+|---|---|---|
+| `draft` (brouillon) | Invisible | Listé |
+| `published` (publié) | Listé et lisible | Listé |
+| `archived` (archivé) | Invisible | Listé seulement avec `?status=archived` ; toujours lisible par son id |
+
+- Un produit est créé en brouillon, sauf si la création envoie un autre statut. Le statut se change par `PUT`, dans un sens comme dans l'autre (un produit archivé peut être republié).
+- `DELETE` archive le produit au lieu de l'effacer : les commandes qui l'ont vendu doivent pouvoir le relire.
+- Pour la boutique, un produit non publié n'existe pas : elle reçoit le même 404 que pour un id inconnu.
 
 ### Format des listes
 
