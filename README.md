@@ -88,7 +88,7 @@ php bin/console doctrine:fixtures:load
 
 Les fixtures créent trois catégories (Bougies Parfumées, Fondants, Vêtements) et aucun produit.
 
-> **Attention :** cette commande **vide toute la base** avant de la remplir. Ne pas la relancer sur une base dont on veut garder les données.
+> **Attention :** cette commande **vide toute la base** avant de la remplir. Sur une base dont on veut garder les données (des comptes, par exemple), ajouter les catégories sans rien effacer : `php bin/console doctrine:fixtures:load --append`.
 
 **7. Lancer l'API**
 
@@ -183,6 +183,7 @@ npm run dev
 
 Ouvrir http://localhost:5173, puis se connecter avec un compte éditeur ou administrateur (voir « Créer un compte administrateur »). Un compte client est refusé : « Ce compte n'a pas accès au back-office ».
 
+- **Écrans** : la liste des produits (éditeurs et administrateurs) et celle des comptes (administrateurs seulement), avec tri, filtres et pagination. Pas encore de formulaires (`P2-09`, `P3-06`) : pour avoir des produits en développement, les créer avec la collection Bruno (`1 - Comptes / 02 Connexion`, puis `2 - Catalogue / 02 Créer un produit`). Il faut les catégories des fixtures (étape 6).
 - **Port imposé** : 5173 est l'origine que l'API autorise (CORS). S'il est pris, `npm run dev` s'arrête plutôt que de changer de port.
 - **Session** : elle dure tant qu'elle est renouvelée (le refresh token vaut 30 jours) ; « Déconnexion » la termine aussi côté serveur.
 - **Production** : `VITE_API_URL=https://api.example.fr npm run build`, puis servir `admin/dist/` en fichiers statiques (`P7-01`).
@@ -351,6 +352,7 @@ Ne jamais mettre de vrai secret dans un fichier versionné. `.env.local` n'est p
 | Les tests d'intégration échouent tous | La base de test est arrêtée : `docker compose up -d`. |
 | Erreur à la connexion ou tests de sécurité en échec, mention de `private.pem` | Les clés JWT manquent : refaire l'étape 4. |
 | Une migration échoue sur une colonne `NOT NULL` | La base contient d'anciennes données : repartir d'une base vide. |
+| `Category with id "018f5370-…" not found` en créant un produit avec Bruno | Les catégories des fixtures manquent : `php bin/console doctrine:fixtures:load --append` les ajoute sans rien effacer. |
 | Erreur 500 « column … created_at does not exist » | La base de développement n'a pas la dernière migration : `php bin/console doctrine:migrations:migrate`. |
 | Le front reçoit une erreur CORS (« blocked by CORS policy ») | Son origine ne correspond pas exactement à `CORS_SHOP_ORIGIN` ou `CORS_ADMIN_ORIGIN` : vérifier le port, `localhost` contre `127.0.0.1`, et l'absence de barre finale. |
 | Upload d'image refusé au-delà de 2 Mo | Limite `upload_max_filesize` de PHP, à relever dans son `php.ini` (l'API accepte jusqu'à 5 Mo). |

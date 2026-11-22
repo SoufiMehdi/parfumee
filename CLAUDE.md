@@ -6,7 +6,7 @@ Site e-commerce de **bougies parfumées**. Un seul dépôt contient une API et l
 |---|---|---|
 | `api/` | API Symfony 8.1 / PHP 8.4+ / PostgreSQL 16, architecture hexagonale. Voir `api/CLAUDE.md` | Existant, en stabilisation |
 | `shop/` | Front boutique publique en Next.js (SSR pour le SEO), voir ADR 0006 | À créer (P1-11) |
-| `admin/` | Back-office en React-admin (Vite, TypeScript), voir ADR 0003 et `admin/CLAUDE.md` | Initialisé : connexion et session |
+| `admin/` | Back-office en React-admin (Vite, TypeScript), voir ADR 0003 et `admin/CLAUDE.md` | Connexion, session, listes des produits et des comptes |
 | `infra/` | Docker Compose, Caddy, scripts de déploiement et de sauvegarde | À créer |
 | `docs/` | Comptes rendus d'audit, roadmap, ADR, état d'avancement | À jour |
 

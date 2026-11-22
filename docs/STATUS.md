@@ -28,8 +28,9 @@
 - **Fait :** `P1-08` (dates de création et de modification), mergée dans `main` (PR #29).
 - **Fait :** `P1-07` (limites de connexion et d'inscription), mergée dans `main` (PR #30). La partie API de la phase 1 est terminée.
 - **Décidé le 2026-11-22 :** la boutique sera en Next.js (ADR 0006), le back-office en React-admin (ADR 0003, acceptée).
-- **En relecture :** `P1-09` (back-office React-admin et sa session, avec la déconnexion côté serveur), sur la branche `feat/P1-09-admin-react-admin`.
-- **Prochaine tâche conseillée :** `P1-10` (le `dataProvider` du back-office), puis `P1-11` (la boutique Next.js).
+- **Fait :** `P1-09` (back-office React-admin et sa session, avec la déconnexion côté serveur), mergée dans `main` (PR #31).
+- **En relecture :** `P1-10` (le `dataProvider` du back-office, et les listes des produits et des comptes), sur la branche `feat/P1-10-admin-data-provider`.
+- **Prochaine tâche conseillée :** `P1-11` (la boutique Next.js), la dernière de la phase 1.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -52,6 +53,8 @@
 - Back-office : le refresh token est dans le `localStorage`, lisible par un script injecté (XSS). La parade complète serait un cookie `HttpOnly`, avec un changement de l'API ; d'ici là, aucun HTML venu de l'API n'est inséré dans les pages.
 - Back-office : TypeScript 5.9 et non 7, `openapi-typescript` ne fonctionnant pas encore avec TypeScript 7. Les types de l'API (`admin/src/api/schema.ts`) se régénèrent avec `npm run api:types` après tout changement d'`api/openapi.json` ; la CI le vérifie.
 - Collection Bruno : `13 Se déconnecter` révoque le refresh token de la session. Relancer `02 Connexion` pour en ouvrir une nouvelle.
+- Back-office : les adresses passent par le dièse (`http://localhost:5173/#/products`), le routeur par défaut de react-admin.
+- Back-office : pas encore de formulaires (`P2-09` pour les produits, `P3-06` pour les comptes). Les produits de développement se créent avec la collection Bruno, qui utilise la catégorie des fixtures : sur une base qui a déjà des comptes, la charger avec `php bin/console doctrine:fixtures:load --append` (sans `--append`, la commande vide la base).
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
 - Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
 - Contrat OpenAPI : la route `/api/v1/token/refresh` n'a pas de contrôleur (elle est traitée par le pare-feu) et les schémas d'erreur ne viennent pas d'une classe. Les deux sont décrits à la main dans `config/packages/nelmio_api_doc.yaml` ; `OpenApiContractTest` vérifie que les vraies réponses d'erreur y correspondent.
@@ -68,7 +71,7 @@
 - Listes : toutes paginées (`items` + `pagination`, total aussi dans `X-Total-Count`). Le format et la marche à suivre pour une nouvelle liste sont dans `api/CLAUDE.md`, section « Listes ».
 - CORS : seules deux origines sont autorisées, comparées exactement : `CORS_SHOP_ORIGIN` et `CORS_ADMIN_ORIGIN`. En dev, `http://localhost:3000` (boutique) et `http://localhost:5173` (back-office) ; un autre port se règle dans `api/.env.dev.local`. En production, les définir au déploiement (`P7-01`) : vides, elles n'autorisent aucun front.
 - CORS : tout nouvel en-tête de réponse que les fronts doivent lire s'ajoute à `expose_headers` (aujourd'hui `X-Total-Count`).
-- Listes : React-admin trie par `id` tant qu'on ne lui dit rien ; l'API refuse `sort=id` (422). Le data provider (`P1-10`) doit envoyer un vrai champ de tri, ou aucun : `created_at` en `desc` donne les plus récents d'abord.
+- Listes : React-admin trie par `id` tant qu'on ne lui dit rien, et l'API refuse `sort=id` (422). Le `dataProvider` du back-office laisse de côté un tri que l'API ne sait pas faire, et chaque liste trie par défaut par `created_at` décroissant.
 - Listes : le filtre `scent` s'appelle maintenant `fragrance`, comme l'attribut qu'il filtre. Un paramètre inconnu étant ignoré, `scent=ambre` renvoie désormais la liste sans filtre, sans erreur.
 - Listes : le tri des noms utilise la collation ICU `fr-x-icu` de PostgreSQL. L'image `postgres:16-alpine` l'a ; une image sans ICU ferait échouer ce tri (les tests d'intégration le verraient).
 - Recherche de comptes (`q`) : insensible à la casse, mais pas aux accents (« elodie » ne trouve pas « Élodie »). Il faudrait l'extension `unaccent`.
@@ -111,6 +114,13 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-22 — P1-10 : dataProvider du back-office (branche `feat/P1-10-admin-data-provider`, en relecture)
+- `dataProvider` pour `/api/v1/admin`, qui passe par `httpClient`. Les listes suivent le format de `P1-04` : `page`, `per_page` (100 au plus), `sort` et `order`, et des filtres nommés comme l'API les nomme ; il lit les éléments et le total dans `{"items", "pagination"}`. Un tri que l'API refuse (l'`id` que react-admin utilise par défaut) est laissé de côté ; les champs triables sont typés contre le contrat.
+- Lecture d'un ou de plusieurs éléments (une requête par id, l'API n'ayant pas de filtre sur plusieurs), création (avec l'id que répond l'API), modification (l'élément tel qu'enregistré), suppression.
+- Écrans en lecture seule, les plus récents d'abord : la liste des produits (nom, prix, catégorie, parfum, date ; filtres parfum et prix) et celle des comptes (email, noms, rôle, date d'inscription ; recherche). Libellés en français.
+- Les comptes sont réservés aux administrateurs, comme dans l'API : les ressources dépendent des rôles. Sans session, `getPermissions` répond « aucun rôle » sans appeler l'API ; sinon react-admin restait sur « Chargement » au lieu d'afficher la connexion (détecté par les tests de rendu).
+- Vérifications : 51 tests Vitest ; dix régressions introduites exprès, toutes détectées ; les requêtes du `dataProvider` envoyées à une vraie API (liste triée, filtres, recherche, 100 par page acceptés ; 101 et `sort=id` refusés, d'où le plafond et l'omission).
 
 ### 2026-11-22 — P1-09 : back-office React-admin et sa session (branche `feat/P1-09-admin-react-admin`, en relecture)
 - Décisions : Next.js pour la boutique (ADR 0006), React-admin pour le back-office (ADR 0003, acceptée).
