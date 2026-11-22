@@ -29,8 +29,9 @@
 - **Fait :** `P1-07` (limites de connexion et d'inscription), mergée dans `main` (PR #30). La partie API de la phase 1 est terminée.
 - **Décidé le 2026-11-22 :** la boutique sera en Next.js (ADR 0006), le back-office en React-admin (ADR 0003, acceptée).
 - **Fait :** `P1-09` (back-office React-admin et sa session, avec la déconnexion côté serveur), mergée dans `main` (PR #31).
-- **En relecture :** `P1-10` (le `dataProvider` du back-office, et les listes des produits et des comptes), sur la branche `feat/P1-10-admin-data-provider`.
-- **Prochaine tâche conseillée :** `P1-11` (la boutique Next.js), la dernière de la phase 1.
+- **Fait :** `P1-10` (le `dataProvider` du back-office, et les listes des produits et des comptes), mergée dans `main` (PR #32).
+- **En relecture :** `P1-11` (la boutique Next.js et son client d'API typé), sur la branche `feat/P1-11-shop-nextjs`. C'est la dernière tâche de la phase 1.
+- **Prochaine tâche conseillée :** la phase 2, catalogue complet. D'abord `P2-02` (statut des produits) et `P2-01` (catégories), côté API ; puis les écrans (`P2-09`, `P2-11`).
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -54,6 +55,9 @@
 - Back-office : TypeScript 5.9 et non 7, `openapi-typescript` ne fonctionnant pas encore avec TypeScript 7. Les types de l'API (`admin/src/api/schema.ts`) se régénèrent avec `npm run api:types` après tout changement d'`api/openapi.json` ; la CI le vérifie.
 - Collection Bruno : `13 Se déconnecter` révoque le refresh token de la session. Relancer `02 Connexion` pour en ouvrir une nouvelle.
 - Back-office : les adresses passent par le dièse (`http://localhost:5173/#/products`), le routeur par défaut de react-admin.
+- Boutique : `API_URL` est lue à chaque requête par le serveur Next.js. En dev, `shop/.env.development`, le seul fichier d'environnement versionné ; en production, l'environnement du conteneur, avec la sortie `standalone` dans l'image Docker (`P7-01`).
+- Boutique : avec le cache de Next.js 16, une donnée lue à chaque requête s'appelle après `connection()`, dans un `<Suspense>`. Mettre en cache le catalogue (`'use cache'`) le ferait calculer à la compilation, donc avec l'API joignable à ce moment-là : à trancher avec `P2-11`.
+- Boutique : pas encore de framework CSS ni de police web, l'apparence restant à concevoir (`P2-11`).
 - Back-office : pas encore de formulaires (`P2-09` pour les produits, `P3-06` pour les comptes). Les produits de développement se créent avec la collection Bruno, qui utilise la catégorie des fixtures : sur une base qui a déjà des comptes, la charger avec `php bin/console doctrine:fixtures:load --append` (sans `--append`, la commande vide la base).
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
 - Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
@@ -114,6 +118,14 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-22 — P1-11 : boutique Next.js et client d'API typé (branche `feat/P1-11-shop-nextjs`, en relecture)
+- `shop/` : Next.js 16 (App Router), React 19, TypeScript 5.9 ; auto-hébergée (ADR 0006).
+- Client de l'API : `openapi-fetch`, typé par `openapi-typescript` depuis `api/openapi.json`. Une route, un paramètre ou un champ absent du contrat ne compile pas. `API_URL` est lue par le serveur à chaque requête.
+- Accueil : le cadre est précompilé, et les dernières bougies arrivent à chaque requête (`<Suspense>`, puis `connection()`). La compilation n'appelle donc jamais l'API, et les robots d'indexation reçoivent la page entière, produits compris. Quand l'API ne répond pas, la page affiche un message et l'erreur part dans le journal du serveur.
+- En français (`lang="fr"`, titre, page 404). Pas d'en-tête `X-Powered-By`, télémétrie de Next.js coupée, port 3000 imposé.
+- CI `.github/workflows/shop.yml` : lint, types, tests, compilation sans API, et vérification que les types générés suivent le contrat.
+- Vérifications : 14 tests Vitest ; sept régressions introduites exprès, toutes détectées ; compilation sans API (la page d'accueil reste en « Partial Prerender ») ; serveur de production contre l'API de dev (produits dans le HTML, aussi pour Googlebot ; page 404 ; API coupée : message et journal).
 
 ### 2026-11-22 — P1-10 : dataProvider du back-office (branche `feat/P1-10-admin-data-provider`, en relecture)
 - `dataProvider` pour `/api/v1/admin`, qui passe par `httpClient`. Les listes suivent le format de `P1-04` : `page`, `per_page` (100 au plus), `sort` et `order`, et des filtres nommés comme l'API les nomme ; il lit les éléments et le total dans `{"items", "pagination"}`. Un tri que l'API refuse (l'`id` que react-admin utilise par défaut) est laissé de côté ; les champs triables sont typés contre le contrat.
