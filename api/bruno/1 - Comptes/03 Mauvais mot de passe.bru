@@ -23,3 +23,11 @@ tests {
     expect(res.getBody().error).to.be.a("string");
   });
 }
+
+docs {
+  Les essais de connexion sont limités, sur la boutique et le back-office ensemble :
+  - 5 essais sur un même email depuis une même adresse, en 15 minutes ; une connexion réussie (02) remet ce compte à zéro ;
+  - 25 essais depuis une même adresse, tous emails confondus, en 15 minutes ; une connexion réussie ne les efface pas.
+
+  Au-delà, la connexion répond 429, avec l'en-tête `Retry-After` (le nombre de secondes à attendre), même avec le bon mot de passe.
+}
