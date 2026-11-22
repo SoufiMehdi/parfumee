@@ -54,7 +54,7 @@
 - Back-office : TypeScript 5.9 et non 7, `openapi-typescript` ne fonctionnant pas encore avec TypeScript 7. Les types de l'API (`admin/src/api/schema.ts`) se régénèrent avec `npm run api:types` après tout changement d'`api/openapi.json` ; la CI le vérifie.
 - Collection Bruno : `13 Se déconnecter` révoque le refresh token de la session. Relancer `02 Connexion` pour en ouvrir une nouvelle.
 - Back-office : les adresses passent par le dièse (`http://localhost:5173/#/products`), le routeur par défaut de react-admin.
-- Back-office : pas encore de formulaires (`P2-09` pour les produits, `P3-06` pour les comptes). Les produits de développement se créent avec la collection Bruno.
+- Back-office : pas encore de formulaires (`P2-09` pour les produits, `P3-06` pour les comptes). Les produits de développement se créent avec la collection Bruno, qui utilise la catégorie des fixtures : sur une base qui a déjà des comptes, la charger avec `php bin/console doctrine:fixtures:load --append` (sans `--append`, la commande vide la base).
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
 - Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
 - Contrat OpenAPI : la route `/api/v1/token/refresh` n'a pas de contrôleur (elle est traitée par le pare-feu) et les schémas d'erreur ne viennent pas d'une classe. Les deux sont décrits à la main dans `config/packages/nelmio_api_doc.yaml` ; `OpenApiContractTest` vérifie que les vraies réponses d'erreur y correspondent.
