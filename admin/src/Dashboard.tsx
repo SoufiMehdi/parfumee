@@ -16,7 +16,7 @@ export const Dashboard = () => {
                     Bonjour {identity?.fullName}
                 </Typography>
                 {role && <Typography gutterBottom>Rôle : {role}.</Typography>}
-                <Typography color="text.secondary">Les écrans du catalogue et des comptes arrivent avec les prochaines tâches.</Typography>
+                <Typography color="text.secondary">Les listes sont dans le menu. Les fiches et les formulaires arrivent avec les prochaines tâches.</Typography>
             </CardContent>
         </Card>
     );

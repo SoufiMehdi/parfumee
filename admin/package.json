@@ -14,6 +14,7 @@
     "check": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
+    "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "ra-i18n-polyglot": "^5.15.7",
     "ra-language-french": "^5.15.7",

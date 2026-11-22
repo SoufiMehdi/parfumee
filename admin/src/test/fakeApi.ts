@@ -9,6 +9,8 @@ export interface Reply {
 export interface Call {
     method: string;
     path: string;
+    /** The query string, which routes do not match on. */
+    query: URLSearchParams;
     body: unknown;
     headers: Headers;
 }
@@ -29,6 +31,7 @@ export function fakeApi(routes: Record<string, Route>): { calls: Call[] } {
             const call: Call = {
                 method: (init.method ?? 'GET').toUpperCase(),
                 path: url.pathname,
+                query: url.searchParams,
                 body: typeof init.body === 'string' ? JSON.parse(init.body) : undefined,
                 headers: new Headers(init.headers),
             };

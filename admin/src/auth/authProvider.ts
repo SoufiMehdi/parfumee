@@ -88,6 +88,12 @@ export const authProvider = {
     },
 
     async getPermissions() {
+        // Nobody signed in, as on the sign-in page: no roles, without asking the API.
+        // react-admin waits for them before showing anything (the resources depend on them).
+        if (!hasSession()) {
+            return [];
+        }
+
         return (await currentAccount()).roles;
     },
 } satisfies AuthProvider;
