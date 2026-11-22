@@ -19,7 +19,9 @@ class Product
     private array $pictures = []; // Initialisation directe : plus jamais de erreur "non initialisé"
 
     /**
-     * @param Picture[] $pictures
+     * @param Picture[]               $pictures
+     * @param \DateTimeImmutable|null $createdAt set when the product is first saved: null for a product never saved
+     * @param \DateTimeImmutable|null $updatedAt set when a change of the product is saved
      */
     public function __construct(
         string $id,
@@ -29,6 +31,8 @@ class Product
         Category $category,
         ?Attribute $attributes = null,
         array $pictures = [],
+        private readonly ?\DateTimeImmutable $createdAt = null,
+        private readonly ?\DateTimeImmutable $updatedAt = null,
     ) {
         $this->id = $id;
         $this->name = $name;
@@ -76,6 +80,20 @@ class Product
     public function getCategory(): Category
     {
         return $this->category;
+    }
+
+    /**
+     * The dates are recorded by the persistence when the product is saved, not by
+     * the model: a product changed in memory keeps the dates it was loaded with.
+     */
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
     }
 
     /**

@@ -19,6 +19,10 @@ use PHPUnit\Framework\TestCase;
 
 final class UserPresenterTest extends TestCase
 {
+    // An account handed to the presenter has always been saved: it has its dates.
+    private const string CREATED_AT = '2026-11-01T09:30:00+00:00';
+    private const string UPDATED_AT = '2026-11-20T18:00:00+00:00';
+
     private UserPresenter $presenter;
 
     protected function setUp(): void
@@ -37,6 +41,8 @@ final class UserPresenterTest extends TestCase
             new PhoneNumber('+33612345678'),
             [Role::USER, Role::ADMIN],
             [new Address('address-id', Address::TYPE_BILLING, '1 rue des Bougies', 'Lyon', '69001', 'FR', true)],
+            new \DateTimeImmutable(self::CREATED_AT),
+            new \DateTimeImmutable(self::UPDATED_AT),
         );
 
         $view = $this->presenter->present($user);
@@ -49,12 +55,14 @@ final class UserPresenterTest extends TestCase
             '+33612345678',
             [Role::USER, Role::ADMIN],
             [new AddressView('address-id', Address::TYPE_BILLING, '1 rue des Bougies', 'Lyon', '69001', 'FR', true)],
+            new \DateTimeImmutable(self::CREATED_AT),
+            new \DateTimeImmutable(self::UPDATED_AT),
         ), $view);
     }
 
     public function testTheViewHasNoPlaceForThePassword(): void
     {
-        $user = new User('user-id', new Email('ada@example.test'), 'hashed-password', 'Ada', 'Lovelace');
+        $user = self::savedUser('user-id', 'ada@example.test');
 
         $view = $this->presenter->present($user);
 
@@ -63,7 +71,7 @@ final class UserPresenterTest extends TestCase
 
     public function testAUserWithoutPhoneNorAddressIsPresentedWithNone(): void
     {
-        $user = new User('user-id', new Email('ada@example.test'), 'hashed-password', 'Ada', 'Lovelace');
+        $user = self::savedUser('user-id', 'ada@example.test');
 
         $view = $this->presenter->present($user);
 
@@ -72,12 +80,22 @@ final class UserPresenterTest extends TestCase
         self::assertSame([Role::USER], $view->roles);
     }
 
+    public function testAnAccountNeverSavedCannotBePresented(): void
+    {
+        // Without dates: a use case returned it before saving it, which is a bug (500).
+        $user = new User('user-id', new Email('ada@example.test'), 'hashed-password', 'Ada', 'Lovelace');
+
+        $this->expectException(\LogicException::class);
+
+        $this->presenter->present($user);
+    }
+
     public function testPresentPageKeepsTheOrderOfTheItemsAndDescribesThePage(): void
     {
         $page = new Page(
             [
-                new User('first', new Email('a@example.test'), 'hash', 'A', 'A'),
-                new User('second', new Email('b@example.test'), 'hash', 'B', 'B'),
+                self::savedUser('first', 'a@example.test'),
+                self::savedUser('second', 'b@example.test'),
             ],
             total: 2,
             pagination: new Pagination(),
@@ -87,5 +105,18 @@ final class UserPresenterTest extends TestCase
 
         self::assertSame(['first', 'second'], [$list->items[0]->id, $list->items[1]->id]);
         self::assertEquals(new PaginationView(page: 1, perPage: Pagination::DEFAULT_PER_PAGE, total: 2, totalPages: 1), $list->pagination);
+    }
+
+    private static function savedUser(string $id, string $email): User
+    {
+        return new User(
+            $id,
+            new Email($email),
+            'hashed-password',
+            'Ada',
+            'Lovelace',
+            createdAt: new \DateTimeImmutable(self::CREATED_AT),
+            updatedAt: new \DateTimeImmutable(self::UPDATED_AT),
+        );
     }
 }

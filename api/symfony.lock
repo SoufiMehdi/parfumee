@@ -125,6 +125,9 @@
             "bin/phpunit"
         ]
     },
+    "stof/doctrine-extensions-bundle": {
+        "version": "v1.15.3"
+    },
     "symfony/console": {
         "version": "7.4",
         "recipe": {

@@ -11,6 +11,7 @@ enum ProductSortField: string
 {
     case NAME = 'name';
     case PRICE = 'price';
+    case CREATED_AT = 'created_at';
 
     /**
      * @return list<string>

@@ -58,11 +58,12 @@ class DoctrineUserRepository implements UserRepositoryInterface
             $parameters['search'] = '%'.addcslashes($criteria->search, '\\%_').'%';
         }
 
-        $sortColumn = SqlOrderBy::frenchText(match ($criteria->sortBy) {
-            UserSortField::EMAIL => 'u.email',
-            UserSortField::FIRST_NAME => 'u.first_name',
-            UserSortField::LAST_NAME => 'u.last_name',
-        });
+        $sortColumn = match ($criteria->sortBy) {
+            UserSortField::EMAIL => SqlOrderBy::frenchText('u.email'),
+            UserSortField::FIRST_NAME => SqlOrderBy::frenchText('u.first_name'),
+            UserSortField::LAST_NAME => SqlOrderBy::frenchText('u.last_name'),
+            UserSortField::CREATED_AT => 'u.created_at',
+        };
 
         $connection = $this->entityManager->getConnection();
         $total = (int) $connection->fetchOne('SELECT COUNT(*) FROM users u'.$where, $parameters);

@@ -3,3 +3,8 @@ framework:
         # The API speaks snake_case (first_name, category_id) while the DTO
         # properties are camelCase. Applies to #[MapRequestPayload] and #[MapQueryString].
         name_converter: serializer.name_converter.camel_case_to_snake_case
+        default_context:
+            # Every date of a response is written in UTC, in the RFC 3339 format
+            # (2026-11-21T19:52:47+00:00): the same instant always reads the same,
+            # whatever the time zone of PHP or of the database session.
+            datetime_timezone: 'UTC'

@@ -20,10 +20,13 @@ use App\Tests\Factory\User\DoctrineUserFactory;
 use App\Tests\Support\DatabaseTestCase;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 use Symfony\Component\Uid\Uuid;
 
 final class DoctrineUserRepositoryTest extends DatabaseTestCase
 {
+    use ClockSensitiveTrait;
+
     private UserRepositoryInterface $repository;
 
     protected function setUp(): void
@@ -137,6 +140,39 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
         self::assertCount(1, $this->repository->findAll());
     }
 
+    public function testAnAccountIsReadBackWithTheDatesOfItsSaves(): void
+    {
+        self::mockTime(new \DateTimeImmutable('2026-11-01T09:30:00+00:00'));
+        $id = Uuid::v4()->toRfc4122();
+        $this->repository->save(new User($id, new Email('ada@example.test'), 'hash', 'Ada', 'Lovelace'));
+        $this->entityManager->clear();
+
+        self::mockTime(new \DateTimeImmutable('2026-11-21T10:00:00+00:00'));
+        $user = $this->repository->findById($id);
+        $user->updateProfile('Augusta', 'King');
+        $this->repository->save($user);
+
+        // Read again right after the save, in the same request: what UpdateUserUseCase returns.
+        $stored = $this->repository->findById($id);
+        self::assertEquals(new \DateTimeImmutable('2026-11-01T09:30:00+00:00'), $stored->getCreatedAt());
+        self::assertEquals(new \DateTimeImmutable('2026-11-21T10:00:00+00:00'), $stored->getUpdatedAt());
+        // The object that was saved keeps the dates it was loaded with.
+        self::assertEquals(new \DateTimeImmutable('2026-11-01T09:30:00+00:00'), $user->getUpdatedAt());
+    }
+
+    public function testSavingAnAccountWithoutAnyChangeWritesNothing(): void
+    {
+        $doctrineUser = DoctrineUserFactory::createOne(['phoneNumber' => '+33612345678']);
+        DoctrineAddressFactory::createOne(['user' => $doctrineUser]);
+        $this->entityManager->clear();
+        $user = $this->repository->findById($doctrineUser->getId());
+
+        $queries = $this->queriesRunBy(fn () => $this->repository->save($user));
+
+        // An UPDATE would move updated_at: of the account, and of its addresses.
+        self::assertSame([], $queries, implode("\n", $queries));
+    }
+
     public function testDeletingAUserAlsoDeletesItsAddresses(): void
     {
         $doctrineUser = DoctrineUserFactory::createOne();
@@ -234,6 +270,21 @@ final class DoctrineUserRepositoryTest extends DatabaseTestCase
         self::assertSame(5, $second->total);
         self::assertSame(5, $afterTheLast->total);
         self::assertSame(3, $second->totalPages());
+    }
+
+    public function testAccountsCanBeSortedByCreationDate(): void
+    {
+        foreach (['first' => '2026-11-01', 'third' => '2026-11-03', 'second' => '2026-11-02'] as $name => $day) {
+            self::mockTime(new \DateTimeImmutable($day.'T09:30:00+00:00'));
+            DoctrineUserFactory::createOne(['email' => $name.'@example.test']);
+        }
+        $this->entityManager->clear();
+
+        $oldestFirst = $this->repository->findPage(new UserCriteria(sortBy: UserSortField::CREATED_AT), new Pagination());
+        $newestFirst = $this->repository->findPage(new UserCriteria(sortBy: UserSortField::CREATED_AT, direction: SortDirection::DESC), new Pagination());
+
+        self::assertSame(['first@example.test', 'second@example.test', 'third@example.test'], $this->emailsOf($oldestFirst));
+        self::assertSame(['third@example.test', 'second@example.test', 'first@example.test'], $this->emailsOf($newestFirst));
     }
 
     public function testAPageIsLoadedWithTheAddressesInThreeQueries(): void

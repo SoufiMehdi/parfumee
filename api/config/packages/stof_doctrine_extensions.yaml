@@ -1,0 +1,10 @@
+# Doctrine extensions (Gedmo). The bundle has no official Flex recipe: it is
+# registered by hand in config/bundles.php, and configured here.
+#
+# Only Timestampable is enabled. It fills created_at and updated_at on every
+# entity that uses the Timestamps trait (Infrastructure/Persistence/Entity),
+# with the time of the "clock" service: tests can freeze it (ClockSensitiveTrait).
+stof_doctrine_extensions:
+    orm:
+        default:
+            timestampable: true

@@ -339,7 +339,7 @@ final class AccessControlTest extends WebTestCase
      */
     private function expectAccountUseCasesToTarget(string $id): void
     {
-        $user = new User($id, new Email('owner@example.test'), 'hash', 'Test', 'User');
+        $user = self::savedAccount($id);
 
         $get = $this->createMock(GetUserUseCase::class);
         $get->expects(self::atMost(1))->method('execute')->with($id)->willReturn($user);
@@ -356,7 +356,7 @@ final class AccessControlTest extends WebTestCase
 
     private function stubAccountUseCases(string $id): void
     {
-        $user = new User($id, new Email('owner@example.test'), 'hash', 'Test', 'User');
+        $user = self::savedAccount($id);
 
         $get = $this->createStub(GetUserUseCase::class);
         $get->method('execute')->willReturn($user);
@@ -367,5 +367,15 @@ final class AccessControlTest extends WebTestCase
         static::getContainer()->set(UpdateUserUseCase::class, $update);
 
         static::getContainer()->set(DeleteUserUseCase::class, $this->createStub(DeleteUserUseCase::class));
+    }
+
+    /**
+     * An account as the use cases return it: saved, so with its dates.
+     */
+    private static function savedAccount(string $id): User
+    {
+        $savedAt = new \DateTimeImmutable('2026-11-01T09:30:00+00:00');
+
+        return new User($id, new Email('owner@example.test'), 'hash', 'Test', 'User', createdAt: $savedAt, updatedAt: $savedAt);
     }
 }

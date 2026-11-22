@@ -106,6 +106,7 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         $sortColumn = match ($criteria->sortBy) {
             ProductSortField::NAME => SqlOrderBy::frenchText('p.name'),
             ProductSortField::PRICE => 'p.price',
+            ProductSortField::CREATED_AT => 'p.created_at',
         };
 
         $connection = $this->entityManager->getConnection();

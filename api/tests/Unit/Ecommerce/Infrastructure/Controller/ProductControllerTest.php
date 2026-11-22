@@ -46,7 +46,7 @@ class ProductControllerTest extends WebTestCase
         $category = new Category('22222222-2222-4222-8222-222222222222', 'Bougies', 'bougies');
         $useCaseMock = $this->createMock(ListProductsUseCase::class);
         $useCaseMock->expects($this->once())->method('execute')->willReturn(new Page(
-            [new Product('11111111-1111-4111-8111-111111111111', 'Ambre', 'ambre', 12.5, $category)],
+            [new Product('11111111-1111-4111-8111-111111111111', 'Ambre', 'ambre', 12.5, $category, createdAt: new \DateTimeImmutable('2026-11-01T09:30:00+00:00'), updatedAt: new \DateTimeImmutable('2026-11-20T18:00:00+00:00'))],
             total: 21,
             pagination: new Pagination(page: 1, perPage: 1),
         ));
@@ -77,6 +77,9 @@ class ProductControllerTest extends WebTestCase
             new CategorySummaryView('22222222-2222-4222-8222-222222222222', 'Bougies'),
             new AttributesView(180.0, null, null, null, null),
             [new PictureView('img-1', 'products/a.jpg', null, 2)],
+            // Paris time on purpose: the response must give the same instant in UTC.
+            new \DateTimeImmutable('2026-11-01 10:30:00', new \DateTimeZone('Europe/Paris')),
+            new \DateTimeImmutable('2026-11-21 20:43:09', new \DateTimeZone('Europe/Paris')),
         ));
 
         static::getContainer()->set(GetProductUseCase::class, $useCaseMock);
@@ -96,6 +99,9 @@ class ProductControllerTest extends WebTestCase
             // 180, not 180.0: JSON has a single number type.
             'attributes' => ['weight' => 180, 'fragrance' => null, 'size' => null, 'description' => null, 'presentation' => null],
             'pictures' => [['id' => 'img-1', 'url' => 'products/a.jpg', 'alt' => null, 'sort_order' => 2]],
+            // Every date leaves in UTC, in the RFC 3339 format.
+            'created_at' => '2026-11-01T09:30:00+00:00',
+            'updated_at' => '2026-11-21T19:43:09+00:00',
         ], json_decode($response->getContent(), true));
     }
 
@@ -152,6 +158,8 @@ class ProductControllerTest extends WebTestCase
             'nouveau-nom',
             95.0,
             new Category('22222222-2222-4222-8222-222222222222', 'Bougies', 'bougies'),
+            createdAt: new \DateTimeImmutable('2026-11-01T09:30:00+00:00'),
+            updatedAt: new \DateTimeImmutable('2026-11-21T19:43:09+00:00'),
         );
 
         $useCaseMock->expects($this->once())
@@ -174,6 +182,8 @@ class ProductControllerTest extends WebTestCase
         $this->assertSame('Nouveau Nom', $data['name']);
         $this->assertSame('nouveau-nom', $data['slug']);
         $this->assertEquals(95.0, $data['price']);
+        // The date of this change: the use case returns the product as stored.
+        $this->assertSame('2026-11-21T19:43:09+00:00', $data['updated_at']);
     }
 
     public function testUploadPictureSuccess(): void

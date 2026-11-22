@@ -38,8 +38,11 @@ class UpdateProductUseCaseTest extends TestCase
             attributes: ['fragrance' => 'Lavande']
         );
 
+        // The product as stored once saved: the save recorded its new updated_at.
+        $stored = new Product('prod-1', 'Nouveau Nom', 'nouveau-nom', 15.0, $category, createdAt: new \DateTimeImmutable('2026-11-01T09:30:00+00:00'), updatedAt: new \DateTimeImmutable('2026-11-21T10:00:00+00:00'));
+
         // 3. Configuration
-        $productRepo->expects($this->once())->method('findById')->willReturn($product);
+        $productRepo->expects($this->exactly(2))->method('findById')->with('prod-1')->willReturnOnConsecutiveCalls($product, $stored);
         $categoryRepo->expects($this->once())->method('findById')->willReturn($category);
 
         $attributeMapper
@@ -47,7 +50,12 @@ class UpdateProductUseCaseTest extends TestCase
             ->method('fromDto')
             ->willReturn($attributeMock);
 
-        $productRepo->expects($this->once())->method('save');
+        $productRepo->expects($this->once())->method('save')->with($this->callback(
+            static fn (Product $saved): bool => $saved === $product
+                && 'Nouveau Nom' === $saved->getName()
+                && 'nouveau-nom' === $saved->getSlug()
+                && 15.0 === $saved->getPrice(),
+        ));
 
         // 4. Exécution (Injection du mapper ici)
         $slugGenerator = $this->createMock(SlugGeneratorInterface::class);
@@ -55,11 +63,8 @@ class UpdateProductUseCaseTest extends TestCase
         $useCase = new UpdateProductUseCase($productRepo, $categoryRepo, $attributeMapper, new ProductSlugResolver($slugGenerator, $productRepo));
         $result = $useCase->execute($dto, 'prod-1');
 
-        // 5. Assertions
-        $this->assertInstanceOf(Product::class, $result);
-        $this->assertEquals('Nouveau Nom', $result->getName());
-        $this->assertSame('nouveau-nom', $result->getSlug());
-        $this->assertEquals(15.0, $result->getPrice());
+        // 5. Assertions: the product is read again after the save, with the dates the save recorded.
+        $this->assertSame($stored, $result);
     }
 
     public function testTheSlugIsKeptWhenTheNameDoesNotChange(): void

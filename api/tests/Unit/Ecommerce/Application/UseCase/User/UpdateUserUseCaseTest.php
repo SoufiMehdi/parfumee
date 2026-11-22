@@ -37,11 +37,14 @@ class UpdateUserUseCaseTest extends TestCase
             phoneNumber: null,
         );
 
+        // The account as stored once saved: the save recorded its new updated_at.
+        $stored = $this->createStub(User::class);
+
         $this->userRepository
-            ->expects($this->once())
+            ->expects($this->exactly(2))
             ->method('findById')
             ->with($id)
-            ->willReturn($user);
+            ->willReturnOnConsecutiveCalls($user, $stored);
 
         $user->expects($this->once())->method('updateProfile')->with('Jane', 'Smith');
         $user->expects($this->never())->method('updatePhoneNumber');
@@ -53,7 +56,8 @@ class UpdateUserUseCaseTest extends TestCase
 
         $result = $this->useCase->execute($id, $dto);
 
-        $this->assertSame($user, $result);
+        // Read again after the save, with the dates the save recorded.
+        $this->assertSame($stored, $result);
     }
 
     #[AllowMockObjectsWithoutExpectations]

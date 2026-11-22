@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Ecommerce\Infrastructure\Persistence\Entity\Catalog;
 
+use App\Ecommerce\Infrastructure\Persistence\Entity\Timestamps;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'pictures')]
 class DoctrinePicture
 {
+    use Timestamps;
+
     #[ORM\Id]
     #[ORM\Column(type: 'string')]
     private string $id;

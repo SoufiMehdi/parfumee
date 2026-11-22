@@ -24,8 +24,9 @@
 - **Fait :** `P1-05` (`/me` et refresh token), mergée dans `main` (PR #25).
 - **Fait :** `P1-03` (contrat OpenAPI et Swagger UI), mergée dans `main` (PR #26).
 - **Fait :** `P1-04` (format de liste : pagination, tri, filtres), mergée dans `main` (PR #27).
-- **En relecture :** `P1-02` (CORS pour les deux fronts), sur la branche `feat/P1-02-cors`.
-- **Prochaine tâche conseillée :** `P1-08` (dates de création et de modification), puis `P1-07` (limitation des tentatives de connexion). Les autres tâches de la phase 1 (`P1-09` à `P1-11`, les fronts) attendent les décisions ci-dessous. Les décisions en attente ci-dessous deviennent bloquantes à partir de `P1-09`.
+- **Fait :** `P1-02` (CORS pour les deux fronts), mergée dans `main` (PR #28).
+- **En relecture :** `P1-08` (dates de création et de modification), sur la branche `feat/P1-08-timestamps`.
+- **Prochaine tâche conseillée :** `P1-07` (limitation des tentatives de connexion). Les autres tâches de la phase 1 (`P1-09` à `P1-11`, les fronts) attendent les décisions ci-dessous, qui deviennent bloquantes à partir de `P1-09`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -61,7 +62,7 @@
 - Listes : toutes paginées (`items` + `pagination`, total aussi dans `X-Total-Count`). Le format et la marche à suivre pour une nouvelle liste sont dans `api/CLAUDE.md`, section « Listes ».
 - CORS : seules deux origines sont autorisées, comparées exactement : `CORS_SHOP_ORIGIN` et `CORS_ADMIN_ORIGIN`. En dev, `http://localhost:3000` (boutique) et `http://localhost:5173` (back-office) ; un autre port se règle dans `api/.env.dev.local`. En production, les définir au déploiement (`P7-01`) : vides, elles n'autorisent aucun front.
 - CORS : tout nouvel en-tête de réponse que les fronts doivent lire s'ajoute à `expose_headers` (aujourd'hui `X-Total-Count`).
-- Listes : React-admin trie par `id` tant qu'on ne lui dit rien ; l'API refuse `sort=id` (422). Le data provider (`P1-10`) doit envoyer un vrai champ de tri, ou aucun.
+- Listes : React-admin trie par `id` tant qu'on ne lui dit rien ; l'API refuse `sort=id` (422). Le data provider (`P1-10`) doit envoyer un vrai champ de tri, ou aucun : `created_at` en `desc` donne les plus récents d'abord.
 - Listes : le filtre `scent` s'appelle maintenant `fragrance`, comme l'attribut qu'il filtre. Un paramètre inconnu étant ignoré, `scent=ambre` renvoie désormais la liste sans filtre, sans erreur.
 - Listes : le tri des noms utilise la collation ICU `fr-x-icu` de PostgreSQL. L'image `postgres:16-alpine` l'a ; une image sans ICU ferait échouer ce tri (les tests d'intégration le verraient).
 - Recherche de comptes (`q`) : insensible à la casse, mais pas aux accents (« elodie » ne trouve pas « Élodie »). Il faudrait l'extension `unaccent`.
@@ -85,7 +86,10 @@
 - La migration `Version20261114170000` (colonne `slug`) est à jouer sur chaque base de dev : `php bin/console doctrine:migrations:migrate`. Elle calcule le slug des produits existants.
 - Symfony 8.1 n'est pas LTS et sa fin de maintenance tombe en **janvier 2027** : monter en 8.2 dès sa sortie, prévue fin novembre 2026 (ADR 0005).
 - Deux recipes Flex ont une mise à jour disponible : `doctrine/doctrine-bundle` et `symfony/framework-bundle` (celle de `symfony/security-bundle` est passée avec `P0-01`). Les appliquer avec `composer recipes:update` sur un arbre git propre, en relisant les diffs.
-- `doctrine:schema:validate` échoue encore sur le mapping, à cause de B15 uniquement (`DoctrineProduct::price` : `DECIMAL` mappé sur un `float`). B2 est corrigé par `P0-03`, et la base est bien synchronisée avec le mapping. B15 se règle avec le passage des montants en centimes, à faire avant la phase 4.
+- `doctrine:schema:validate` passe entièrement depuis `P1-08` : côté entité, le prix est stocké en chaîne, comme PostgreSQL rend un `DECIMAL`. B15 reste ouvert sur le fond : le domaine calcule encore les prix en `float`. Il se règle avec le passage des montants en centimes, à faire avant la phase 4.
+- Dates : la migration `Version20261121195209` est à jouer sur chaque base de dev (`php bin/console doctrine:migrations:migrate`). Sans elle, toute route qui lit un produit ou un compte répond 500 (« column created_at does not exist »). Les lignes existantes y reçoivent l'heure de la migration.
+- Dates : `updated_at` suit la ligne elle-même, à la seconde près. Ajouter une image ne change pas celui du produit, ni une adresse celui du compte. Le sitemap (`P8-05`) devra prendre la plus récente des deux dates s'il veut tenir compte des images.
+- Serveur sur la base de test (pour Bruno) : `APP_ENV=test php -d variables_order=EGPCS -S 127.0.0.1:8001 -t public`. Sans le `-d`, le serveur intégré de PHP ne transmet pas `APP_ENV` : il tourne en dev, sur la base de dev.
 - Une PR se crée toujours vers `main`, même si sa branche part d'une autre branche de travail : la PR #22, créée vers la branche de la #21, a été mergée dans cette branche et n'est jamais arrivée dans `main`.
 - Un test fonctionnel (`tests/Functional/`, `WebTestCase`) ne doit jamais atteindre la base : en CI elle est vide quand ils tournent, et la requête répond 500. En local le défaut ne se voit pas, la base ayant déjà son schéma. Pour le reproduire : `docker compose restart database_test`, puis `vendor/bin/phpunit tests/Functional`. Un parcours HTTP qui a besoin de la base étend `DatabaseTestCase` (voir `TokenRefreshTest`).
 - Tests d'intégration (`tests/Integration/`) : ils exigent la base de test, c'est-à-dire le service `database_test` lancé par `docker compose up -d` depuis `api/` (`127.0.0.1:54320`). Sans elle ils **échouent**, avec un message qui dit quoi lancer. `vendor/bin/phpunit tests/Unit` reste utilisable sans base.
@@ -96,6 +100,14 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-21 — P1-08 : dates de création et de modification (branche `feat/P1-08-timestamps`, en relecture)
+- `stof/doctrine-extensions-bundle` installé, avec Gedmo Timestampable pour seule extension. Les cinq tables reçoivent `created_at` et `updated_at` (`timestamptz`), posées à l'enregistrement avec l'horloge de Symfony.
+- Migration `Version20261121195209` : les lignes existantes reçoivent l'heure de la migration.
+- Produits et comptes exposent `created_at` et `updated_at`, toujours en UTC (RFC 3339). Les listes de produits et de comptes se trient aussi par `created_at`.
+- Modifier un produit ou un compte renvoie la date de cette modification : les deux use cases relisent l'objet après l'enregistrement.
+- Trouvé en écrivant les tests : chaque `flush()` réécrivait toutes les lignes chargées, parce que les identifiants étaient mappés en `uuid` sur des chaînes et le prix `DECIMAL` sur un `float`. C'était sans effet visible jusqu'ici, mais `updated_at` aurait avancé à chaque écriture pour le compte connecté ou la catégorie d'un produit. Les identifiants passent en `guid` et le prix est stocké en chaîne, sans changement de schéma. `doctrine:schema:validate` passe maintenant entièrement.
+- Vérifications : `composer check` vert, PHPUnit « OK (439 tests) » ; dix régressions introduites exprès, toutes détectées ; migration essayée sur des lignes existantes, avec aller-retour `down`/`up` ; collection Bruno, 20 requêtes sur 20, contre un serveur sur la base de test.
 
 ### 2026-11-21 — P1-02 : CORS pour les deux fronts (branche `feat/P1-02-cors`, en relecture)
 - `nelmio/cors-bundle` installé. La boutique et le back-office peuvent lire les réponses de l'API depuis le navigateur ; aucune autre origine (constat S7 de l'audit).

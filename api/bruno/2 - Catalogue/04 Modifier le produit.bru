@@ -34,4 +34,11 @@ tests {
     expect(res.getBody().price).to.equal(26.5);
     expect(res.getBody().attributes.size).to.equal("L");
   });
+
+  test("les dates sont en UTC, et la modification est postérieure à la création", function () {
+    const body = res.getBody();
+    expect(body.created_at).to.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/);
+    expect(body.updated_at).to.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00$/);
+    expect(Date.parse(body.updated_at)).to.be.at.least(Date.parse(body.created_at));
+  });
 }

@@ -12,6 +12,7 @@ enum UserSortField: string
     case EMAIL = 'email';
     case FIRST_NAME = 'first_name';
     case LAST_NAME = 'last_name';
+    case CREATED_AT = 'created_at';
 
     /**
      * @return list<string>
