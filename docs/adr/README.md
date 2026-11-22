@@ -6,9 +6,10 @@ Une fiche par décision structurante. On ne modifie pas une décision acceptée 
 |---|---|---|
 | [0001](0001-monorepo.md) | Monorepo unique pour l'API et les deux fronts | Acceptée |
 | [0002](0002-architecture-hexagonale.md) | Architecture hexagonale pour l'API | Acceptée |
-| [0003](0003-back-office-react-admin.md) | Back-office en React-admin consommant l'API | Proposée |
+| [0003](0003-back-office-react-admin.md) | Back-office en React-admin consommant l'API | Acceptée |
 | [0004](0004-hebergement-ionos-docker-compose.md) | Hébergement sur un VPS IONOS avec Docker Compose et Caddy | Acceptée |
 | [0005](0005-symfony-derniere-version-stable.md) | Suivre la dernière version stable de Symfony (8.x) plutôt que la LTS | Acceptée |
+| [0006](0006-boutique-nextjs.md) | Boutique en Next.js | Acceptée |
 
 ## Modèle
 

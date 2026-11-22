@@ -26,16 +26,16 @@
 - **Fait :** `P1-04` (format de liste : pagination, tri, filtres), mergée dans `main` (PR #27).
 - **Fait :** `P1-02` (CORS pour les deux fronts), mergée dans `main` (PR #28).
 - **Fait :** `P1-08` (dates de création et de modification), mergée dans `main` (PR #29).
-- **En relecture :** `P1-07` (limites de connexion et d'inscription), sur la branche `feat/P1-07-rate-limiting`. Avec elle, la partie API de la phase 1 est terminée.
-- **Prochaine tâche conseillée :** les tâches restantes de la phase 1 (`P1-09` à `P1-11`, les fronts) attendent les décisions ci-dessous. En attendant, la phase 2 peut avancer côté API : `P2-02` (statut des produits), puis `P2-01` (catégories).
+- **Fait :** `P1-07` (limites de connexion et d'inscription), mergée dans `main` (PR #30). La partie API de la phase 1 est terminée.
+- **Décidé le 2026-11-22 :** la boutique sera en Next.js (ADR 0006), le back-office en React-admin (ADR 0003, acceptée).
+- **En relecture :** `P1-09` (back-office React-admin et sa session, avec la déconnexion côté serveur), sur la branche `feat/P1-09-admin-react-admin`.
+- **Prochaine tâche conseillée :** `P1-10` (le `dataProvider` du back-office), puis `P1-11` (la boutique Next.js).
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
 
 | Sujet | Options | Impact |
 |---|---|---|
-| Framework du front boutique | Next.js (React) / Nuxt (Vue) | P1-11 et tout `shop/` |
-| Back-office | React-admin (proposé, ADR 0003) / EasyAdmin | P1-09, P1-10 et tout `admin/` |
 | Paiement | Stripe / Mollie | P5-04 |
 | Régime de TVA | Franchise en base (micro-entreprise) / TVA collectée | P4-03, P5-07 |
 | Taille du VPS IONOS | S+ pendant le dev, M+ au lancement (proposé) | Phase 7 |
@@ -46,7 +46,12 @@
 - Les anciennes routes (`/create-product`, `/users/login`…) n'existent plus depuis `P1-01` : elles répondent 404. Il n'y a pas de redirection, aucun client n'existant encore.
 - Les deux connexions (`/api/v1/shop/login` et `/api/v1/admin/login`) délivrent le même jeton : un client peut se connecter par celle du back-office, son jeton y sera simplement refusé partout (403).
 - Sessions : le JWT vit 15 minutes, le refresh token 30 jours et ne sert qu'une fois (`POST /api/v1/token/refresh`). Un front doit donc remplacer son refresh token à chaque renouvellement, et ne pas lancer deux renouvellements en parallèle : le second serait refusé.
-- Pas de déconnexion côté serveur : aucune route ne révoque un refresh token, et un JWT émis reste valable jusqu'à son expiration, même après suppression du rôle. Seule la suppression du compte coupe la session. Une route de déconnexion reste à écrire, au plus tard avec les fronts (`P1-09`, `P3-07`).
+- Déconnexion : `POST /api/v1/token/revoke` révoque le refresh token (le back-office s'en sert, la boutique s'en servira en `P3-07`). Le JWT déjà délivré reste valable jusqu'à son expiration (15 minutes), même après la suppression d'un rôle : on ne peut pas le révoquer.
+- Back-office : `VITE_API_URL` est lue à la compilation. Le build de production doit la définir (`P7-01`) ; sinon il appelle `http://127.0.0.1:8000`.
+- Back-office : le serveur de dev doit tourner sur `http://localhost:5173` exactement, l'origine autorisée par l'API (CORS). `strictPort` l'arrête si le port est pris.
+- Back-office : le refresh token est dans le `localStorage`, lisible par un script injecté (XSS). La parade complète serait un cookie `HttpOnly`, avec un changement de l'API ; d'ici là, aucun HTML venu de l'API n'est inséré dans les pages.
+- Back-office : TypeScript 5.9 et non 7, `openapi-typescript` ne fonctionnant pas encore avec TypeScript 7. Les types de l'API (`admin/src/api/schema.ts`) se régénèrent avec `npm run api:types` après tout changement d'`api/openapi.json` ; la CI le vérifie.
+- Collection Bruno : `13 Se déconnecter` révoque le refresh token de la session. Relancer `02 Connexion` pour en ouvrir une nouvelle.
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
 - Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
 - Contrat OpenAPI : la route `/api/v1/token/refresh` n'a pas de contrôleur (elle est traitée par le pare-feu) et les schémas d'erreur ne viennent pas d'une classe. Les deux sont décrits à la main dans `config/packages/nelmio_api_doc.yaml` ; `OpenApiContractTest` vérifie que les vraies réponses d'erreur y correspondent.
@@ -106,6 +111,15 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-22 — P1-09 : back-office React-admin et sa session (branche `feat/P1-09-admin-react-admin`, en relecture)
+- Décisions : Next.js pour la boutique (ADR 0006), React-admin pour le back-office (ADR 0003, acceptée).
+- `admin/` : Vite 8, React 19, TypeScript 5.9, React-admin 5 en français. Le lint est oxlint, comme dans le modèle Vite actuel.
+- Connexion par `/api/v1/admin/login`, puis `/api/v1/admin/me` : un compte sans rôle d'éditeur ou d'administrateur est refusé et déconnecté. L'identité et les rôles viennent de `/admin/me`.
+- Session : le JWT en mémoire, le refresh token dans le `localStorage`. Un seul renouvellement à la fois, entre onglets aussi (Web Locks), puisqu'un refresh token ne sert qu'une fois. Un JWT expiré est renouvelé une fois, puis la requête est renvoyée.
+- API : nouvelle route `POST /api/v1/token/revoke` (déconnexion), publique, qui répond 204 même pour un jeton inconnu ou déjà révoqué, y compris avec un JWT expiré joint.
+- CI `.github/workflows/admin.yml` : lint, types, tests, build, et vérification que les types générés suivent le contrat.
+- Vérifications : `composer check` vert, PHPUnit « OK (464 tests) » ; 33 tests Vitest ; douze régressions introduites exprès (dix dans le back-office, deux sur la déconnexion), toutes détectées ; parcours complet joué avec `curl` contre une vraie API (requêtes préliminaires CORS depuis `localhost:5173`, connexion, `/admin/me`, renouvellement, déconnexion, compte client refusé) ; collection Bruno, 22 requêtes sur 22.
 
 ### 2026-11-22 — P1-07 : limites de connexion et d'inscription (branche `feat/P1-07-rate-limiting`, en relecture)
 - `symfony/rate-limiter` installé, avec `symfony/lock` pour que des requêtes parallèles ne passent pas toutes avant l'écriture du compteur (constat S6 de l'audit).

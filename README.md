@@ -148,7 +148,7 @@ Un corps JSON doit toujours être envoyé avec `Content-Type: application/json`,
 
 ## Tester avec Bruno
 
-Le dossier `api/bruno/` est une collection [Bruno](https://www.usebruno.com/) : 20 requêtes qui couvrent toutes les routes, avec le jeton géré automatiquement.
+Le dossier `api/bruno/` est une collection [Bruno](https://www.usebruno.com/) : 22 requêtes qui couvrent toutes les routes, avec le jeton géré automatiquement.
 
 1. Dans Bruno : **Open Collection**, choisir le dossier `api/bruno`.
 2. En haut à droite, sélectionner l'environnement **local** (API sur `http://127.0.0.1:8000`).
@@ -171,6 +171,23 @@ cd api/bruno && bru run --env local -r
 
 Chaque exécution crée un produit et une image dans la base de développement.
 
+## Lancer le back-office
+
+Le back-office (`admin/`) est une application React-admin qui consomme l'API. Il faut Node 22.12 ou plus, et l'API lancée comme à l'étape 7 (`http://127.0.0.1:8000`, ou l'adresse mise dans `admin/.env.local`).
+
+```bash
+cd admin
+npm install
+npm run dev
+```
+
+Ouvrir http://localhost:5173, puis se connecter avec un compte éditeur ou administrateur (voir « Créer un compte administrateur »). Un compte client est refusé : « Ce compte n'a pas accès au back-office ».
+
+- **Port imposé** : 5173 est l'origine que l'API autorise (CORS). S'il est pris, `npm run dev` s'arrête plutôt que de changer de port.
+- **Session** : elle dure tant qu'elle est renouvelée (le refresh token vaut 30 jours) ; « Déconnexion » la termine aussi côté serveur.
+- **Production** : `VITE_API_URL=https://api.example.fr npm run build`, puis servir `admin/dist/` en fichiers statiques (`P7-01`).
+- **Vérifier** : `npm run check` (lint, types, tests), ce que lance la CI.
+
 ## Routes actuelles
 
 Deux espaces, un par front. Ils partagent les mêmes cas d'usage ; seuls les contrôleurs et les droits diffèrent.
@@ -182,8 +199,9 @@ Une connexion renvoie deux valeurs : un `token` (JWT, valable 15 minutes, à env
 | Méthode | Route | Accès |
 |---|---|---|
 | `POST` | `/api/v1/token/refresh` | Public. Corps : `{"refresh_token": "..."}`. Renvoie un nouveau `token` et un nouveau `refresh_token` |
+| `POST` | `/api/v1/token/revoke` | Public. Corps : `{"refresh_token": "..."}`. Déconnexion : répond `204`, et le refresh token ne renouvelle plus la session |
 
-Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau, et l'ancien est refusé.
+Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau, et l'ancien est refusé. Après une déconnexion, le `token` déjà délivré reste valable jusqu'à son expiration : le front l'oublie.
 
 **Boutique — `/api/v1/shop`**
 
@@ -336,6 +354,8 @@ Ne jamais mettre de vrai secret dans un fichier versionné. `.env.local` n'est p
 | Erreur 500 « column … created_at does not exist » | La base de développement n'a pas la dernière migration : `php bin/console doctrine:migrations:migrate`. |
 | Le front reçoit une erreur CORS (« blocked by CORS policy ») | Son origine ne correspond pas exactement à `CORS_SHOP_ORIGIN` ou `CORS_ADMIN_ORIGIN` : vérifier le port, `localhost` contre `127.0.0.1`, et l'absence de barre finale. |
 | Upload d'image refusé au-delà de 2 Mo | Limite `upload_max_filesize` de PHP, à relever dans son `php.ini` (l'API accepte jusqu'à 5 Mo). |
+| `npm run dev` du back-office : « Port 5173 is already in use » | Un autre programme occupe le port : l'arrêter. Changer de port ferait refuser les appels par l'API (CORS). |
+| Le back-office affiche « Ce compte n'a pas accès au back-office » | Le compte n'est ni éditeur ni administrateur : `php bin/console app:user:create-admin <email> --promote`. |
 | `429 Too Many Requests` à la connexion ou à l'inscription, en développement | Les limites sont atteintes, par exemple après plusieurs exécutions de Bruno : `php bin/console cache:pool:clear cache.rate_limiter` remet les compteurs à zéro. |
 
 ## Contribuer
