@@ -21,8 +21,8 @@ security:
             pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
         login:
-            # No token is expected on the sign-in routes: an expired one must not block them.
-            pattern: ^/api/v1/(shop|admin)/login$
+            # No token is expected on the sign-in and sign-out routes: an expired one must not block them.
+            pattern: ^/api/v1/((shop|admin)/login|token/revoke)$
             stateless: true
             security: false
         main:
@@ -46,8 +46,8 @@ security:
         # The OpenAPI contract and its Swagger UI are public: they describe the API, they do not open it
         - { path: ^/api/v1/doc(\.json)?$, methods: [GET], roles: PUBLIC_ACCESS }
 
-        # Token renewal, shared by both fronts: the refresh token is the credential
-        - { path: ^/api/v1/token/refresh$, methods: [POST], roles: PUBLIC_ACCESS }
+        # Token renewal and sign-out, shared by both fronts: the refresh token is the credential
+        - { path: ^/api/v1/token/(refresh|revoke)$, methods: [POST], roles: PUBLIC_ACCESS }
 
         # Shop, public: authentication and catalogue reading
         - { path: ^/api/v1/shop/(login|register)$, methods: [POST], roles: PUBLIC_ACCESS }
