@@ -40,4 +40,10 @@ docs {
   ```
   php bin/console app:user:create-admin admin@example.test --promote
   ```
+
+  L'inscription est limitée à 10 essais par heure depuis une même adresse, qu'ils réussissent ou non (au-delà : 429 et l'en-tête `Retry-After`). Chaque exécution de la collection en consomme deux (01 et 08). En dev, pour remettre les compteurs à zéro :
+
+  ```
+  php bin/console cache:pool:clear cache.rate_limiter
+  ```
 }

@@ -25,8 +25,9 @@
 - **Fait :** `P1-03` (contrat OpenAPI et Swagger UI), mergée dans `main` (PR #26).
 - **Fait :** `P1-04` (format de liste : pagination, tri, filtres), mergée dans `main` (PR #27).
 - **Fait :** `P1-02` (CORS pour les deux fronts), mergée dans `main` (PR #28).
-- **En relecture :** `P1-08` (dates de création et de modification), sur la branche `feat/P1-08-timestamps`.
-- **Prochaine tâche conseillée :** `P1-07` (limitation des tentatives de connexion). Les autres tâches de la phase 1 (`P1-09` à `P1-11`, les fronts) attendent les décisions ci-dessous, qui deviennent bloquantes à partir de `P1-09`.
+- **Fait :** `P1-08` (dates de création et de modification), mergée dans `main` (PR #29).
+- **En relecture :** `P1-07` (limites de connexion et d'inscription), sur la branche `feat/P1-07-rate-limiting`. Avec elle, la partie API de la phase 1 est terminée.
+- **Prochaine tâche conseillée :** les tâches restantes de la phase 1 (`P1-09` à `P1-11`, les fronts) attendent les décisions ci-dessous. En attendant, la phase 2 peut avancer côté API : `P2-02` (statut des produits), puis `P2-01` (catégories).
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -89,7 +90,12 @@
 - `doctrine:schema:validate` passe entièrement depuis `P1-08` : côté entité, le prix est stocké en chaîne, comme PostgreSQL rend un `DECIMAL`. B15 reste ouvert sur le fond : le domaine calcule encore les prix en `float`. Il se règle avec le passage des montants en centimes, à faire avant la phase 4.
 - Dates : la migration `Version20261121195209` est à jouer sur chaque base de dev (`php bin/console doctrine:migrations:migrate`). Sans elle, toute route qui lit un produit ou un compte répond 500 (« column created_at does not exist »). Les lignes existantes y reçoivent l'heure de la migration.
 - Dates : `updated_at` suit la ligne elle-même, à la seconde près. Ajouter une image ne change pas celui du produit, ni une adresse celui du compte. Le sitemap (`P8-05`) devra prendre la plus récente des deux dates s'il veut tenir compte des images.
-- Serveur sur la base de test (pour Bruno) : `APP_ENV=test php -d variables_order=EGPCS -S 127.0.0.1:8001 -t public`. Sans le `-d`, le serveur intégré de PHP ne transmet pas `APP_ENV` : il tourne en dev, sur la base de dev.
+- Serveur sur la base de test (pour Bruno) : `APP_ENV=test php -d variables_order=EGPCS -S 127.0.0.1:8001 -t public`. Sans le `-d`, le serveur intégré de PHP ne transmet pas `APP_ENV` : il tourne en dev, sur la base de dev. Les limites de connexion n'y jouent pas (voir `api/CLAUDE.md`).
+- Limites (`P1-07`) : en production derrière Caddy, définir `SYMFONY_TRUSTED_PROXIES=private_ranges` (`P7-01`). Sans lui, toutes les requêtes semblent venir de Caddy, et les limites par adresse s'appliquent à tous les clients ensemble : 25 essais de connexion en 15 minutes pour tout le site. Ne jamais le définir dans un fichier versionné.
+- Limites : `APP_SECRET` devient indispensable en production. Les clés des compteurs sont hachées avec lui : sans lui, la connexion et l'inscription répondent 500.
+- Limites : les compteurs sont dans le cache `cache.app` (des fichiers) et les verrous en `flock`, ce qui suffit pour un seul serveur. Avec plusieurs conteneurs API, passer les deux sur un stockage partagé (Redis, PostgreSQL).
+- Limites, en dev : après quelques exécutions de Bruno (deux inscriptions chacune), l'inscription répond 429 pendant une heure au plus. `php bin/console cache:pool:clear cache.rate_limiter` remet les compteurs à zéro.
+- Connexion : la réponse arrive plus vite pour un email inconnu, puisque aucun mot de passe n'est vérifié, ce qui laisse deviner si un compte existe. Les limites ralentissent ce sondage sans l'empêcher. Correctif simple : vérifier un hachage factice quand le compte n'existe pas, avec `P3-02` ou à part.
 - Une PR se crée toujours vers `main`, même si sa branche part d'une autre branche de travail : la PR #22, créée vers la branche de la #21, a été mergée dans cette branche et n'est jamais arrivée dans `main`.
 - Un test fonctionnel (`tests/Functional/`, `WebTestCase`) ne doit jamais atteindre la base : en CI elle est vide quand ils tournent, et la requête répond 500. En local le défaut ne se voit pas, la base ayant déjà son schéma. Pour le reproduire : `docker compose restart database_test`, puis `vendor/bin/phpunit tests/Functional`. Un parcours HTTP qui a besoin de la base étend `DatabaseTestCase` (voir `TokenRefreshTest`).
 - Tests d'intégration (`tests/Integration/`) : ils exigent la base de test, c'est-à-dire le service `database_test` lancé par `docker compose up -d` depuis `api/` (`127.0.0.1:54320`). Sans elle ils **échouent**, avec un message qui dit quoi lancer. `vendor/bin/phpunit tests/Unit` reste utilisable sans base.
@@ -100,6 +106,15 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-22 — P1-07 : limites de connexion et d'inscription (branche `feat/P1-07-rate-limiting`, en relecture)
+- `symfony/rate-limiter` installé, avec `symfony/lock` pour que des requêtes parallèles ne passent pas toutes avant l'écriture du compteur (constat S6 de l'audit).
+- Connexion, boutique et back-office comptés ensemble : 5 essais par email et par adresse, 25 par adresse, sur 15 minutes glissantes. L'essai est compté avant la vérification du mot de passe ; une connexion réussie efface le compte de son email, pas celui de l'adresse.
+- Inscription : 10 essais par adresse et par heure, réussis ou non (un email déjà pris compte aussi).
+- Au-delà : 429, `{"error": ...}` et `Retry-After`. L'en-tête est exposé aux fronts par CORS et la réponse est documentée dans le contrat.
+- `login_throttling`, cité par la roadmap, ne peut pas s'appliquer : la connexion passe par `LoginUserUseCase`, pas par le pare-feu. `AuthenticationThrottle` en reprend la règle (`DefaultLoginRateLimiter` de Symfony), appelé par les trois contrôleurs.
+- Aucun proxy n'est cru tant que `SYMFONY_TRUSTED_PROXIES` n'est pas défini : un client ne peut pas changer d'adresse avec `X-Forwarded-For`. Réglage de production (`private_ranges`) vérifié avec un vrai serveur.
+- Vérifications : `composer check` vert, PHPUnit « OK (457 tests) », y compris sur une base de test vide ; dix régressions introduites exprès, toutes détectées ; collection Bruno, 20 requêtes sur 20.
 
 ### 2026-11-21 — P1-08 : dates de création et de modification (branche `feat/P1-08-timestamps`, en relecture)
 - `stof/doctrine-extensions-bundle` installé, avec Gedmo Timestampable pour seule extension. Les cinq tables reçoivent `created_at` et `updated_at` (`timestamptz`), posées à l'enregistrement avec l'horloge de Symfony.

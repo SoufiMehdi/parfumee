@@ -54,7 +54,7 @@
                     "Back-office \u00b7 Authentication"
                 ],
                 "summary": "Sign in to the back-office",
-                "description": "Any account can sign in; the routes of the back-office then refuse an account without the editor or administrator role.",
+                "description": "Any account can sign in; the routes of the back-office then refuse an account without the editor or administrator role. Failed attempts are limited as on the shop, and the two sign-ins share the count.",
                 "operationId": "post_admin_login",
                 "requestBody": {
                     "required": true,
@@ -92,6 +92,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/TooManyRequests"
                     }
                 },
                 "security": []
@@ -833,6 +836,7 @@
                     "Shop \u00b7 Authentication"
                 ],
                 "summary": "Create a customer account",
+                "description": "The number of attempts from one address is limited, whatever their outcome.",
                 "operationId": "post_shop_register",
                 "requestBody": {
                     "required": true,
@@ -870,6 +874,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/TooManyRequests"
                     }
                 },
                 "security": []
@@ -881,6 +888,7 @@
                     "Shop \u00b7 Authentication"
                 ],
                 "summary": "Sign in",
+                "description": "Failed attempts are limited per email and per address; a successful sign-in clears the count of its email.",
                 "operationId": "post_shop_login",
                 "requestBody": {
                     "required": true,
@@ -918,6 +926,9 @@
                     },
                     "422": {
                         "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/TooManyRequests"
                     }
                 },
                 "security": []
@@ -1821,11 +1832,32 @@
                         }
                     }
                 }
+            },
+            "TooManyRequests": {
+                "description": "Too many attempts from this address. Wait for the number of seconds given by `Retry-After`.",
+                "headers": {
+                    "Retry-After": {
+                        "$ref": "#/components/headers/RetryAfter"
+                    }
+                },
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
             }
         },
         "headers": {
             "TotalCount": {
                 "description": "Number of items matching the filters, over all pages. Same value as `pagination.total`.",
+                "schema": {
+                    "type": "integer"
+                }
+            },
+            "RetryAfter": {
+                "description": "Number of seconds to wait before trying again.",
                 "schema": {
                     "type": "integer"
                 }

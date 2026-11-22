@@ -1,0 +1,42 @@
+# Limits of the public authentication routes (audit S6, P1-07). They are applied by
+# App\Ecommerce\Infrastructure\Security\AuthenticationThrottle, which the controllers
+# call: the sign-in goes through LoginUserUseCase, not through the firewall, so
+# Symfony's login_throttling cannot apply. Its rule is reused as such.
+#
+# The keys are the address of the client (and the email, for the sign-in), hashed.
+# Behind a proxy (Caddy, P7-01), the address is only the client's once
+# SYMFONY_TRUSTED_PROXIES is set: otherwise every request seems to come from the proxy.
+framework:
+    rate_limiter:
+        # Guessing a password: one email from one address. A successful sign-in clears it.
+        login_per_account:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        # Trying many accounts: any email from one address. A success does not clear it.
+        login_per_address:
+            policy: sliding_window
+            limit: 25
+            interval: '15 minutes'
+        # Creating accounts from one address: slows down spam accounts, and the probing
+        # of which emails have an account (a taken one answers 409).
+        registration_per_address:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
+
+when@test:
+    services:
+        # In memory, for the life of a kernel: each test starts with no attempt counted,
+        # and the counts survive from one request to the next. An array cache pool would
+        # not do: the kernel empties it between two requests.
+        test.rate_limiter.storage:
+            class: Symfony\Component\RateLimiter\Storage\InMemoryStorage
+    framework:
+        rate_limiter:
+            login_per_account:
+                storage_service: test.rate_limiter.storage
+            login_per_address:
+                storage_service: test.rate_limiter.storage
+            registration_per_address:
+                storage_service: test.rate_limiter.storage

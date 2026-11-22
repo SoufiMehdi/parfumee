@@ -8,7 +8,9 @@ use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\User\ListUsersUseCase;
+use App\Ecommerce\Application\UseCase\User\LoginUserUseCase;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
+use App\Ecommerce\Domain\Exception\User\InvalidCredentialsException;
 use App\Ecommerce\Domain\Repository\Page;
 use App\Ecommerce\Domain\Repository\Pagination;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -96,7 +98,7 @@ final class CorsTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $headers = $this->client->getResponse()->headers;
         self::assertSame($origin, $headers->get('Access-Control-Allow-Origin'));
-        self::assertSame('x-total-count', $headers->get('Access-Control-Expose-Headers'));
+        self::assertSame('x-total-count, retry-after', $headers->get('Access-Control-Expose-Headers'));
         self::assertSame('0', $headers->get('X-Total-Count'));
         self::assertFalse($headers->has('Access-Control-Allow-Credentials'));
     }
@@ -112,6 +114,28 @@ final class CorsTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(401);
         self::assertSame($this->adminOrigin, $this->client->getResponse()->headers->get('Access-Control-Allow-Origin'));
+    }
+
+    /**
+     * After too many attempts, the front reads how long to wait in Retry-After.
+     */
+    public function testTheWaitAfterTooManyAttemptsIsReadable(): void
+    {
+        // Several requests here: the counts, and the stub, must survive from one to the next.
+        $this->client->disableReboot();
+        $useCase = $this->createStub(LoginUserUseCase::class);
+        $useCase->method('execute')->willThrowException(new InvalidCredentialsException());
+        static::getContainer()->set(LoginUserUseCase::class, $useCase);
+
+        foreach (range(1, 6) as $attempt) {
+            $this->client->request('POST', '/api/v1/shop/login', server: ['HTTP_ORIGIN' => $this->shopOrigin, 'CONTENT_TYPE' => 'application/json'], content: '{"email": "ada@example.test", "password": "wrong"}');
+        }
+
+        self::assertResponseStatusCodeSame(429);
+        $headers = $this->client->getResponse()->headers;
+        self::assertSame($this->shopOrigin, $headers->get('Access-Control-Allow-Origin'));
+        self::assertSame('x-total-count, retry-after', $headers->get('Access-Control-Expose-Headers'));
+        self::assertGreaterThan(0, (int) $headers->get('Retry-After'));
     }
 
     public function testAValidationErrorIsReadable(): void

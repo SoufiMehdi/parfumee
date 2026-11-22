@@ -248,6 +248,18 @@ Chaque produit et chaque compte porte deux dates, en UTC et au format RFC 3339 (
 
 L'API les pose elle-même à l'enregistrement, à la seconde près ; un client ne peut pas les envoyer. Les plus récents d'abord : `sort=created_at&order=desc`.
 
+### Limites de connexion et d'inscription
+
+Contre la recherche de mots de passe et la création de comptes en masse, l'API limite les essais par adresse IP :
+
+| Route | Limite | Remise à zéro |
+|---|---|---|
+| Connexion (`/api/v1/shop/login` et `/api/v1/admin/login`, comptées ensemble) | 5 essais sur un même email depuis une même adresse, en 15 minutes | une connexion réussie remet cet email à zéro |
+| | 25 essais depuis une même adresse, tous emails confondus, en 15 minutes | une connexion réussie ne les efface pas |
+| Inscription (`/api/v1/shop/register`) | 10 essais depuis une même adresse en une heure, réussis ou non | aucune |
+
+Au-delà, l'API répond `429` : `{"error": "..."}`, avec l'en-tête `Retry-After`, le nombre de secondes à attendre. Une adresse bloquée est refusée même avec le bon mot de passe. Les limites se règlent dans `api/config/packages/rate_limiter.yaml`.
+
 ## Appeler l'API depuis un navigateur (CORS)
 
 La boutique et le back-office tournent sur leur propre origine et appellent l'API depuis le navigateur. L'API n'autorise que ces deux origines, une variable chacune :
@@ -260,7 +272,7 @@ La boutique et le back-office tournent sur leur propre origine et appellent l'AP
 - **Comparaison exacte** : schéma, hôte et port, sans barre finale. `http://localhost:5173/` ou `http://127.0.0.1:5173` ne correspondent pas à `http://localhost:5173`.
 - **Autre port en développement** : surcharger la variable dans `api/.env.dev.local`, non versionné.
 - **Valeur vide** : aucun front n'est autorisé. C'est le cas par défaut dans `api/.env`, donc en production tant que les variables ne sont pas définies.
-- **En-tête exposé** : le front peut lire `X-Total-Count`, le total d'une liste.
+- **En-têtes exposés** : le front peut lire `X-Total-Count`, le total d'une liste, et `Retry-After`, l'attente après trop d'essais.
 - **Limite** : le CORS n'empêche que la lecture des réponses par une page web d'une autre origine. Un script hors navigateur appelle l'API librement : ce sont le jeton et les rôles qui la protègent.
 
 ## Contrat de l'API (OpenAPI)
@@ -324,6 +336,7 @@ Ne jamais mettre de vrai secret dans un fichier versionné. `.env.local` n'est p
 | Erreur 500 « column … created_at does not exist » | La base de développement n'a pas la dernière migration : `php bin/console doctrine:migrations:migrate`. |
 | Le front reçoit une erreur CORS (« blocked by CORS policy ») | Son origine ne correspond pas exactement à `CORS_SHOP_ORIGIN` ou `CORS_ADMIN_ORIGIN` : vérifier le port, `localhost` contre `127.0.0.1`, et l'absence de barre finale. |
 | Upload d'image refusé au-delà de 2 Mo | Limite `upload_max_filesize` de PHP, à relever dans son `php.ini` (l'API accepte jusqu'à 5 Mo). |
+| `429 Too Many Requests` à la connexion ou à l'inscription, en développement | Les limites sont atteintes, par exemple après plusieurs exécutions de Bruno : `php bin/console cache:pool:clear cache.rate_limiter` remet les compteurs à zéro. |
 
 ## Contribuer
 
