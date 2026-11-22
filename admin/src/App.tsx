@@ -1,4 +1,4 @@
-import { Admin } from 'react-admin';
+import { Admin, Resource } from 'react-admin';
 
 import { authProvider } from './auth/authProvider';
 import { Dashboard } from './Dashboard';
@@ -11,5 +11,13 @@ import { LoginPage } from './LoginPage';
  * disableTelemetry: react-admin would otherwise tell its publisher where it runs.
  */
 export const App = () => (
-    <Admin title="Parfumée" authProvider={authProvider} i18nProvider={i18nProvider} loginPage={LoginPage} dashboard={Dashboard} requireAuth disableTelemetry />
+    <Admin title="Parfumée" authProvider={authProvider} i18nProvider={i18nProvider} loginPage={LoginPage} dashboard={Dashboard} requireAuth disableTelemetry>
+        {/*
+          Declared without screens until P1-10, which gives them their lists: a resource
+          without a list stays out of the menu. Without any resource, react-admin would show
+          its "Welcome to React-admin" page instead of the sign-in page and the dashboard.
+        */}
+        <Resource name="products" />
+        <Resource name="users" />
+    </Admin>
 );

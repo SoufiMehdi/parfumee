@@ -119,7 +119,8 @@
 - Session : le JWT en mémoire, le refresh token dans le `localStorage`. Un seul renouvellement à la fois, entre onglets aussi (Web Locks), puisqu'un refresh token ne sert qu'une fois. Un JWT expiré est renouvelé une fois, puis la requête est renvoyée.
 - API : nouvelle route `POST /api/v1/token/revoke` (déconnexion), publique, qui répond 204 même pour un jeton inconnu ou déjà révoqué, y compris avec un JWT expiré joint.
 - CI `.github/workflows/admin.yml` : lint, types, tests, build, et vérification que les types générés suivent le contrat.
-- Vérifications : `composer check` vert, PHPUnit « OK (464 tests) » ; 33 tests Vitest ; douze régressions introduites exprès (dix dans le back-office, deux sur la déconnexion), toutes détectées ; parcours complet joué avec `curl` contre une vraie API (requêtes préliminaires CORS depuis `localhost:5173`, connexion, `/admin/me`, renouvellement, déconnexion, compte client refusé) ; collection Bruno, 22 requêtes sur 22.
+- Corrigé après un premier essai dans le navigateur : sans aucune ressource déclarée, react-admin affichait sa page « Welcome to React-admin » au lieu de la connexion. Les ressources `products` et `users` sont déclarées sans écran, et trois tests de rendu de l'application entière le vérifient.
+- Vérifications : `composer check` vert, PHPUnit « OK (464 tests) » ; 36 tests Vitest ; douze régressions introduites exprès (dix dans le back-office, deux sur la déconnexion), toutes détectées ; parcours complet joué avec `curl` contre une vraie API (requêtes préliminaires CORS depuis `localhost:5173`, connexion, `/admin/me`, renouvellement, déconnexion, compte client refusé) ; collection Bruno, 22 requêtes sur 22.
 
 ### 2026-11-22 — P1-07 : limites de connexion et d'inscription (branche `feat/P1-07-rate-limiting`, en relecture)
 - `symfony/rate-limiter` installé, avec `symfony/lock` pour que des requêtes parallèles ne passent pas toutes avant l'écriture du compteur (constat S6 de l'audit).

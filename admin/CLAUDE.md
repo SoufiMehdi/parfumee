@@ -45,10 +45,12 @@ src/
 - Vitest, en environnement jsdom (`localStorage`, `Response`). `npm test`, ou `npm run check` pour tout ce que vérifie la CI (lint, types, tests).
 - `fakeApi()` remplace `fetch` : chaque route « MÉTHODE /chemin » répond, chaque appel est enregistré, toute autre requête fait échouer le test.
 - La session vit dans la mémoire des modules : chaque test les recharge (`vi.resetModules()`, puis `await import(...)`).
+- `App.test.tsx` rend l'application entière (Testing Library) : page de connexion sans session, tableau de bord avec une session, connexion par le formulaire. C'est lui qui vérifie ce que l'utilisateur voit ; les autres tests ne couvrent que la logique.
 
 ## Pièges connus
 
 - TypeScript 5.9, et non 7 (que propose le modèle Vite) : `openapi-typescript` utilise l'API JavaScript du compilateur, que TypeScript 7 n'a pas encore. Passer à 7 quand il le permettra.
 - Le lint est **oxlint**, pas ESLint : c'est celui du modèle Vite actuel, et il ne dépend pas du compilateur TypeScript.
 - `<Admin>` n'a pas encore de `dataProvider` : les écrans des ressources arrivent avec P1-10.
+- Sans aucune `<Resource>` ni `<CustomRoutes>`, react-admin affiche sa page « Welcome to React-admin » à la place de la connexion et du tableau de bord : il teste l'application « vide » avant même l'authentification. Les ressources `products` et `users` sont donc déclarées dès maintenant, sans écran ; une ressource sans liste n'apparaît pas dans le menu.
 - Le `package-lock.json` est au format 3 : il faut npm 9 ou plus.
