@@ -21,5 +21,7 @@ export default defineConfig({
     test: {
         // A browser-like environment: localStorage, Response, navigator.
         environment: 'jsdom',
+        // The render tests type in whole forms (App.test.tsx): up to 4 s here, more on a CI runner.
+        testTimeout: 15000,
     },
 });

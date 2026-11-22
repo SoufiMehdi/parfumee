@@ -59,6 +59,7 @@ src/
 - `fakeApi()` remplace `fetch` : chaque route « MÉTHODE /chemin » répond, chaque appel est enregistré, toute autre requête fait échouer le test.
 - La session vit dans la mémoire des modules : chaque test les recharge (`vi.resetModules()`, puis `await import(...)`).
 - `App.test.tsx` rend l'application entière (Testing Library) : page de connexion sans session, tableau de bord, menu selon le rôle, listes, connexion par le formulaire. C'est lui qui vérifie ce que l'utilisateur voit ; les autres tests ne couvrent que la logique. Tout nouvel écran y a son test.
+- `App.test.tsx` attend jusqu'à 5 s ce qu'il cherche (`configure({ asyncUtilTimeout: 5000 })`) et chaque test a 15 s (`testTimeout`) : le premier rendu charge react-admin et Material UI, plus lent sur la CI (3,3 s vu) que la seconde par défaut de Testing Library.
 - Les adresses de react-admin passent par le dièse (`HashRouter`) : pour ouvrir une page dans un test, `window.history.replaceState({}, '', '/#/products')` avant le rendu.
 - `fakeApi` ignore la chaîne de requête pour choisir la route, mais l'enregistre (`call.query`) : de quoi vérifier la page, le tri et les filtres envoyés.
 

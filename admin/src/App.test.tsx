@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, configure, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,6 +25,11 @@ const ADMIN = {
 const EDITOR = { ...ADMIN, id: 'u-2', email: 'grace@example.test', first_name: 'Grace', last_name: 'Hopper', roles: ['ROLE_EDITOR', 'ROLE_USER'] };
 
 const onePage = (items: object[]) => ({ body: { items, pagination: { page: 1, per_page: 25, total: items.length, total_pages: 1 } } });
+
+// The whole application is rendered: the first render loads react-admin and Material UI,
+// which takes more than the default second on a CI runner (3.3 s seen). findBy… and waitFor
+// wait up to 5 s; a test that passes still ends as soon as what it waits for shows.
+configure({ asyncUtilTimeout: 5000 });
 
 let App: (typeof import('./App'))['App'];
 
