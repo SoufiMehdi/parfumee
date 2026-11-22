@@ -1,0 +1,18 @@
+.hero {
+    padding: 3rem 0 2rem;
+}
+
+.hero h1 {
+    margin: 0 0 0.5rem;
+    font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.hero p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 1.15rem;
+}
+
+.section h2 {
+    margin: 0 0 1rem;
+}

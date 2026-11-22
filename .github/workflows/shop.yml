@@ -1,0 +1,72 @@
+name: Shop
+
+# Runs the same checks as `npm run check` on a dev machine, plus the build.
+# The contract of the API is watched too: the client of the shop is typed from it.
+on:
+  pull_request:
+    paths:
+      - 'shop/**'
+      - 'api/openapi.json'
+      - '.github/workflows/shop.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'shop/**'
+      - 'api/openapi.json'
+      - '.github/workflows/shop.yml'
+
+# A new push on the same branch cancels the run in progress.
+concurrency:
+  group: shop-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: shop
+
+env:
+  # Next.js would otherwise send anonymous usage data from the runner.
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  check:
+    name: Lint, types, tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: shop/.nvmrc
+          cache: npm
+          cache-dependency-path: shop/package-lock.json
+
+      - name: Install the dependencies
+        run: npm ci
+
+      - name: The types of the API follow the contract
+        # src/api/schema.ts is generated from api/openapi.json: a change of the contract
+        # without `npm run api:types` would leave the shop behind the API.
+        run: |
+          npm run api:types
+          git diff --exit-code -- src/api/schema.ts
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Types
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        # No API here: the pages read it at request time, never while building.
+        run: npm run build

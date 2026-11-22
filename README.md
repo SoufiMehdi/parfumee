@@ -189,6 +189,23 @@ Ouvrir http://localhost:5173, puis se connecter avec un compte éditeur ou admin
 - **Production** : `VITE_API_URL=https://api.example.fr npm run build`, puis servir `admin/dist/` en fichiers statiques (`P7-01`).
 - **Vérifier** : `npm run check` (lint, types, tests), ce que lance la CI.
 
+## Lancer la boutique
+
+La boutique (`shop/`) est une application Next.js : ses pages sont rendues par le serveur, pour le référencement. Il faut Node 22.12 ou plus, et l'API lancée comme à l'étape 7.
+
+```bash
+cd shop
+npm install
+npm run dev
+```
+
+Ouvrir http://localhost:3000 : l'accueil montre les dernières bougies du catalogue (8 au plus). Sans produit, il affiche « Le catalogue arrive bientôt » ; quand l'API ne répond pas, « Le catalogue est momentanément indisponible ».
+
+- **Adresse de l'API** : `API_URL`, dans `shop/.env.development` (`http://127.0.0.1:8000`). Une autre adresse se met dans `shop/.env.local`, non versionné.
+- **Port imposé** : 3000, l'origine que l'API autorisera pour les appels faits depuis le navigateur (panier, compte). S'il est pris, `npm run dev` s'arrête.
+- **Production** : `npm run build`, qui n'a pas besoin de l'API, puis `API_URL=https://… npm start`. L'image Docker arrive avec `P7-01`.
+- **Vérifier** : `npm run check` (lint, types, tests), ce que lance la CI.
+
 ## Routes actuelles
 
 Deux espaces, un par front. Ils partagent les mêmes cas d'usage ; seuls les contrôleurs et les droits diffèrent.
@@ -356,6 +373,7 @@ Ne jamais mettre de vrai secret dans un fichier versionné. `.env.local` n'est p
 | Erreur 500 « column … created_at does not exist » | La base de développement n'a pas la dernière migration : `php bin/console doctrine:migrations:migrate`. |
 | Le front reçoit une erreur CORS (« blocked by CORS policy ») | Son origine ne correspond pas exactement à `CORS_SHOP_ORIGIN` ou `CORS_ADMIN_ORIGIN` : vérifier le port, `localhost` contre `127.0.0.1`, et l'absence de barre finale. |
 | Upload d'image refusé au-delà de 2 Mo | Limite `upload_max_filesize` de PHP, à relever dans son `php.ini` (l'API accepte jusqu'à 5 Mo). |
+| La boutique affiche « Le catalogue est momentanément indisponible » | L'API ne répond pas à l'adresse `API_URL` : la lancer (étape 7), ou corriger l'adresse dans `shop/.env.local`. Le détail de l'erreur est dans le terminal de `npm run dev`. |
 | `npm run dev` du back-office : « Port 5173 is already in use » | Un autre programme occupe le port : l'arrêter. Changer de port ferait refuser les appels par l'API (CORS). |
 | Le back-office affiche « Ce compte n'a pas accès au back-office » | Le compte n'est ni éditeur ni administrateur : `php bin/console app:user:create-admin <email> --promote`. |
 | `429 Too Many Requests` à la connexion ou à l'inscription, en développement | Les limites sont atteintes, par exemple après plusieurs exécutions de Bruno : `php bin/console cache:pool:clear cache.rate_limiter` remet les compteurs à zéro. |

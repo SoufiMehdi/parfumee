@@ -15,7 +15,11 @@ Front séparé dans `shop/`, construit avec **Next.js** (React, TypeScript) :
 - client de l'API typé, généré depuis `api/openapi.json` (`openapi-typescript`) ;
 - auto-hébergé : un conteneur Node (sortie `standalone`) derrière Caddy, sans dépendre de Vercel.
 
-Décision prise le 2026-11-22. Mise en œuvre : `P1-11`.
+Décision prise le 2026-11-22.
+
+## Mise en œuvre
+- `P1-11` : Next.js 16 (App Router), client `openapi-fetch` typé par `openapi-typescript`. Les données fraîches sont lues à chaque requête, dans un `<Suspense>` après `connection()` : la compilation n'appelle jamais l'API. Les règles sont dans `shop/CLAUDE.md`.
+- `P7-01` : l'image Docker, avec la sortie `standalone`.
 
 ## Conséquences
 - Un seul écosystème pour les deux fronts : React, TypeScript, les mêmes outils de test et de lint.
