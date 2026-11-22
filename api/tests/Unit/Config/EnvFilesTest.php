@@ -74,6 +74,18 @@ final class EnvFilesTest extends TestCase
         }
     }
 
+    /**
+     * A trusted proxy is believed when it tells who the client is (X-Forwarded-For).
+     * No committed file may trust one: only production, behind Caddy, sets it (P7-01).
+     * Otherwise a client could pose as any address and get round the rate limits.
+     */
+    public function testNoCommittedFileTrustsAProxy(): void
+    {
+        foreach (['.env', '.env.dev', '.env.test'] as $file) {
+            self::assertSame('', $this->parse($file)['SYMFONY_TRUSTED_PROXIES'] ?? '', $file.' must not trust any proxy.');
+        }
+    }
+
     public function testTheBaseDatabaseUrlOnlyHoldsThePlaceholderPassword(): void
     {
         self::assertStringContainsString(':!ChangeMe!@127.0.0.1', $this->parse('.env')['DATABASE_URL']);

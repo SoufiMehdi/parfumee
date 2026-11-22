@@ -19,7 +19,8 @@ nelmio_cors:
             allow_headers: ['Authorization', 'Content-Type']
             # The token is sent in a header, never in a cookie: no credentials.
             allow_credentials: false
-            # Without it, the browser hides the total of a list from the front (P1-04).
-            expose_headers: ['X-Total-Count']
+            # Without them, the browser hides from the front the total of a list (P1-04),
+            # and how long to wait after too many attempts (429, P1-07).
+            expose_headers: ['X-Total-Count', 'Retry-After']
             # The browser may reuse a preflight answer for an hour.
             max_age: 3600

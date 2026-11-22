@@ -61,6 +61,10 @@ nelmio_api_doc:
                     description: Number of items matching the filters, over all pages. Same value as `pagination.total`.
                     schema:
                         type: integer
+                RetryAfter:
+                    description: Number of seconds to wait before trying again.
+                    schema:
+                        type: integer
             responses:
                 BadRequest:
                     description: The body is not valid JSON, or is not sent as `application/json`
@@ -87,6 +91,13 @@ nelmio_api_doc:
                     content:
                         application/json:
                             schema: { $ref: '#/components/schemas/ValidationError' }
+                TooManyRequests:
+                    description: Too many attempts from this address. Wait for the number of seconds given by `Retry-After`.
+                    headers:
+                        Retry-After: { $ref: '#/components/headers/RetryAfter' }
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/Error' }
         paths:
             # Handled by the refresh_jwt authenticator: there is no controller to read it from.
             /api/v1/token/refresh:

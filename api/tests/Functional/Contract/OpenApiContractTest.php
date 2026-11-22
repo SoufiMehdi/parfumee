@@ -130,6 +130,20 @@ final class OpenApiContractTest extends WebTestCase
     }
 
     /**
+     * The fronts must know that these routes may answer 429, and where to read the wait.
+     */
+    public function testTheRateLimitedOperationsDocumentTooManyRequests(): void
+    {
+        $spec = $this->fetchSpec();
+        $operations = $this->operations();
+
+        foreach (['POST /api/v1/shop/login', 'POST /api/v1/admin/login', 'POST /api/v1/shop/register'] as $name) {
+            self::assertSame(['$ref' => '#/components/responses/TooManyRequests'], $operations[$name]['responses']['429'] ?? null, $name.' must document 429.');
+        }
+        self::assertArrayHasKey('Retry-After', $spec['components']['responses']['TooManyRequests']['headers']);
+    }
+
+    /**
      * A list is always one page with its pagination, never a bare array: a bare array
      * cannot tell how many items there are in all, nor grow a field later.
      */
