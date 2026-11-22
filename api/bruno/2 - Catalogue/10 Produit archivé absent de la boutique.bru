@@ -1,0 +1,21 @@
+meta {
+  name: 10 Produit archivé absent de la boutique
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/v1/shop/products/{{productId}}
+  body: none
+  auth: none
+}
+
+tests {
+  test("404 : la boutique ne voit que les produits publiés", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  À lancer après la requête 09. Le back-office, lui, lit toujours le produit (`GET /api/v1/admin/products/{{productId}}`) et le liste avec le filtre `?status=archived`.
+}
