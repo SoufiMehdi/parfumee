@@ -746,6 +746,38 @@
                 }
             }
         },
+        "/api/v1/token/revoke": {
+            "post": {
+                "tags": [
+                    "Sessions"
+                ],
+                "summary": "Sign out",
+                "description": "The refresh token can no longer be exchanged for a new session. The JWT already issued stays valid until it expires (15 minutes): a front forgets it. An unknown or already revoked refresh token is accepted too, so that signing out never fails.",
+                "operationId": "post_api_token_revoke",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevokeRefreshTokenRequestDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "The refresh token is revoked"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    }
+                },
+                "security": []
+            }
+        },
         "/api/v1/shop/me": {
             "get": {
                 "tags": [
@@ -1387,6 +1419,19 @@
                 },
                 "type": "object"
             },
+            "RevokeRefreshTokenRequestDto": {
+                "required": [
+                    "refresh_token"
+                ],
+                "properties": {
+                    "refresh_token": {
+                        "title": "The refresh token of the session to end, as the sign-in or the last refresh returned it.",
+                        "type": "string",
+                        "maxLength": 255
+                    }
+                },
+                "type": "object"
+            },
             "RegisterAddressDto": {
                 "required": [
                     "street",
@@ -1888,6 +1933,9 @@
             "name": "Back-office \u00b7 Users"
         },
         {
+            "name": "Sessions"
+        },
+        {
             "name": "Shop \u00b7 My account"
         },
         {
@@ -1895,10 +1943,6 @@
         },
         {
             "name": "Shop \u00b7 Catalogue"
-        },
-        {
-            "name": "Sessions",
-            "description": "Sessions"
         }
     ]
 }

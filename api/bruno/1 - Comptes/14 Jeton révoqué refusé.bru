@@ -1,0 +1,28 @@
+meta {
+  name: 14 Jeton révoqué refusé
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/api/v1/token/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refresh_token": "{{refreshToken}}"
+  }
+}
+
+tests {
+  test("401 : un refresh token révoqué ne renouvelle plus la session", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(res.getBody().error).to.be.a("string");
+  });
+}
+
+docs {
+  Le refresh token révoqué par 13 est refusé. Pour une nouvelle session, relancer `02 Connexion`.
+}

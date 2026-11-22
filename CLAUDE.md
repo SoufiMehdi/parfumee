@@ -5,8 +5,8 @@ Site e-commerce de **bougies parfumées**. Un seul dépôt contient une API et l
 | Dossier | Contenu | État |
 |---|---|---|
 | `api/` | API Symfony 8.1 / PHP 8.4+ / PostgreSQL 16, architecture hexagonale. Voir `api/CLAUDE.md` | Existant, en stabilisation |
-| `shop/` | Front boutique publique (SSR pour le SEO) | À créer — framework non choisi |
-| `admin/` | Back-office (React-admin proposé, voir ADR 0003) | À créer |
+| `shop/` | Front boutique publique en Next.js (SSR pour le SEO), voir ADR 0006 | À créer (P1-11) |
+| `admin/` | Back-office en React-admin (Vite, TypeScript), voir ADR 0003 et `admin/CLAUDE.md` | Initialisé : connexion et session |
 | `infra/` | Docker Compose, Caddy, scripts de déploiement et de sauvegarde | À créer |
 | `docs/` | Comptes rendus d'audit, roadmap, ADR, état d'avancement | À jour |
 
@@ -59,4 +59,10 @@ composer check                             # tout : style + PHPStan + conteneur 
 composer lint                              # style (dry-run), PHPStan niveau 6, lint du conteneur
 composer test                              # PHPUnit ; les tests d'intégration exigent la base de test
 composer fix-cs                            # corrige le style (php-cs-fixer)
+
+# Back-office (depuis admin/)
+npm install
+npm run dev                                # http://localhost:5173, l'API sur VITE_API_URL (admin/.env)
+npm run check                              # lint (oxlint) + types (tsc) + tests (Vitest), comme la CI
+npm run api:types                          # régénère src/api/schema.ts après un changement du contrat
 ```

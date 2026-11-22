@@ -136,6 +136,35 @@ final class TokenRefreshTest extends DatabaseTestCase
         self::assertSame(401, $this->refresh($session['refresh_token'])->getStatusCode());
     }
 
+    public function testARevokedRefreshTokenCanNoLongerRenewTheSession(): void
+    {
+        $session = $this->signIn();
+
+        self::assertSame(204, $this->revoke($session['refresh_token'])->getStatusCode());
+
+        self::assertSame(401, $this->refresh($session['refresh_token'])->getStatusCode());
+        self::assertSame(0, (int) $this->entityManager->getConnection()->fetchOne('SELECT COUNT(*) FROM refresh_tokens'));
+    }
+
+    public function testSigningOutTwiceOrWithAnUnknownTokenIsNotAnError(): void
+    {
+        $session = $this->signIn();
+        $this->revoke($session['refresh_token']);
+
+        self::assertSame(204, $this->revoke($session['refresh_token'])->getStatusCode());
+        self::assertSame(204, $this->revoke(str_repeat('a', 128))->getStatusCode());
+    }
+
+    public function testSigningOutEndsOnlyThatSession(): void
+    {
+        $onThisDevice = $this->signIn();
+        $onAnotherDevice = $this->signIn('/api/v1/admin/login');
+
+        $this->revoke($onThisDevice['refresh_token']);
+
+        self::assertSame(200, $this->refresh($onAnotherDevice['refresh_token'])->getStatusCode());
+    }
+
     public function testMyAccountRequiresAToken(): void
     {
         self::assertSame(401, $this->request('GET', '/api/v1/shop/me')->getStatusCode());
@@ -160,6 +189,11 @@ final class TokenRefreshTest extends DatabaseTestCase
     private function refresh(string $refreshToken): Response
     {
         return $this->request('POST', '/api/v1/token/refresh', ['refresh_token' => $refreshToken]);
+    }
+
+    private function revoke(string $refreshToken): Response
+    {
+        return $this->request('POST', '/api/v1/token/revoke', ['refresh_token' => $refreshToken]);
     }
 
     /**
