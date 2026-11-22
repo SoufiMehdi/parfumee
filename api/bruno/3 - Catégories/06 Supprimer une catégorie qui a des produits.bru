@@ -1,0 +1,25 @@
+meta {
+  name: 06 Supprimer une catégorie qui a des produits
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/admin/categories/{{categoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("409 : la catégorie des fixtures contient les produits du dossier Catalogue", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  Les produits archivés comptent aussi : une commande doit pouvoir relire la catégorie d'un produit vendu.
+}

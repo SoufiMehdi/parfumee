@@ -1,0 +1,21 @@
+meta {
+  name: 08 Supprimer la sous-catégorie
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/admin/categories/{{childCategoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("204, sans contenu", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

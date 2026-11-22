@@ -242,6 +242,11 @@ Un refresh token ne sert qu'une fois : chaque renouvellement en donne un nouveau
 | `POST` | `/api/v1/admin/products` | Éditeur. En brouillon, sauf `status` contraire |
 | `PUT` | `/api/v1/admin/products/{id}` | Éditeur. Sans `status`, le produit garde le sien |
 | `DELETE` | `/api/v1/admin/products/{id}` | Éditeur. Archive le produit (204) : il n'est jamais effacé |
+| `GET` | `/api/v1/admin/categories` | Éditeur. Une page de catégories (filtres `q`, `parent_id`, `top_level`) |
+| `GET` | `/api/v1/admin/categories/{id}` | Éditeur |
+| `POST` | `/api/v1/admin/categories` | Éditeur. Au premier niveau, ou sous `parent_id` |
+| `PUT` | `/api/v1/admin/categories/{id}` | Éditeur. Sans `parent_id`, la catégorie passe au premier niveau |
+| `DELETE` | `/api/v1/admin/categories/{id}` | Éditeur. Seulement une catégorie vide (204), sinon 409 |
 | `POST` | `/api/v1/admin/products/{id}/pictures` | Éditeur |
 | `GET` | `/api/v1/admin/users` | Administrateur. Une page de comptes |
 | `GET` `PUT` `DELETE` | `/api/v1/admin/users/{id}` | Administrateur |
@@ -261,6 +266,14 @@ Chaque produit a un statut (`status`) :
 - Un produit est créé en brouillon, sauf si la création envoie un autre statut. Le statut se change par `PUT`, dans un sens comme dans l'autre (un produit archivé peut être republié).
 - `DELETE` archive le produit au lieu de l'effacer : les commandes qui l'ont vendu doivent pouvoir le relire.
 - Pour la boutique, un produit non publié n'existe pas : elle reçoit le même 404 que pour un id inconnu.
+
+### Catégories
+
+Les catégories ont **deux niveaux** : une catégorie de premier niveau peut contenir des sous-catégories, qui n'en contiennent pas. Chaque catégorie a un `slug` calculé à partir de son nom, unique, et un `parent` (`{id, name}`, ou `null` au premier niveau).
+
+- Placer une catégorie sous une sous-catégorie, sous elle-même, ou placer sous une autre une catégorie qui a des sous-catégories répond 422.
+- Une catégorie ne se supprime que vide : avec une sous-catégorie ou un produit, même archivé, la réponse est 409.
+- Le filtre `category_id` des produits donne aussi, pour une catégorie de premier niveau, les produits de ses sous-catégories.
 
 ### Format des listes
 
@@ -284,7 +297,7 @@ Paramètres, tous facultatifs :
 | `sort` | produits : `name`, `price`, `created_at` ; comptes : `email`, `first_name`, `last_name`, `created_at` | `name` pour les produits, `email` pour les comptes |
 | `order` | `asc`, `desc` | `asc` |
 
-Filtres des produits : `category_id`, `min_price` et `max_price` (inclus), `fragrance` et `size` (valeur exacte). Filtre des comptes : `q`, un morceau de l'email, du prénom ou du nom, sans tenir compte des majuscules.
+Filtres des produits : `category_id` (avec ses sous-catégories), `min_price` et `max_price` (inclus), `fragrance` et `size` (valeur exacte). Filtre des comptes : `q`, un morceau de l'email, du prénom ou du nom, sans tenir compte des majuscules.
 
 Les noms se trient dans l'ordre alphabétique français (« ambre » avant « Bougie », « Été » avec les « e »). À valeur égale, les éléments sont départagés par leur identifiant : un élément ne peut pas apparaître sur deux pages.
 

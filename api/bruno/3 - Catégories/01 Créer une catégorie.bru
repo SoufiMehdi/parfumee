@@ -1,0 +1,40 @@
+meta {
+  name: 01 Créer une catégorie
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Bougies d'exemple"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("parentCategoryId", res.getBody().id);
+  }
+}
+
+tests {
+  test("201 et l'identifiant de la catégorie", function () {
+    expect(res.getStatus()).to.equal(201);
+    expect(res.getBody().id).to.be.a("string");
+  });
+}
+
+docs {
+  Réservée aux éditeurs (et donc aux administrateurs). Sans `parent_id`, la catégorie est au premier niveau. Le slug est calculé à partir du nom.
+  
+  Enregistre l'identifiant dans `parentCategoryId`. Le dossier supprime ses catégories à la fin (requêtes 08 et 09).
+}

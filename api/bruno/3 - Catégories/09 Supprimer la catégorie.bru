@@ -1,0 +1,21 @@
+meta {
+  name: 09 Supprimer la catégorie
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/admin/categories/{{parentCategoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("204 : vide, elle peut partir", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

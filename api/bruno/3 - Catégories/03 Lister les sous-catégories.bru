@@ -1,0 +1,30 @@
+meta {
+  name: 03 Lister les sous-catégories
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/categories?parent_id={{parentCategoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("200, la sous-catégorie et son parent", function () {
+    expect(res.getStatus()).to.equal(200);
+    const items = res.getBody().items;
+    expect(items).to.have.lengthOf(1);
+    expect(items[0].id).to.equal(bru.getVar("childCategoryId"));
+    expect(items[0].parent.id).to.equal(bru.getVar("parentCategoryId"));
+    expect(res.getHeader("x-total-count")).to.equal("1");
+  });
+}
+
+docs {
+  Autres filtres : `q` (un morceau du nom), `top_level=true` (le premier niveau seulement). Tri par `name` (défaut) ou `created_at`.
+}
