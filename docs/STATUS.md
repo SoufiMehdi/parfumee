@@ -32,8 +32,9 @@
 - **Fait :** `P1-10` (le `dataProvider` du back-office, et les listes des produits et des comptes), mergée dans `main` (PR #32).
 - **Fait :** `P1-11` (la boutique Next.js et son client d'API typé), mergée dans `main` (PR #33). **La phase 1 est terminée.**
 - **Fait :** `P2-02` (statut des produits : brouillon, publié, archivé ; la suppression archive), mergée dans `main` (PR #34).
-- **En relecture :** `P2-01` (catégories : gestion dans le back-office, deux niveaux), sur la branche `feat/P2-01-categories`.
-- **Prochaine tâche conseillée :** les écrans du back-office (`P2-09` produits, `P2-10` catégories), puis la boutique (`P2-11`). La boutique n'a pas encore de route publique pour lire les catégories : à ajouter avec `P2-07` ou `P2-11`.
+- **Fait :** `P2-01` (catégories : gestion dans le back-office, deux niveaux), mergée dans `main` (PR #35).
+- **En relecture :** `P2-09` (écrans des produits dans le back-office : création, édition, statut, archivage, images), sur la branche `feat/P2-09-admin-product-screens`. Les écrans des variantes et du stock, que la tâche prévoit aussi, attendent leur API (`P2-03`, `P2-04`).
+- **Prochaine tâche conseillée :** `P2-10` (écrans des catégories), puis la boutique (`P2-11`). La boutique n'a pas encore de route publique pour lire les catégories : à ajouter avec `P2-07` ou `P2-11`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -64,9 +65,11 @@
 - Catégories : deux niveaux seulement (décision de `P2-01`). Pour la lever : `Category::moveUnder()`, `UpdateCategoryUseCase`, le mapper (un niveau de parent) et le trigger `categories_two_levels` (nouvelle migration). Une catégorie ne se supprime que vide, produits archivés compris. Les routes ne sont que dans le back-office (`/api/v1/admin/categories`) : la boutique n'a pas encore de quoi construire son menu.
 - Catégories : la fixture « Vêtements » prend un id aléatoire à chaque chargement, contrairement aux deux autres.
 - Statut des produits (`P2-02`) : la migration `Version20261122162959` est à jouer sur chaque base de dev (`php bin/console doctrine:migrations:migrate`), sinon toute route qui lit un produit répond 500. Elle publie les produits existants.
-- Statut des produits : un produit créé sans `status` est un brouillon, que la boutique ne voit pas. La collection Bruno crée le sien publié ; le back-office n'a pas encore de formulaire pour changer le statut (`P2-09`), seulement le filtre et la colonne.
+- Statut des produits : un produit créé sans `status` est un brouillon, que la boutique ne voit pas. La collection Bruno crée le sien publié ; dans le back-office, le statut se choisit à la création et se change dans l'édition.
 - Statut des produits : `DELETE /api/v1/admin/products/{id}` archive, n'efface jamais. Il n'existe pas de suppression définitive ; les produits archivés restent dans la base (et leurs images sur le disque).
-- Back-office : pas encore de formulaires (`P2-09` pour les produits, `P3-06` pour les comptes). Les produits de développement se créent avec la collection Bruno, qui utilise la catégorie des fixtures : sur une base qui a déjà des comptes, la charger avec `php bin/console doctrine:fixtures:load --append` (sans `--append`, la commande vide la base).
+- Back-office : les produits se créent et se modifient dans ses écrans (`P2-09`) ; les comptes n'ont pas encore de formulaire (`P3-06`), ni les catégories d'écran (`P2-10`). Il faut au moins une catégorie pour créer un produit : celles des fixtures (sur une base qui a déjà des comptes, `php bin/console doctrine:fixtures:load --append` ; sans `--append`, la commande vide la base).
+- Back-office : les images s'affichent depuis `{VITE_API_URL}/uploads/<url>`. L'API ne donne que le chemin relatif (`PictureView.url`) ; en production, `/uploads` devra être servi par Caddy ou par l'API (`P7-01`), et les miniatures viendront avec `P2-05`. Pas encore de suppression ni de tri des images (`P2-05`).
+- Back-office : la compilation pèse 1,1 Mo (350 Ko compressés) depuis les formulaires ; la limite d'avertissement de Vite est à 1 200 Ko.
 - Les refresh tokens expirés ne sont pas purgés tout seuls : prévoir `php bin/console gesdinet:jwt:clear` en tâche planifiée en production (`P7-01`).
 - Contrat OpenAPI : `api/openapi.json` est versionné et un test le compare au contrat généré. Après tout changement de route, de DTO ou de vue, lancer `composer openapi:dump` et commiter le fichier, sinon la suite échoue.
 - Contrat OpenAPI : la route `/api/v1/token/refresh` n'a pas de contrôleur (elle est traitée par le pare-feu) et les schémas d'erreur ne viennent pas d'une classe. Les deux sont décrits à la main dans `config/packages/nelmio_api_doc.yaml` ; `OpenApiContractTest` vérifie que les vraies réponses d'erreur y correspondent.
@@ -126,6 +129,15 @@
 - Le port de la base de **dev** côté hôte est toujours attribué au hasard par `compose.override.yaml` et change à chaque recréation du conteneur : le relire avec `docker compose port database 5432`. Seule la base de test a un port fixe.
 
 ## Journal
+
+### 2026-11-22 — P2-09 : écrans des produits du back-office (branche `feat/P2-09-admin-product-screens`, en relecture)
+- Périmètre : création, édition, statut, archivage et images. Les écrans des variantes et du stock, prévus par la tâche, attendent leur API (`P2-03`, `P2-04`).
+- Liste : un clic ouvre l'édition ; nouveau filtre par catégorie (recherche par nom, une catégorie principale donne aussi ses sous-catégories) ; bouton « Créer ».
+- Formulaire partagé : nom, prix, catégorie (recherche dans `/admin/categories`, « Parent › Enfant »), statut, poids, parfum, taille, description, présentation. Les règles de l'API sont reprises pour répondre tout de suite ; `toProductBody()` n'envoie que les champs du DTO (pas d'id, de slug, d'images ni de dates), sans les attributs vides.
+- Création : brouillon par défaut, puis ouverture de l'édition pour ajouter les images. Édition pessimiste : les violations d'une 422 s'affichent sous leurs champs (`attributes[size]` sous « Taille », `category_id` sous « Catégorie »).
+- Archivage : bouton « Archiver », après confirmation (le `DELETE` de l'API archive) ; absent pour un produit déjà archivé, qui se republie par son statut.
+- Images : panneau à côté du formulaire, avec les images du produit et l'envoi d'une nouvelle (JPEG, PNG ou WebP, 5 Mo au plus vérifiés avant l'envoi, texte alternatif) par `dataProvider.uploadProductPicture()` en multipart, puis relecture du produit. Ce qui a été saisi dans le formulaire sans être enregistré reste (`keepDirtyValues`), et un fichier refusé affiche la raison donnée par l'API.
+- Vérifications : 75 tests Vitest (rendu de l'application entière pour chaque écran) ; dix-sept régressions introduites exprès, toutes détectées (une ne l'était pas au premier essai : la régression elle-même était mal choisie) ; un vrai bug trouvé par les tests (le panneau des images plantait juste après une création) ; relecture par l'agent `reviewer`, dont les remarques sont corrigées (saisie perdue à l'envoi d'une image, raison d'un refus d'image, taille vérifiée avant l'envoi, règles du prix et du poids, statut laissé à l'API sans valeur) ; requêtes du back-office rejouées avec `curl` contre une vraie API (requêtes préliminaires CORS depuis `localhost:5173`, création, 422 avec violations, envoi multipart d'une vraie image PNG, image servie sous `/uploads`, archivage) ; compilation de production.
 
 ### 2026-11-22 — P2-01 : catégories (branche `feat/P2-01-categories`, en relecture)
 - Décision : **deux niveaux** de catégories. Une catégorie de premier niveau contient des sous-catégories, qui n'en contiennent pas. Assez pour le menu d'une boutique de bougies, sans cycle possible ni requête récursive.
