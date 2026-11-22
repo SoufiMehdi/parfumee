@@ -32,7 +32,8 @@ export function fakeApi(routes: Record<string, Route>): { calls: Call[] } {
                 method: (init.method ?? 'GET').toUpperCase(),
                 path: url.pathname,
                 query: url.searchParams,
-                body: typeof init.body === 'string' ? JSON.parse(init.body) : undefined,
+                // JSON as an object; a multipart body (an upload) as the FormData itself.
+                body: typeof init.body === 'string' ? JSON.parse(init.body) : init.body instanceof FormData ? init.body : undefined,
                 headers: new Headers(init.headers),
             };
             calls.push(call);

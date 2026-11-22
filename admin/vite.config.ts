@@ -13,9 +13,10 @@ export default defineConfig({
         strictPort: true,
     },
     build: {
-        // react-admin and Material UI weigh about 270 kB gzipped: expected for a back-office,
-        // loaded once and cached. Splitting it would not make the first screen faster.
-        chunkSizeWarningLimit: 1000,
+        // react-admin and Material UI weigh about 350 kB gzipped with the product forms
+        // (P2-09): expected for a back-office, loaded once and cached. Splitting it would not
+        // make the first screen faster.
+        chunkSizeWarningLimit: 1200,
     },
     test: {
         // A browser-like environment: localStorage, Response, navigator.

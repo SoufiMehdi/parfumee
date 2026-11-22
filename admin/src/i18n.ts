@@ -11,13 +11,30 @@ const resources = {
         fields: {
             name: 'Nom',
             price: 'Prix',
-            category: { name: 'Catégorie' },
-            attributes: { fragrance: 'Parfum' },
+            category: { name: 'Catégorie', id: 'Catégorie' },
+            category_id: 'Catégorie',
+            attributes: {
+                weight: 'Poids (g)',
+                fragrance: 'Parfum',
+                size: 'Taille',
+                description: 'Description',
+                presentation: 'Présentation',
+            },
             fragrance: 'Parfum',
             min_price: 'Prix minimum',
             max_price: 'Prix maximum',
             status: 'Statut',
             created_at: 'Créé le',
+        },
+        notifications: {
+            // A key, not the text: react-admin would show its own "Élément supprimé" instead.
+            archived: 'Produit archivé',
+        },
+    },
+    categories: {
+        name: 'Catégorie |||| Catégories',
+        fields: {
+            name: 'Nom',
         },
     },
     users: {
