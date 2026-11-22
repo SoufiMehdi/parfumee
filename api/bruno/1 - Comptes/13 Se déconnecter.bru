@@ -1,0 +1,29 @@
+meta {
+  name: 13 Se déconnecter
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/v1/token/revoke
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refresh_token": "{{refreshToken}}"
+  }
+}
+
+tests {
+  test("204 : le refresh token est révoqué", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Termine la session côté serveur : le refresh token ne peut plus être échangé (voir 14). Le jeton déjà délivré reste valable jusqu'à son expiration, 15 minutes au plus : les requêtes du catalogue qui suivent l'utilisent encore.
+
+  Un refresh token inconnu ou déjà révoqué répond aussi 204 : se déconnecter n'échoue jamais.
+}
