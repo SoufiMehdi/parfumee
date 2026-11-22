@@ -1,3 +1,4 @@
+import { HttpError } from 'react-admin';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { callsTo, fakeApi, type Reply } from './test/fakeApi';
@@ -137,5 +138,90 @@ describe('writing records', () => {
 
         expect(await dataProvider.delete('users', { id: 'u-1', previousData: account })).toEqual({ data: account });
         expect(callsTo(calls, 'DELETE /api/v1/admin/users/u-1')).toHaveLength(1);
+    });
+    it('archives a product: the API answers 204, without a body', async () => {
+        const { calls } = await signedIn({ 'DELETE /api/v1/admin/products/p-1': { status: 204 } });
+
+        expect(await dataProvider.delete('products', { id: 'p-1', previousData: AMBER })).toEqual({ data: AMBER });
+        expect(callsTo(calls, 'DELETE /api/v1/admin/products/p-1')).toHaveLength(1);
+    });
+
+    it('puts the violations of a 422 under the fields of the form, named as the form names them', async () => {
+        await signedIn({
+            'PUT /api/v1/admin/products/p-1': {
+                status: 422,
+                body: {
+                    error: 'Validation failed.',
+                    violations: [
+                        { field: 'price', message: 'This value should be either positive or zero.' },
+                        { field: 'attributes[weight]', message: 'This value should be a number.' },
+                        { field: 'category_id', message: 'This value is not a valid UUID.' },
+                    ],
+                },
+            },
+        });
+
+        const failure = await dataProvider.update('products', { id: 'p-1', data: {}, previousData: AMBER }).catch((error: unknown) => error);
+
+        expect(failure).toBeInstanceOf(HttpError);
+        expect((failure as HttpError).message).toBe('Validation failed.');
+        expect((failure as HttpError).status).toBe(422);
+        expect((failure as HttpError).body.errors).toEqual({
+            price: 'This value should be either positive or zero.',
+            attributes: { weight: 'This value should be a number.' },
+            category: { id: 'This value is not a valid UUID.' },
+        });
+    });
+
+    it('leaves an error without violations as it is', async () => {
+        await signedIn({ 'POST /api/v1/admin/products': { status: 404, body: { error: 'Category with id "c-9" not found.' } } });
+
+        const failure = await dataProvider.create('products', { data: { name: 'Figue' } }).catch((error: unknown) => error);
+
+        expect((failure as HttpError).message).toBe('Category with id "c-9" not found.');
+        expect((failure as HttpError).body.errors).toBeUndefined();
+    });
+});
+
+describe('categories', () => {
+    it('lists the categories, sorted as the API sorts them, searched with q', async () => {
+        const { calls } = await signedIn({ 'GET /api/v1/admin/categories': page([{ id: 'c-1', name: 'Bougies' }], 1) });
+
+        const result = await dataProvider.getList('categories', { pagination: { page: 1, perPage: 100 }, sort: { field: 'name', order: 'ASC' }, filter: { q: 'bou' } });
+
+        expect(result).toEqual({ data: [{ id: 'c-1', name: 'Bougies' }], total: 1 });
+        expect(Object.fromEntries(callsTo(calls, 'GET /api/v1/admin/categories')[0].query)).toEqual({ page: '1', per_page: '100', sort: 'name', order: 'asc', q: 'bou' });
+    });
+});
+
+describe('uploadProductPicture', () => {
+    it('sends the file and its alternative text as multipart, with the JWT', async () => {
+        const { calls } = await signedIn({ 'POST /api/v1/admin/products/p-1/pictures': { status: 201, body: { id: 'img-1' } } });
+        const file = new File(['fake'], 'candle.png', { type: 'image/png' });
+
+        expect(await dataProvider.uploadProductPicture('p-1', file, '  Une bougie  ')).toEqual({ id: 'img-1' });
+
+        const call = callsTo(calls, 'POST /api/v1/admin/products/p-1/pictures')[0];
+        expect(call.body).toBeInstanceOf(FormData);
+        const form = call.body as FormData;
+        expect((form.get('file') as File).name).toBe('candle.png');
+        expect(form.get('alt')).toBe('Une bougie');
+        // The browser writes the multipart Content-Type and its boundary: never JSON.
+        expect(call.headers.get('Content-Type')).toBeNull();
+        expect(call.headers.get('Authorization')).toBe('Bearer jwt-1');
+    });
+
+    it('sends no alternative text when there is none', async () => {
+        const { calls } = await signedIn({ 'POST /api/v1/admin/products/p-1/pictures': { status: 201, body: { id: 'img-1' } } });
+
+        await dataProvider.uploadProductPicture('p-1', new File(['fake'], 'candle.png', { type: 'image/png' }), ' ');
+
+        expect((callsTo(calls, 'POST /api/v1/admin/products/p-1/pictures')[0].body as FormData).has('alt')).toBe(false);
+    });
+
+    it('passes the reason of a refused file on', async () => {
+        await signedIn({ 'POST /api/v1/admin/products/p-1/pictures': { status: 422, body: { error: 'Validation failed.', violations: [{ field: 'file', message: 'The picture must be a JPEG, PNG or WebP image.' }] } } });
+
+        await expect(dataProvider.uploadProductPicture('p-1', new File(['<svg/>'], 'x.svg', { type: 'image/svg+xml' }), '')).rejects.toThrow(/^The picture must be a JPEG, PNG or WebP image\.$/);
     });
 });

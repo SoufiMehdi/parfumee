@@ -7,6 +7,8 @@ import { Dashboard } from './Dashboard';
 import { dataProvider } from './dataProvider';
 import { i18nProvider } from './i18n';
 import { LoginPage } from './LoginPage';
+import { ProductCreate } from './products/ProductCreate';
+import { ProductEdit } from './products/ProductEdit';
 import { ProductList } from './products/ProductList';
 import { UserList } from './users/UserList';
 
@@ -31,7 +33,9 @@ export const App = () => (
     >
         {(permissions: string[] | undefined) => (
             <>
-                <Resource name="products" list={ProductList} icon={ProductIcon} />
+                <Resource name="products" list={ProductList} create={ProductCreate} edit={ProductEdit} icon={ProductIcon} recordRepresentation="name" />
+                {/* No screen yet (P2-10): the product form and filter read the categories from it. */}
+                <Resource name="categories" recordRepresentation="name" />
                 {permissions?.includes('ROLE_ADMIN') ? <Resource name="users" list={UserList} icon={PeopleIcon} /> : null}
             </>
         )}

@@ -7,11 +7,11 @@ React-admin 5 (Material UI 9), React 19, Vite 8, TypeScript 5.9. Un site statiqu
 ```
 src/
   App.tsx           <Admin> : providers, page de connexion, tableau de bord, ressources selon les rôles
-  config.ts         API_URL (VITE_API_URL) et apiUrl('/admin/me')
+  config.ts         API_URL (VITE_API_URL), apiUrl('/admin/me') et uploadUrl() pour les images
   dataProvider.ts   le dataProvider de react-admin pour /api/v1/admin (format de liste de P1-04)
   i18n.ts           interface en français, noms des ressources et de leurs champs
   auth/             session (les jetons), httpClient, authProvider, libellés des rôles
-  products/         écrans des produits (liste)
+  products/         écrans des produits : liste, création, édition (statut, archivage, images)
   users/            écrans des comptes (liste)
   api/schema.ts     types de l'API, générés depuis api/openapi.json : ne jamais le modifier à la main
   test/fakeApi.ts   faux serveur d'API pour les tests
@@ -41,7 +41,9 @@ src/
    - la déclarer dans `App.tsx` selon les rôles qui y ont droit dans l'API (`security.yaml`) ;
    - ajouter son test de rendu dans `App.test.tsx`.
 6. **Langue :** l'interface est en français (`ra-language-french`) ; le code, les noms et les commentaires sont en anglais, comme dans l'API.
-7. **Pas de télémétrie :** `disableTelemetry` sur `<Admin>`, sinon react-admin signale à son éditeur où il tourne.
+7. **Formulaires :** les champs portent les noms du record de l'API (`category.id`, `attributes.weight`) ; une fonction `to<Objet>Body()` (`transform`) n'envoie que les champs du DTO, typés par le contrat (voir `products/productBody.ts`). Édition en `mutationMode="pessimistic"` : l'API vérifie avant d'enregistrer, et les violations d'une 422 s'affichent sous les champs (`withFormErrors` du `dataProvider`, avec `formFields` quand un champ du formulaire ne porte pas le nom de l'API).
+8. **Appels hors CRUD** (envoi d'une image) : une méthode de plus du `dataProvider` (`BackOfficeDataProvider`), appelée par `useDataProvider<BackOfficeDataProvider>()`, jamais un `fetch` dans un composant.
+9. **Pas de télémétrie :** `disableTelemetry` sur `<Admin>`, sinon react-admin signale à son éditeur où il tourne.
 
 ## Configuration
 
@@ -57,6 +59,7 @@ src/
 - `fakeApi()` remplace `fetch` : chaque route « MÉTHODE /chemin » répond, chaque appel est enregistré, toute autre requête fait échouer le test.
 - La session vit dans la mémoire des modules : chaque test les recharge (`vi.resetModules()`, puis `await import(...)`).
 - `App.test.tsx` rend l'application entière (Testing Library) : page de connexion sans session, tableau de bord, menu selon le rôle, listes, connexion par le formulaire. C'est lui qui vérifie ce que l'utilisateur voit ; les autres tests ne couvrent que la logique. Tout nouvel écran y a son test.
+- `App.test.tsx` attend jusqu'à 5 s ce qu'il cherche (`configure({ asyncUtilTimeout: 5000 })`) et chaque test a 15 s (`testTimeout`) : le premier rendu charge react-admin et Material UI, plus lent sur la CI (3,3 s vu) que la seconde par défaut de Testing Library.
 - Les adresses de react-admin passent par le dièse (`HashRouter`) : pour ouvrir une page dans un test, `window.history.replaceState({}, '', '/#/products')` avant le rendu.
 - `fakeApi` ignore la chaîne de requête pour choisir la route, mais l'enregistre (`call.query`) : de quoi vérifier la page, le tri et les filtres envoyés.
 
@@ -68,5 +71,8 @@ src/
 - Les ressources dépendent des rôles (fonction enfant de `<Admin>`) : react-admin attend donc `getPermissions` avant d'afficher quoi que ce soit, même la page de connexion. Sans session, `getPermissions` répond donc tout de suite « aucun rôle », sans appeler l'API ; sinon le back-office resterait sur « Chargement ».
 - React-admin trie par `id` quand on ne lui dit rien ; l'API le refuse (422). Le `dataProvider` laisse de côté un tri que l'API ne sait pas faire, mais chaque liste doit déclarer un tri par défaut accepté.
 - L'API donne 100 éléments par page au plus : le `dataProvider` plafonne `per_page` à 100, et react-admin ne reçoit alors qu'une partie de ce qu'il demandait (le total lui dit qu'il en existe d'autres).
-- Pas encore de formulaires : les fiches et l'édition des produits arrivent avec P2-09, celles des comptes avec P3-06. Pour avoir des produits en dev, les créer avec la collection Bruno (`2 - Catalogue / 02 Créer un produit`), une fois les catégories des fixtures chargées (`php bin/console doctrine:fixtures:load --append` sur une base qui a déjà des comptes : sans `--append`, la commande vide la base).
+- Les produits se créent et se modifient dans le back-office (P2-09) ; les comptes n'ont pas encore de formulaire (P3-06), ni les catégories d'écran (P2-10, leur ressource existe sans liste pour les formulaires des produits). Il faut au moins une catégorie : celles des fixtures (`php bin/console doctrine:fixtures:load --append` sur une base qui a déjà des comptes : sans `--append`, la commande vide la base), ou une catégorie créée par `POST /api/v1/admin/categories` (le dossier Bruno `3 - Catégories` supprime les siennes à la fin).
+- **Message passé à react-admin** (`successMessage`, `notify` d'un composant de react-admin) : une clé de traduction déclarée dans `i18n.ts`, jamais le texte. React-admin passe un texte par défaut (`_`) que polyglot affiche à la place d'une clé inconnue : « Produit archivé » écrit en dur sortait « Élément supprimé ».
+- **Juste après une création**, react-admin ouvre l'édition avec l'enregistrement qu'il a envoyé (le corps du `POST` et l'id), avant d'avoir lu celui de l'API : les champs que seule l'API produit (`pictures`, `slug`, les dates) peuvent manquer un instant. Un composant de l'édition ne doit pas les supposer présents (voir `ProductPictures`).
+- **Images** : l'API donne leur chemin dans le dossier des envois (`PictureView.url`, `products/x.png`), qu'elle sert sous `/uploads` : `uploadUrl()` (`config.ts`) construit l'adresse. Les miniatures arriveront avec P2-05.
 - Le `package-lock.json` est au format 3 : il faut npm 9 ou plus.
