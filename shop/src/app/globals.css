@@ -1,0 +1,65 @@
+/*
+ * The look of the shop is still to be designed (P2-11): plain system fonts and a few
+ * warm colours meanwhile.
+ */
+:root {
+    --background: #fbf8f4;
+    --surface: #ffffff;
+    --text: #2b2420;
+    --muted: #6f6359;
+    --border: #e7ddd2;
+    --accent: #9a5b2e;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background: #1d1a17;
+        --surface: #26221e;
+        --text: #f3ede6;
+        --muted: #b8aa9c;
+        --border: #3a332d;
+        --accent: #e0a46f;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--background);
+    color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--accent);
+}
+
+.site-header {
+    padding: 1rem clamp(1rem, 4vw, 3rem);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.brand {
+    color: var(--text);
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+}
+
+.site-main {
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 4vw, 3rem) 4rem;
+}

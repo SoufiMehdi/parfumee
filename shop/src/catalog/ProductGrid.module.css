@@ -1,0 +1,30 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+.card {
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--surface);
+}
+
+.name {
+    margin: 0 0 0.25rem;
+    font-size: 1.1rem;
+}
+
+.fragrance {
+    margin: 0 0 0.75rem;
+    color: var(--muted);
+    text-transform: capitalize;
+}
+
+.price {
+    margin: 0;
+    font-weight: 600;
+}
