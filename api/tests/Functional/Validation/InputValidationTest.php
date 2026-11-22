@@ -9,9 +9,14 @@ use App\Ecommerce\Application\DTO\Catalog\ListProductsQueryDto;
 use App\Ecommerce\Application\DTO\User\ListUsersQueryDto;
 use App\Ecommerce\Application\DTO\User\RegisterUserRequestDto;
 use App\Ecommerce\Application\UseCase\Catalog\ArchiveProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\CreateCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\DeleteCategoryUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\GetCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\ListCategoriesUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\UpdateCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
@@ -223,6 +228,11 @@ final class InputValidationTest extends WebTestCase
         yield 'product update with a negative price' => ['PUT', '/api/v1/admin/products/'.self::ID, ['price' => -5] + $product, 'price'];
         yield 'product with an unknown status' => ['POST', '/api/v1/admin/products', ['status' => 'online'] + $product, 'status'];
         yield 'product update with an unknown status' => ['PUT', '/api/v1/admin/products/'.self::ID, ['status' => 'deleted'] + $product, 'status'];
+        yield 'category without name' => ['POST', '/api/v1/admin/categories', [], 'name'];
+        yield 'category with a blank name' => ['POST', '/api/v1/admin/categories', ['name' => '  '], 'name'];
+        yield 'category with a 256-character name' => ['POST', '/api/v1/admin/categories', ['name' => str_repeat('a', 256)], 'name'];
+        yield 'category with a parent that is not a UUID' => ['POST', '/api/v1/admin/categories', ['name' => 'Bougies', 'parent_id' => 'candles'], 'parent_id'];
+        yield 'category update without name' => ['PUT', '/api/v1/admin/categories/'.self::ID, ['parent_id' => self::ID], 'name'];
     }
 
     /**
@@ -320,6 +330,11 @@ final class InputValidationTest extends WebTestCase
         yield 'too many accounts per page' => [$users.'per_page=1000', 'per_page'];
         yield 'unknown account order' => [$users.'order=up', 'order'];
         yield 'unknown product status' => ['/api/v1/admin/products?status=deleted', 'status'];
+        $categories = '/api/v1/admin/categories?';
+        yield 'category parent that is not a UUID' => [$categories.'parent_id=candles', 'parent_id'];
+        yield 'sort categories by slug' => [$categories.'sort=slug', 'sort'];
+        yield 'too many categories per page' => [$categories.'per_page=101', 'per_page'];
+        yield '256-character category search' => [$categories.'q='.str_repeat('a', 256), 'q'];
     }
 
     #[DataProvider('invalidFilters')]
@@ -355,6 +370,9 @@ final class InputValidationTest extends WebTestCase
         yield 'read product' => ['GET', '/api/v1/shop/products/abc'];
         yield 'update product' => ['PUT', '/api/v1/admin/products/abc'];
         yield 'archive product' => ['DELETE', '/api/v1/admin/products/abc'];
+        yield 'read category' => ['GET', '/api/v1/admin/categories/abc'];
+        yield 'update category' => ['PUT', '/api/v1/admin/categories/abc'];
+        yield 'delete category' => ['DELETE', '/api/v1/admin/categories/abc'];
         yield 'upload picture' => ['POST', '/api/v1/admin/products/abc/pictures'];
         yield 'read user' => ['GET', '/api/v1/admin/users/abc'];
         yield 'update user' => ['PUT', '/api/v1/admin/users/abc'];
@@ -418,7 +436,8 @@ final class InputValidationTest extends WebTestCase
         $useCases = [
             RegisterUserUseCase::class, LoginUserUseCase::class, UpdateUserUseCase::class, GetUserUseCase::class, DeleteUserUseCase::class,
             CreateProductUseCase::class, UpdateProductUseCase::class, GetProductUseCase::class, ListProductsUseCase::class, ListUsersUseCase::class,
-            ArchiveProductUseCase::class,
+            ArchiveProductUseCase::class, ListCategoriesUseCase::class, GetCategoryUseCase::class, CreateCategoryUseCase::class, UpdateCategoryUseCase::class,
+            DeleteCategoryUseCase::class,
         ];
         foreach ($useCases as $useCase) {
             $mock = $this->createMock($useCase);

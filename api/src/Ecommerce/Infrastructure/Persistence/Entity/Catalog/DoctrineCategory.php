@@ -26,11 +26,17 @@ class DoctrineCategory
     #[ORM\Column(type: 'string', length: 255, unique: true)]
     private string $slug;
 
-    public function __construct(string $id, string $name, string $slug)
+    // No cascade: a category that holds others cannot be deleted (DeleteCategoryUseCase).
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?DoctrineCategory $parent;
+
+    public function __construct(string $id, string $name, string $slug, ?DoctrineCategory $parent = null)
     {
         $this->id = $id;
         $this->name = $name;
         $this->slug = $slug;
+        $this->parent = $parent;
     }
 
     // Getters / Setters...
@@ -57,5 +63,15 @@ class DoctrineCategory
     public function setSlug(string $slug): void
     {
         $this->slug = $slug;
+    }
+
+    public function getParent(): ?DoctrineCategory
+    {
+        return $this->parent;
+    }
+
+    public function setParent(?DoctrineCategory $parent): void
+    {
+        $this->parent = $parent;
     }
 }

@@ -15,6 +15,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 final readonly class ListProductsQueryDto
 {
     public function __construct(
+        /** A category: a top-level one gives the products of its child categories too. */
         #[Assert\Uuid]
         public ?string $categoryId = null,
         /** Inclusive. */

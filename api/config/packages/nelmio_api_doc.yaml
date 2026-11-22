@@ -86,6 +86,11 @@ nelmio_api_doc:
                     content:
                         application/json:
                             schema: { $ref: '#/components/schemas/Error' }
+                Conflict:
+                    description: The request conflicts with the current state of the resource
+                    content:
+                        application/json:
+                            schema: { $ref: '#/components/schemas/Error' }
                 ValidationFailed:
                     description: A field is missing or invalid
                     content:

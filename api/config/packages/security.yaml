@@ -59,6 +59,7 @@ security:
         # Back-office. Its sign-in route is public (see the "login" firewall).
         # Editors manage the catalogue and read their own identity; everything else needs an administrator.
         - { path: ^/api/v1/admin/products(/|$), roles: ROLE_EDITOR }
+        - { path: ^/api/v1/admin/categories(/|$), roles: ROLE_EDITOR }
         - { path: ^/api/v1/admin/me$, roles: ROLE_EDITOR }
         - { path: ^/api/v1/admin/, roles: ROLE_ADMIN }
 

@@ -5,12 +5,18 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Security;
 
 use App\Ecommerce\Application\UseCase\Catalog\ArchiveProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\CreateCategoryUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\DeleteCategoryUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\GetCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\ListCategoriesUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\ListProductsUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\UpdateCategoryUseCase;
 use App\Ecommerce\Application\UseCase\User\DeleteUserUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
 use App\Ecommerce\Application\UseCase\User\ListUsersUseCase;
 use App\Ecommerce\Application\UseCase\User\UpdateUserUseCase;
+use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Model\User\User;
 use App\Ecommerce\Domain\Repository\Page;
@@ -90,6 +96,11 @@ final class AccessControlTest extends WebTestCase
         yield 'admin: create product' => ['POST', '/api/v1/admin/products'];
         yield 'admin: update product' => ['PUT', '/api/v1/admin/products/'.self::OTHER_ID];
         yield 'admin: archive product' => ['DELETE', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'admin: list categories' => ['GET', '/api/v1/admin/categories'];
+        yield 'admin: read category' => ['GET', '/api/v1/admin/categories/'.self::OTHER_ID];
+        yield 'admin: create category' => ['POST', '/api/v1/admin/categories'];
+        yield 'admin: update category' => ['PUT', '/api/v1/admin/categories/'.self::OTHER_ID];
+        yield 'admin: delete category' => ['DELETE', '/api/v1/admin/categories/'.self::OTHER_ID];
         yield 'admin: upload picture' => ['POST', '/api/v1/admin/products/'.self::OTHER_ID.'/pictures'];
     }
 
@@ -114,6 +125,11 @@ final class AccessControlTest extends WebTestCase
         yield 'create product' => ['POST', '/api/v1/admin/products'];
         yield 'update product' => ['PUT', '/api/v1/admin/products/'.self::OTHER_ID];
         yield 'archive product' => ['DELETE', '/api/v1/admin/products/'.self::OTHER_ID];
+        yield 'list categories' => ['GET', '/api/v1/admin/categories'];
+        yield 'read category' => ['GET', '/api/v1/admin/categories/'.self::OTHER_ID];
+        yield 'create category' => ['POST', '/api/v1/admin/categories'];
+        yield 'update category' => ['PUT', '/api/v1/admin/categories/'.self::OTHER_ID];
+        yield 'delete category' => ['DELETE', '/api/v1/admin/categories/'.self::OTHER_ID];
         yield 'upload picture' => ['POST', '/api/v1/admin/products/'.self::OTHER_ID.'/pictures'];
     }
 
@@ -319,7 +335,7 @@ final class AccessControlTest extends WebTestCase
      */
     private function forbidUseCases(): void
     {
-        foreach ([ListUsersUseCase::class, GetUserUseCase::class, UpdateUserUseCase::class, DeleteUserUseCase::class, ArchiveProductUseCase::class] as $class) {
+        foreach ([ListUsersUseCase::class, GetUserUseCase::class, UpdateUserUseCase::class, DeleteUserUseCase::class, ArchiveProductUseCase::class, ListCategoriesUseCase::class, GetCategoryUseCase::class, CreateCategoryUseCase::class, UpdateCategoryUseCase::class, DeleteCategoryUseCase::class] as $class) {
             $useCase = $this->createMock($class);
             $useCase->expects(self::never())->method('execute');
             static::getContainer()->set($class, $useCase);
@@ -335,6 +351,15 @@ final class AccessControlTest extends WebTestCase
         $get = $this->createStub(GetProductUseCase::class);
         $get->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));
         static::getContainer()->set(GetProductUseCase::class, $get);
+
+        $listCategories = $this->createStub(ListCategoriesUseCase::class);
+        $listCategories->method('execute')->willReturn(new Page([], 0, new Pagination()));
+        static::getContainer()->set(ListCategoriesUseCase::class, $listCategories);
+        foreach ([GetCategoryUseCase::class, CreateCategoryUseCase::class, UpdateCategoryUseCase::class, DeleteCategoryUseCase::class] as $class) {
+            $useCase = $this->createStub($class);
+            $useCase->method('execute')->willThrowException(new CategoryNotFoundException(self::OTHER_ID));
+            static::getContainer()->set($class, $useCase);
+        }
 
         $archive = $this->createStub(ArchiveProductUseCase::class);
         $archive->method('execute')->willThrowException(new ProductNotFoundException(self::OTHER_ID));

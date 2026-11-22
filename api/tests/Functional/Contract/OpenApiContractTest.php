@@ -172,8 +172,8 @@ final class OpenApiContractTest extends WebTestCase
             }
         }
 
-        // The shop products, the back-office products and the accounts.
-        self::assertSame(3, $lists);
+        // The shop products, the back-office products, the categories and the accounts.
+        self::assertSame(4, $lists);
     }
 
     public function testEveryReferenceOfTheContractResolves(): void

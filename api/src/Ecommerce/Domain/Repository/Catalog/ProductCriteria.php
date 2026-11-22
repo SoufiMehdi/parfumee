@@ -17,6 +17,7 @@ final readonly class ProductCriteria
      */
     public function __construct(
         public array $statuses = [ProductStatus::PUBLISHED],
+        /** A category: a top-level one gives the products of its child categories too. */
         public ?string $categoryId = null,
         /** Inclusive. */
         public ?float $minPrice = null,
