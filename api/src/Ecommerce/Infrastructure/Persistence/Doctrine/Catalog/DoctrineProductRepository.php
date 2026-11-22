@@ -84,7 +84,8 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         $parameters = ['statuses' => array_map(static fn ($status): string => $status->value, $criteria->statuses)];
         $types = ['statuses' => ArrayParameterType::STRING];
         if (null !== $criteria->categoryId) {
-            $conditions[] = 'p.category_id = :categoryId';
+            // A top-level category holds the products of its children too.
+            $conditions[] = 'p.category_id IN (SELECT cat.id FROM categories cat WHERE cat.id = :categoryId OR cat.parent_id = :categoryId)';
             $parameters['categoryId'] = $criteria->categoryId;
         }
         if (null !== $criteria->minPrice) {
@@ -139,7 +140,8 @@ class DoctrineProductRepository implements ProductRepositoryInterface
         }
 
         $entities = $this->entityManager
-            ->createQuery('SELECT p, c, pic FROM '.DoctrineProduct::class.' p JOIN p.category c LEFT JOIN p.pictures pic WHERE p.id IN (:ids)')
+            // The parent of the category comes along: the mapper reads it.
+            ->createQuery('SELECT p, c, cp, pic FROM '.DoctrineProduct::class.' p JOIN p.category c LEFT JOIN c.parent cp LEFT JOIN p.pictures pic WHERE p.id IN (:ids)')
             ->setParameter('ids', $ids)
             ->getResult();
 

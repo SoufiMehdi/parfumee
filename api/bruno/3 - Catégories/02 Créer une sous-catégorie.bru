@@ -1,0 +1,38 @@
+meta {
+  name: 02 Créer une sous-catégorie
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Bougies d'exemple parfumées",
+    "parent_id": "{{parentCategoryId}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("childCategoryId", res.getBody().id);
+  }
+}
+
+tests {
+  test("201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Deux niveaux seulement : le parent doit être une catégorie de premier niveau.
+}

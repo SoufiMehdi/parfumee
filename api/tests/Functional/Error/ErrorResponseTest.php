@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Error;
 
+use App\Ecommerce\Application\UseCase\Catalog\CreateCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\CreateProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\DeleteCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\GetProductUseCase;
+use App\Ecommerce\Application\UseCase\Catalog\UpdateCategoryUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UpdateProductUseCase;
 use App\Ecommerce\Application\UseCase\Catalog\UploadProductImageUseCase;
 use App\Ecommerce\Application\UseCase\User\GetUserUseCase;
 use App\Ecommerce\Application\UseCase\User\LoginUserUseCase;
 use App\Ecommerce\Application\UseCase\User\RegisterUserUseCase;
+use App\Ecommerce\Domain\Exception\Catalog\CategoryNotEmptyException;
 use App\Ecommerce\Domain\Exception\Catalog\CategoryNotFoundException;
+use App\Ecommerce\Domain\Exception\Catalog\InvalidCategoryParentException;
 use App\Ecommerce\Domain\Exception\Catalog\InvalidPriceException;
 use App\Ecommerce\Domain\Exception\Catalog\ProductNotFoundException;
 use App\Ecommerce\Domain\Exception\User\DuplicateEmailException;
@@ -59,6 +64,12 @@ final class ErrorResponseTest extends WebTestCase
         yield 'register with a taken email' => [RegisterUserUseCase::class, new DuplicateEmailException('a@example.test'), 'POST', '/api/v1/shop/register', 409];
         yield 'register with an invalid email' => [RegisterUserUseCase::class, new InvalidEmailException('nope'), 'POST', '/api/v1/shop/register', 422];
         yield 'login with wrong credentials' => [LoginUserUseCase::class, new InvalidCredentialsException(), 'POST', '/api/v1/shop/login', 401];
+        yield 'create category under an unknown parent' => [CreateCategoryUseCase::class, new CategoryNotFoundException(self::ID), 'POST', '/api/v1/admin/categories', 404];
+        yield 'create category under a child category' => [CreateCategoryUseCase::class, InvalidCategoryParentException::notTopLevel(self::ID), 'POST', '/api/v1/admin/categories', 422];
+        yield 'move a category that holds others' => [UpdateCategoryUseCase::class, InvalidCategoryParentException::hasChildren(self::ID), 'PUT', '/api/v1/admin/categories/'.self::ID, 422];
+        yield 'delete a category with children' => [DeleteCategoryUseCase::class, CategoryNotEmptyException::withChildren(self::ID), 'DELETE', '/api/v1/admin/categories/'.self::ID, 409];
+        yield 'delete a category with products' => [DeleteCategoryUseCase::class, CategoryNotEmptyException::withProducts(self::ID), 'DELETE', '/api/v1/admin/categories/'.self::ID, 409];
+        yield 'delete an unknown category' => [DeleteCategoryUseCase::class, new CategoryNotFoundException(self::ID), 'DELETE', '/api/v1/admin/categories/'.self::ID, 404];
     }
 
     /**

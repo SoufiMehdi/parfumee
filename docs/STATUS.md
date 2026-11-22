@@ -31,8 +31,9 @@
 - **Fait :** `P1-09` (back-office React-admin et sa session, avec la déconnexion côté serveur), mergée dans `main` (PR #31).
 - **Fait :** `P1-10` (le `dataProvider` du back-office, et les listes des produits et des comptes), mergée dans `main` (PR #32).
 - **Fait :** `P1-11` (la boutique Next.js et son client d'API typé), mergée dans `main` (PR #33). **La phase 1 est terminée.**
-- **En relecture :** `P2-02` (statut des produits : brouillon, publié, archivé ; la suppression archive), sur la branche `feat/P2-02-product-status`.
-- **Prochaine tâche conseillée :** `P2-01` (catégories, côté API), puis les écrans (`P2-09` pour le back-office, `P2-11` pour la boutique).
+- **Fait :** `P2-02` (statut des produits : brouillon, publié, archivé ; la suppression archive), mergée dans `main` (PR #34).
+- **En relecture :** `P2-01` (catégories : gestion dans le back-office, deux niveaux), sur la branche `feat/P2-01-categories`.
+- **Prochaine tâche conseillée :** les écrans du back-office (`P2-09` produits, `P2-10` catégories), puis la boutique (`P2-11`). La boutique n'a pas encore de route publique pour lire les catégories : à ajouter avec `P2-07` ou `P2-11`.
 - **Branche de travail :** `main`. La montée en Symfony 8.1 y est mergée.
 
 ## Décisions en attente
@@ -59,6 +60,9 @@
 - Boutique : `API_URL` est lue à chaque requête par le serveur Next.js. En dev, `shop/.env.development`, le seul fichier d'environnement versionné ; en production, l'environnement du conteneur, avec la sortie `standalone` dans l'image Docker (`P7-01`).
 - Boutique : avec le cache de Next.js 16, une donnée lue à chaque requête s'appelle après `connection()`, dans un `<Suspense>`. Mettre en cache le catalogue (`'use cache'`) le ferait calculer à la compilation, donc avec l'API joignable à ce moment-là : à trancher avec `P2-11`.
 - Boutique : pas encore de framework CSS ni de police web, l'apparence restant à concevoir (`P2-11`).
+- Catégories (`P2-01`) : la migration `Version20261122165552` est à jouer sur chaque base de dev, sinon toute route qui lit un produit ou une catégorie répond 500. Les catégories existantes restent au premier niveau.
+- Catégories : deux niveaux seulement (décision de `P2-01`). Pour la lever : `Category::moveUnder()`, `UpdateCategoryUseCase`, le mapper (un niveau de parent) et le trigger `categories_two_levels` (nouvelle migration). Une catégorie ne se supprime que vide, produits archivés compris. Les routes ne sont que dans le back-office (`/api/v1/admin/categories`) : la boutique n'a pas encore de quoi construire son menu.
+- Catégories : la fixture « Vêtements » prend un id aléatoire à chaque chargement, contrairement aux deux autres.
 - Statut des produits (`P2-02`) : la migration `Version20261122162959` est à jouer sur chaque base de dev (`php bin/console doctrine:migrations:migrate`), sinon toute route qui lit un produit répond 500. Elle publie les produits existants.
 - Statut des produits : un produit créé sans `status` est un brouillon, que la boutique ne voit pas. La collection Bruno crée le sien publié ; le back-office n'a pas encore de formulaire pour changer le statut (`P2-09`), seulement le filtre et la colonne.
 - Statut des produits : `DELETE /api/v1/admin/products/{id}` archive, n'efface jamais. Il n'existe pas de suppression définitive ; les produits archivés restent dans la base (et leurs images sur le disque).
@@ -123,6 +127,18 @@
 
 ## Journal
 
+### 2026-11-22 — P2-01 : catégories (branche `feat/P2-01-categories`, en relecture)
+- Décision : **deux niveaux** de catégories. Une catégorie de premier niveau contient des sous-catégories, qui n'en contiennent pas. Assez pour le menu d'une boutique de bougies, sans cycle possible ni requête récursive.
+- Domaine : `Category` reçoit son parent, ses dates, `rename()` et `moveUnder()`, qui refuse elle-même comme parent et une sous-catégorie comme parent (422). `UpdateCategoryUseCase` garde au premier niveau une catégorie qui en contient d'autres.
+- Routes du back-office (éditeurs) `/api/v1/admin/categories` : liste paginée (`q`, `parent_id`, `top_level`, tri par nom ou date), lecture, création, modification (`PUT` : sans `parent_id`, premier niveau), suppression (204) d'une catégorie vide seulement, sinon 409 (`CategoryNotEmptyException`, produits archivés compris).
+- Slug calculé et rendu unique comme celui des produits (`CategorySlugResolver`), qui suit le nom.
+- Produits : le filtre `category_id` donne aussi les produits des sous-catégories d'une catégorie de premier niveau. Une page de produits charge le parent de leur catégorie dans la même requête (toujours 3 requêtes).
+- Base : colonne `parent_id` (clé étrangère sans cascade, index, contrainte `CHECK` contre une catégorie parente d'elle-même). Les catégories existantes restent au premier niveau. Un trigger (`categories_two_levels`) revérifie les deux niveaux en verrouillant le parent : deux requêtes simultanées (X sous Y pendant que Y passe sous X) ne peuvent plus passer toutes les deux, essayé avec deux transactions concurrentes.
+- Robustesse : le mapper ne lit qu'un niveau de parent, jamais le parent du parent. Une suppression qui croise l'ajout d'un produit ou d'une sous-catégorie répond 409 au lieu de 500.
+- Contrat OpenAPI : réponse partagée `Conflict` (409) ; types des deux fronts régénérés.
+- Collection Bruno : dossier `3 - Catégories` (9 requêtes), qui supprime à la fin ce qu'il a créé.
+- Vérifications : `composer check` vert, PHPUnit « OK (604 tests) » sur une base de test vide ; quinze régressions introduites exprès, toutes détectées (une ne l'était pas au premier essai : le test du nombre de requêtes a été resserré) ; migration essayée sur une catégorie existante, avec aller-retour `down`/`up` ; collection Bruno, 33 requêtes sur 33, contre un serveur sur la base de test ; relecture par l'agent `reviewer`, dont les remarques sur les requêtes simultanées ont été corrigées.
+
 ### 2026-11-22 — P2-02 : statut des produits (branche `feat/P2-02-product-status`, en relecture)
 - Domaine : `ProductStatus` (`draft`, `published`, `archived`) sur `Product`, avec `changeStatus()` et `archive()`. Toute transition est permise, un produit archivé peut être republié.
 - Lecture : les use cases de liste et de lecture reçoivent les statuts que l'appelant peut voir ; le contrôleur les choisit. La boutique ne voit que les produits publiés, et reçoit le même 404 pour un brouillon que pour un id inconnu. Le back-office lit tout produit ; sa liste met les archivés de côté, sauf avec `?status=archived` (filtre `status`, 422 pour un statut inconnu).
@@ -131,7 +147,7 @@
 - Contrat OpenAPI : `status` dans `ProductView` (enum `ProductStatus`), dans les corps de création et de modification, et en filtre de la liste du back-office ; route `DELETE`. Types des deux fronts régénérés.
 - Back-office : colonne « Statut » et filtre par statut dans la liste des produits, libellés en français. Boutique : rien à changer, l'API ne lui envoie que des produits publiés.
 - Collection Bruno : `02 Créer un produit` le crée publié ; `09 Archiver le produit` et `10 Produit archivé absent de la boutique` ajoutées.
-- Vérifications : `composer check` vert, PHPUnit « OK (508 tests) » sur une base de test vide ; 53 tests Vitest dans le back-office, 14 dans la boutique ; treize régressions introduites exprès (onze dans l'API, deux dans le back-office), toutes détectées ; migration essayée sur une ligne existante (publiée, sans valeur par défaut, statut inconnu refusé) ; collection Bruno, 24 requêtes sur 24, contre un serveur sur la base de test.
+- Vérifications : `composer check` vert, PHPUnit « OK (508 tests) » sur une base de test vide ; 52 tests Vitest dans le back-office, 14 dans la boutique ; treize régressions introduites exprès (onze dans l'API, deux dans le back-office), toutes détectées ; migration essayée sur une ligne existante (publiée, sans valeur par défaut, statut inconnu refusé) ; collection Bruno, 24 requêtes sur 24, contre un serveur sur la base de test.
 
 ### 2026-11-22 — P1-11 : boutique Next.js et client d'API typé (branche `feat/P1-11-shop-nextjs`, en relecture)
 - `shop/` : Next.js 16 (App Router), React 19, TypeScript 5.9 ; auto-hébergée (ADR 0006).

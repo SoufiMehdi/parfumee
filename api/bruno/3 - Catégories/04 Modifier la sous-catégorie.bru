@@ -1,0 +1,34 @@
+meta {
+  name: 04 Modifier la sous-catégorie
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/api/v1/admin/categories/{{childCategoryId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Bougies d'exemple à l'ambre",
+    "parent_id": "{{parentCategoryId}}"
+  }
+}
+
+tests {
+  test("200, le slug suit le nom", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().slug).to.match(/^bougies-d-exemple-a-l-ambre(-\d+)?$/);
+    expect(res.getBody().parent.id).to.equal(bru.getVar("parentCategoryId"));
+  });
+}
+
+docs {
+  Remplacement complet (`PUT`) : sans `parent_id`, la catégorie remonterait au premier niveau.
+}

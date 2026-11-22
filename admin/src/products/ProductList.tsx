@@ -2,8 +2,8 @@ import { DataTable, DateField, List, NumberInput, SelectInput, TextInput } from 
 
 import { STATUS_CHOICES, STATUS_LABELS, type ProductStatus } from './statuses';
 
-// Named as the API names its filters (P1-04). The category filter needs the list of the
-// categories, which the API does not serve yet (P2-01). Without a status, the API lists the
+// Named as the API names its filters (P1-04). The category filter comes with the category
+// screens (P2-10), the API serving the categories since P2-01. Without a status, the API lists the
 // drafts and the published products: the archived ones are asked for with the filter.
 const filters = [
     <SelectInput key="status" source="status" choices={STATUS_CHOICES} translateChoice={false} />,

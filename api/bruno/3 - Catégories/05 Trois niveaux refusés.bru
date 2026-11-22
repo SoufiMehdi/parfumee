@@ -1,0 +1,29 @@
+meta {
+  name: 05 Trois niveaux refusés
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Trop profond",
+    "parent_id": "{{childCategoryId}}"
+  }
+}
+
+tests {
+  test("422 : une sous-catégorie ne contient pas d'autres catégories", function () {
+    expect(res.getStatus()).to.equal(422);
+    expect(res.getBody().error).to.contain("child category");
+  });
+}

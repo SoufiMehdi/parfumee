@@ -1,0 +1,21 @@
+meta {
+  name: 07 Supprimer une catégorie qui a des sous-catégories
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/admin/categories/{{parentCategoryId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+tests {
+  test("409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}

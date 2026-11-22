@@ -271,6 +271,27 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
         self::assertSame(\count($expectedSlugs), $page->total);
     }
 
+    public function testATopLevelCategoryGivesTheProductsOfItsChildrenToo(): void
+    {
+        $candles = DoctrineCategoryFactory::createOne();
+        $scented = DoctrineCategoryFactory::createOne(['parent' => $candles]);
+        $melts = DoctrineCategoryFactory::createOne();
+        $this->givenAProduct('plain', 20.0, $candles, []);
+        $this->givenAProduct('scented', 25.0, $scented, []);
+        $this->givenAProduct('melt', 8.0, $melts, []);
+        $this->entityManager->clear();
+
+        $parentPage = $this->repository->findPage(new ProductCriteria(categoryId: $candles->getId()), new Pagination());
+        $childPage = $this->repository->findPage(new ProductCriteria(categoryId: $scented->getId()), new Pagination());
+
+        $parentSlugs = $this->slugsOf($parentPage);
+        sort($parentSlugs);
+        self::assertSame(['plain', 'scented'], $parentSlugs);
+        self::assertSame(2, $parentPage->total);
+        // A child category gives its own products only.
+        self::assertSame(['scented'], $this->slugsOf($childPage));
+    }
+
     public function testFindPageReturnsOneSliceAndTheTotalOfTheWholeList(): void
     {
         $category = DoctrineCategoryFactory::createOne();
@@ -369,7 +390,9 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
     public function testAPageIsLoadedWithCategoriesAndPicturesInThreeQueries(): void
     {
         foreach (range(1, 5) as $i) {
-            $product = DoctrineProductFactory::createOne(['category' => DoctrineCategoryFactory::createOne(['name' => 'Category '.$i])]);
+            // Child categories: their parent comes in the same query.
+            $parent = DoctrineCategoryFactory::createOne(['name' => 'Parent '.$i]);
+            $product = DoctrineProductFactory::createOne(['category' => DoctrineCategoryFactory::createOne(['name' => 'Category '.$i, 'parent' => $parent])]);
             DoctrinePictureFactory::createMany(2, ['product' => $product]);
         }
         $this->entityManager->clear();
@@ -386,6 +409,7 @@ final class DoctrineProductRepositoryTest extends DatabaseTestCase
         self::assertCount(5, $page->items);
         foreach ($page->items as $product) {
             self::assertStringStartsWith('Category ', $product->getCategory()->getName());
+            self::assertStringStartsWith('Parent ', (string) $product->getCategory()->getParent()?->getName());
             self::assertCount(2, $product->getPictures());
         }
     }

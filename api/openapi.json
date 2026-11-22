@@ -100,6 +100,349 @@
                 "security": []
             }
         },
+        "/api/v1/admin/categories": {
+            "get": {
+                "tags": [
+                    "Back-office \u00b7 Catalogue"
+                ],
+                "summary": "List the categories",
+                "description": "Requires the editor role. One page of the categories, sorted by name unless told otherwise. Every filter is optional.",
+                "operationId": "get_admin_categories_list",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Part of the name, whatever the case.",
+                            "type": "string",
+                            "nullable": true,
+                            "default": null,
+                            "maxLength": 255
+                        }
+                    },
+                    {
+                        "name": "parent_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "The children of this category only.",
+                            "type": "string",
+                            "nullable": true,
+                            "default": null
+                        }
+                    },
+                    {
+                        "name": "top_level",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "true: the top-level categories only.",
+                            "type": "boolean",
+                            "default": false
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Number of the page, from 1.",
+                            "type": "integer",
+                            "default": 1,
+                            "maximum": 1000000,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Maximum number of categories on a page.",
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "title": "Field to sort by. Categories with the same value are then sorted by id, so that pages never overlap.",
+                            "type": "string",
+                            "default": "name",
+                            "enum": [
+                                "name",
+                                "created_at"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "asc",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "One page of the matching categories",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/TotalCount"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryListView"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/ValidationFailed"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Back-office \u00b7 Catalogue"
+                ],
+                "summary": "Create a category",
+                "description": "Requires the editor role. The slug is computed from the name. With parent_id, the category is filed under that top-level category.",
+                "operationId": "post_admin_categories_create",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateCategoryDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The category is created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IdView"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "description": "The parent category does not exist",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "A field is invalid (with violations), or the parent is itself a child category (without)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ValidationError"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/Error"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/categories/{id}": {
+            "get": {
+                "tags": [
+                    "Back-office \u00b7 Catalogue"
+                ],
+                "summary": "Read a category",
+                "description": "Requires the editor role.",
+                "operationId": "get_admin_categories_get",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[13-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The category",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryView"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Back-office \u00b7 Catalogue"
+                ],
+                "summary": "Update a category",
+                "description": "Requires the editor role. The slug follows the name. Without parent_id, the category becomes a top-level one.",
+                "operationId": "put_admin_categories_update",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[13-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateCategoryDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The updated category",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryView"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "404": {
+                        "description": "The category or its parent does not exist",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "A field is invalid (with violations), or the parent breaks the two levels (itself, a child category, or a category that holds others going under one)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ValidationError"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/Error"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Back-office \u00b7 Catalogue"
+                ],
+                "summary": "Delete a category",
+                "description": "Requires the editor role. Only an empty category is deleted: one that holds a child category or a product (archived ones included) answers 409.",
+                "operationId": "delete_admin_categories_delete",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "[0-9a-f]{8}-[0-9a-f]{4}-[13-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The category is deleted"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    }
+                }
+            }
+        },
         "/api/v1/admin/me": {
             "get": {
                 "tags": [
@@ -142,6 +485,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "A category: a top-level one gives the products of its child categories too.",
                             "type": "string",
                             "nullable": true,
                             "default": null
@@ -1029,6 +1373,7 @@
                         "in": "query",
                         "required": false,
                         "schema": {
+                            "title": "A category: a top-level one gives the products of its child categories too.",
                             "type": "string",
                             "nullable": true,
                             "default": null
@@ -1271,9 +1616,100 @@
                 },
                 "type": "object"
             },
+            "ListCategoriesQueryDto": {
+                "properties": {
+                    "q": {
+                        "title": "Part of the name, whatever the case.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null,
+                        "maxLength": 255
+                    },
+                    "parent_id": {
+                        "title": "The children of this category only.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null
+                    },
+                    "top_level": {
+                        "title": "true: the top-level categories only.",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "page": {
+                        "title": "Number of the page, from 1.",
+                        "type": "integer",
+                        "default": 1,
+                        "maximum": 1000000,
+                        "minimum": 1
+                    },
+                    "per_page": {
+                        "title": "Maximum number of categories on a page.",
+                        "type": "integer",
+                        "default": 20,
+                        "maximum": 100,
+                        "minimum": 1
+                    },
+                    "sort": {
+                        "title": "Field to sort by. Categories with the same value are then sorted by id, so that pages never overlap.",
+                        "type": "string",
+                        "default": "name",
+                        "enum": [
+                            "name",
+                            "created_at"
+                        ]
+                    },
+                    "order": {
+                        "type": "string",
+                        "default": "asc",
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "CreateCategoryDto": {
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "parent_id": {
+                        "title": "A top-level category to file this one under. Left out: a top-level category.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateCategoryDto": {
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "parent_id": {
+                        "title": "A top-level category to file this one under. Left out: a top-level category.",
+                        "type": "string",
+                        "nullable": true,
+                        "default": null
+                    }
+                },
+                "type": "object"
+            },
             "ListProductsQueryDto": {
                 "properties": {
                     "category_id": {
+                        "title": "A category: a top-level one gives the products of its child categories too.",
                         "type": "string",
                         "nullable": true,
                         "default": null
@@ -1621,6 +2057,124 @@
                 },
                 "type": "object"
             },
+            "CategorySummaryView": {
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "CategoryView": {
+                "required": [
+                    "id",
+                    "name",
+                    "slug",
+                    "created_at",
+                    "updated_at"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "title": "URL-safe name, unique among the categories.",
+                        "type": "string"
+                    },
+                    "parent": {
+                        "title": "The top-level category this one is filed under; null for a top-level category.",
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/CategorySummaryView"
+                            },
+                            {
+                                "type": "object",
+                                "nullable": true,
+                                "enum": [
+                                    null
+                                ]
+                            }
+                        ]
+                    },
+                    "created_at": {
+                        "title": "When the category was created, in UTC.",
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "title": "When the category last changed, in UTC.",
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "PaginationView": {
+                "required": [
+                    "page",
+                    "per_page",
+                    "total",
+                    "total_pages"
+                ],
+                "properties": {
+                    "page": {
+                        "title": "Number of the page, from 1.",
+                        "type": "integer"
+                    },
+                    "per_page": {
+                        "title": "Maximum number of items on a page.",
+                        "type": "integer"
+                    },
+                    "total": {
+                        "title": "Number of items matching the filters, over all pages.",
+                        "type": "integer"
+                    },
+                    "total_pages": {
+                        "title": "Number of pages, 0 when nothing matches. A page after the last one is empty, not an error.",
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "CategoryListView": {
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryView"
+                        }
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationView"
+                    }
+                },
+                "type": "object"
+            },
+            "IdView": {
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
             "AddressView": {
                 "required": [
                     "id",
@@ -1706,21 +2260,6 @@
                         "title": "When the account last changed, in UTC. A change of its addresses does not count.",
                         "type": "string",
                         "format": "date-time"
-                    }
-                },
-                "type": "object"
-            },
-            "CategorySummaryView": {
-                "required": [
-                    "id",
-                    "name"
-                ],
-                "properties": {
-                    "id": {
-                        "type": "string"
-                    },
-                    "name": {
-                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1841,33 +2380,6 @@
                 },
                 "type": "object"
             },
-            "PaginationView": {
-                "required": [
-                    "page",
-                    "per_page",
-                    "total",
-                    "total_pages"
-                ],
-                "properties": {
-                    "page": {
-                        "title": "Number of the page, from 1.",
-                        "type": "integer"
-                    },
-                    "per_page": {
-                        "title": "Maximum number of items on a page.",
-                        "type": "integer"
-                    },
-                    "total": {
-                        "title": "Number of items matching the filters, over all pages.",
-                        "type": "integer"
-                    },
-                    "total_pages": {
-                        "title": "Number of pages, 0 when nothing matches. A page after the last one is empty, not an error.",
-                        "type": "integer"
-                    }
-                },
-                "type": "object"
-            },
             "ProductListView": {
                 "required": [
                     "items",
@@ -1882,17 +2394,6 @@
                     },
                     "pagination": {
                         "$ref": "#/components/schemas/PaginationView"
-                    }
-                },
-                "type": "object"
-            },
-            "IdView": {
-                "required": [
-                    "id"
-                ],
-                "properties": {
-                    "id": {
-                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -1960,6 +2461,16 @@
             },
             "NotFound": {
                 "description": "The resource does not exist",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Conflict": {
+                "description": "The request conflicts with the current state of the resource",
                 "content": {
                     "application/json": {
                         "schema": {
